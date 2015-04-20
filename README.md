@@ -1,0 +1,2 @@
+# cocol
+Concurrent Communications Library
