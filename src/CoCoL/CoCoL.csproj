@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{00058DF8-C13F-4DD9-BD8E-775DDF72BF87}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>CoCoL</RootNamespace>
+    <AssemblyName>CoCoL</AssemblyName>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>full</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Timeout.cs" />
+    <Compile Include="Loader.cs" />
+    <Compile Include="ThreadPool.cs" />
+    <Compile Include="ChannelManager.cs" />
+    <Compile Include="ExpirationManager.cs" />
+    <Compile Include="MultiChannelAccess.cs" />
+    <Compile Include="Attributes.cs" />
+    <Compile Include="ContinuationChannelAsBlocking.cs" />
+    <Compile Include="SimpleBlockingChannel.cs" />
+    <Compile Include="ContinuationChannel.cs" />
+    <Compile Include="SingleOffer.cs" />
+    <Compile Include="Interfaces.cs" />
+    <Compile Include="CallbackResult.cs" />
+    <Compile Include="MultiChannelSet.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+</Project>

@@ -1,0 +1,42 @@
+﻿<Properties StartupItem="../Tester/Tester.csproj">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Release" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="UnusedWaitLock.cs">
+    <Files>
+      <File FileName="SimpleBlockingChannel.cs" Line="57" Column="34" />
+      <File FileName="UnusedChannelSet.cs" Line="1" Column="1" />
+      <File FileName="UnusedChannelV2.cs" Line="8" Column="33" />
+      <File FileName="UnusedChannelV3.cs" Line="12" Column="30" />
+      <File FileName="Timeout.cs" Line="6" Column="41" />
+      <File FileName="UnusedWaitLock.cs" Line="10" Column="28" />
+      <File FileName="../Tester/Program.cs" Line="23" Column="1" />
+      <File FileName="Loader.cs" Line="9" Column="60" />
+      <File FileName="Attributes.cs" Line="66" Column="3" />
+      <File FileName="ThreadPool.cs" Line="49" Column="3" />
+      <File FileName="ChannelManager.cs" Line="37" Column="25" />
+      <File FileName="../Tester/CommsTime.cs" Line="1" Column="1" />
+      <File FileName="ContinuationChannel.cs" Line="408" Column="1" />
+      <File FileName="CallbackResult.cs" Line="54" Column="65" />
+      <File FileName="ExpirationManager.cs" Line="106" Column="80" />
+      <File FileName="../Tester/CommsTimeCallback.cs" Line="1" Column="1" />
+      <File FileName="MultiChannelAccess.cs" Line="93" Column="61" />
+      <File FileName="ContinuationChannelAsBlocking.cs" Line="11" Column="49" />
+      <File FileName="MultiChannelSet.cs" Line="185" Column="75" />
+      <File FileName="SingleOffer.cs" Line="25" Column="77" />
+      <File FileName="Interfaces.cs" Line="46" Column="67" />
+    </Files>
+    <Pads>
+      <Pad Id="ProjectPad">
+        <State expanded="True">
+          <Node name="CoCoL" expanded="True" />
+          <Node name="Tester" expanded="True" />
+        </State>
+      </Pad>
+    </Pads>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches>
+    <Watch file="../../duplicati-git/Duplicati/Server/WebServer/ControlHandler.cs" line="117" offsetX="907" offsetY="1740" expression="ex" liveUpdate="False" />
+  </MonoDevelop.Ide.DebuggingService.PinnedWatches>
+</Properties>
