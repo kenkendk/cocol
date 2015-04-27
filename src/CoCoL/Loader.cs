@@ -88,6 +88,13 @@ namespace CoCoL
 			private TimeSpan m_timeout;
 			private ChannelCallback<T> m_runner;
 
+			/// <summary>
+			/// Initializes a new instance of the <see cref="CoCoL.Loader+OnReadHandler`1"/> class.
+			/// </summary>
+			/// <param name="channels">The channels to process.</param>
+			/// <param name="priority">The channel selection priority.</param>
+			/// <param name="timeout">The time to wait for a read result.</param>
+			/// <param name="callback">The delegate to call when the data is available.</param>
 			public OnReadHandler(string[] channels, MultiChannelPriority priority, TimeSpan timeout, ChannelCallback<T> callback)
 			{
 				if (channels == null)
@@ -103,11 +110,20 @@ namespace CoCoL
 				m_set.ReadFromAny(m_runner, m_timeout); 
 			}
 				
+			/// <summary>
+			/// The callback delegate method
+			/// </summary>
+			/// <param name="item">The channel result</param>
 			public void RunHandler(ICallbackResult<T> item)
 			{
 				try
 				{
 					m_callback(item);
+				}
+				catch(RetiredException rex)
+				{
+					// Channel is now retired, stop calling
+					return;
 				}
 				catch(Exception ex)
 				{
@@ -118,6 +134,13 @@ namespace CoCoL
 			}
 		}
 
+		/// <summary>
+		/// Creates a read handler from a method mared with OnRead.
+		/// </summary>
+		/// <returns>The read handler.</returns>
+		/// <param name="attr">The attribute on the method.</param>
+		/// <param name="m">The method to call.</param>
+		/// <param name="instance">The object instance to register the callback on.</param>
 		private static object CreateReadHandler(OnReadAttribute attr, MethodInfo m, object instance)
 		{
 			var gentype = m.GetParameters()[0].ParameterType.GetGenericArguments();

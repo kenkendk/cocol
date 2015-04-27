@@ -3,6 +3,21 @@
 namespace CoCoL
 {
 	/// <summary>
+	/// The communication mode
+	/// </summary>
+	public enum CommunicationMode
+	{
+		/// <summary>
+		/// The request is a read
+		/// </summary>
+		Read,
+		/// <summary>
+		/// The request is a write
+		/// </summary>
+		Write
+	}
+
+	/// <summary>
 	/// Priorities for selecting a channel when multiple are available
 	/// </summary>
 	public enum MultiChannelPriority
@@ -166,6 +181,17 @@ namespace CoCoL
 		/// <param name="value">The value to write to the channel.</param>
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
 		void RegisterWrite(ITwoPhaseOffer offer, T value, TimeSpan timeout);
+
+		/// <summary>
+		/// Stops this channel from processing messages
+		/// </summary>
+		void Retire();
+
+		/// <summary>
+		/// Gets a value indicating whether this <see cref="CoCoL.IContinuationChannel`1"/> is retired.
+		/// </summary>
+		/// <value><c>true</c> if is retired; otherwise, <c>false</c>.</value>
+		bool IsRetired { get; }
 	}
 
 	/// <summary>
@@ -186,6 +212,11 @@ namespace CoCoL
 		void Run();
 	}
 
+	/// <summary>
+	/// A two-phase model where a read or write request is offered,
+	/// and either accepted by both or rejected if consensus could not
+	/// be reached
+	/// </summary>
 	public interface ITwoPhaseOffer
 	{
 		/// <summary>
@@ -203,6 +234,39 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="caller">The offer initiator.</param>
 		void Withdraw(object caller);
+	}
+
+
+	/// <summary>
+	/// An untyped communication intent
+	/// </summary>
+	public interface ICommunicationIntent
+	{
+		/// <summary>
+		/// The direction of the communication
+		/// </summary>
+		CommunicationMode Mode { get; }
+
+		/// <summary>
+		/// The two-phase offer handler or null
+		/// </summary>
+		ITwoPhaseOffer Offer { get; }
+
+		/// <summary>
+		/// The channel to which the communication should be performed
+		/// </summary>
+		IUntypedContinuationChannel Channel { get; }
+
+		/// <summary>
+		/// The value being written, or null
+		/// </summary>
+		object Value { get; }
+
+		/// <summary>
+		/// The method to call after a successfull read or write
+		/// </summary>
+		/// <value>The callback method.</value>
+		Delegate CallbackMethod { get; }
 	}
 }
 

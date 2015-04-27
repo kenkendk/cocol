@@ -48,6 +48,7 @@
     <Compile Include="Interfaces.cs" />
     <Compile Include="CallbackResult.cs" />
     <Compile Include="MultiChannelSet.cs" />
+    <Compile Include="Exceptions.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

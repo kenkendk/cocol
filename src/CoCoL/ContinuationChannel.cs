@@ -143,17 +143,17 @@ namespace CoCoL
 		/// <summary>
 		/// The queue with pending readers
 		/// </summary>
-		private readonly List<ReaderEntry> m_readerQueue = new List<ReaderEntry>(1);
+		private List<ReaderEntry> m_readerQueue = new List<ReaderEntry>(1);
 
 		/// <summary>
 		/// The queue with pending writers
 		/// </summary>
-		private readonly List<WriterEntry> m_writerQueue = new List<WriterEntry>(1);
+		private List<WriterEntry> m_writerQueue = new List<WriterEntry>(1);
 
 		/// <summary>
 		/// The maximal size of the queue
 		/// </summary>
-		private readonly int m_queueSize;
+		private readonly int m_bufferSize;
 
 		/// <summary>
 		/// The lock object protecting access to the queues
@@ -192,6 +192,17 @@ namespace CoCoL
 		public string Name { get; private set; }
 
 		/// <summary>
+		/// Gets a value indicating whether this instance is retired.
+		/// </summary>
+		/// <value><c>true</c> if this instance is retired; otherwise, <c>false</c>.</value>
+		public bool IsRetired { get; private set; }
+
+		/// <summary>
+		/// The number of messages to process before marking the channel as retired
+		/// </summary>
+		private int m_retireCount = -1;
+
+		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.ContinuationChannel`1"/> class.
 		/// </summary>
 		/// <param name="size">The size of the write buffer</param>
@@ -202,7 +213,7 @@ namespace CoCoL
 
 			this.Name = name;
 
-			m_queueSize = size;
+			m_bufferSize = size;
 
 			TimeoutCallbackItem = new HelperCallbackItem(default(T), TimeoutException, this);
 		}
@@ -324,12 +335,20 @@ namespace CoCoL
 		/// <param name="callback">A callback method that is called with the result of the operation</param>
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
 		public void RegisterRead(ITwoPhaseOffer offer, ChannelCallback<T> callback, TimeSpan timeout)
-		{
+		{				
 			// Store entry time in case we need it and the offer dance takes some time
 			var entry = DateTime.Now;
 
 			lock (m_lock)
 			{
+				if (IsRetired)
+				{
+					if (callback != null)
+						ThreadPool.QueueItem(new HelperCallbackItem(default(T), new RetiredException(), this).CallbackWithMethod, callback);
+
+					return;
+				}
+
 				while (m_writerQueue.Count > 0)
 				{
 					var kp = m_writerQueue[0];
@@ -373,6 +392,10 @@ namespace CoCoL
 						// Release items if there is space in the buffer
 						ProcessWriteQueueBuffer();
 
+						// If this was the last item before the retirement, 
+						// flush all following and set the retired flag
+						EmptyQueueIfRetired();
+
 						return;
 					}
 				}
@@ -412,6 +435,14 @@ namespace CoCoL
 
 			lock (m_lock)
 			{
+				if (IsRetired)
+				{
+					if (callback != null)
+						ThreadPool.QueueItem(new HelperCallbackItem(default(T), new RetiredException(), this).CallbackWithMethod, callback);
+
+					return;
+				}
+
 				while (m_readerQueue.Count > 0)
 				{
 					var kp = m_readerQueue[0];
@@ -428,7 +459,7 @@ namespace CoCoL
 						if (offer != null && offerWriter)
 							offer.Withdraw(this);
 
-						// if the writer bailed the queue is intact, but we stop offering
+						// if the writer bailed, the queue is intact, but we stop offering
 						if (!offerWriter)
 							return;
 					}
@@ -454,6 +485,10 @@ namespace CoCoL
 
 						LastWrite = watch.ElapsedTicks;
 
+						// If this was the last item before the retirement, 
+						// flush all following and set the retired flag
+						EmptyQueueIfRetired();
+
 						return;
 					}
 				}
@@ -469,7 +504,7 @@ namespace CoCoL
 				}
 				else
 				{
-					if (m_writerQueue.Count < m_queueSize)
+					if (m_writerQueue.Count < m_bufferSize && m_retireCount < 0)
 					{
 						// We have a buffer slot to use
 						if (offer == null || offer.Offer(this))
@@ -503,9 +538,9 @@ namespace CoCoL
 			lock (m_lock)
 			{
 				// If there is now a buffer slot in the queue, trigger a callback to a waiting item
-				while (m_queueSize > 0 && m_writerQueue.Count >= m_queueSize)
+				while (m_retireCount < 0 && m_bufferSize > 0 && m_writerQueue.Count >= m_bufferSize)
 				{
-					var nextItem = m_writerQueue[m_queueSize - 1];
+					var nextItem = m_writerQueue[m_bufferSize - 1];
 
 					if (nextItem.Offer == null || nextItem.Offer.Offer(this))
 					{
@@ -517,13 +552,77 @@ namespace CoCoL
 
 						// Now that the transaction has completed for the writer, record it as waiting forever
 						if (nextItem.Expires != Timeout.InfiniteDateTime)
-							m_writerQueue[m_queueSize - 1] = new WriterEntry(nextItem.Offer, nextItem.Callback, Timeout.InfiniteDateTime, nextItem.Value);
+							m_writerQueue[m_bufferSize - 1] = new WriterEntry(nextItem.Offer, nextItem.Callback, Timeout.InfiniteDateTime, nextItem.Value);
 
 						LastWrite = watch.ElapsedTicks;
 					}
 					else
-						m_writerQueue.RemoveAt(m_queueSize - 1);
+						m_writerQueue.RemoveAt(m_bufferSize - 1);
 				}
+			}
+		}
+
+		/// <summary>
+		/// Stops this channel from processing messages
+		/// </summary>
+		public void Retire()
+		{
+			lock (m_lock)
+			{
+				if (IsRetired)
+					return;
+
+				if (m_retireCount < 0)
+				{
+					// If we have responded to buffered writes, 
+					// make sure we pair those before retiring
+					m_retireCount = Math.Min(m_writerQueue.Count, m_bufferSize) + 1;
+				}
+				
+				EmptyQueueIfRetired();
+			}
+		}
+
+		/// <summary>
+		/// Empties the queue if the channel is retired.
+		/// </summary>
+		private void EmptyQueueIfRetired()
+		{
+			List<ReaderEntry> readers = null;
+			List<WriterEntry> writers = null;
+
+			lock (m_lock)
+			{
+				// Countdown as required
+				if (m_retireCount > 0)
+				{
+					m_retireCount--;
+					if (m_retireCount == 0)
+					{
+						// Empty the queues, as we are now retired
+						readers = m_readerQueue;
+						writers = m_writerQueue;
+
+						// Make sure nothing new enters the queues
+						IsRetired = true;
+						m_readerQueue = null;
+						m_writerQueue = null;
+
+					}
+				}
+			}
+
+			// If there are pending retire messages, send them
+			if (readers != null || writers != null)
+			{
+				var retiredItem = new HelperCallbackItem(default(T), new RetiredException(), this);
+
+				if (readers != null)
+					foreach (var r in readers)
+						ThreadPool.QueueItem(retiredItem.CallbackWithMethod, r.Callback);
+				if (writers != null)
+					foreach (var r in writers)
+						ThreadPool.QueueItem(retiredItem.CallbackWithMethod, r.Callback);
 			}
 		}
 
