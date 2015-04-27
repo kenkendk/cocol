@@ -19,7 +19,7 @@ namespace CoCoL
 		/// <param name="timeout">The maximum time to wait for a value to read.</param>
 		/// <param name="priority">The priority used to select channels, if multiple channels have a value that can be read.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static void ReadFromAny<T>(ChannelCallback<T> callback, TimeSpan timeout, MultiChannelPriority priority, params IContinuationChannel<T>[] channels)
+		public static void ReadFromAny<T>(ChannelCallback<T> callback, TimeSpan timeout, MultiChannelPriority priority, params IChannel<T>[] channels)
 		{
 			ReadFromAny(callback, channels.AsEnumerable(), timeout, priority);
 		}
@@ -31,7 +31,7 @@ namespace CoCoL
 		/// <param name="channels">The list of channels to call.</param>
 		/// <param name="timeout">The maximum time to wait for a value to read.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static void ReadFromAny<T>(ChannelCallback<T> callback, TimeSpan timeout, params IContinuationChannel<T>[] channels)
+		public static void ReadFromAny<T>(ChannelCallback<T> callback, TimeSpan timeout, params IChannel<T>[] channels)
 		{
 			ReadFromAny(callback, channels.AsEnumerable(), timeout, MultiChannelPriority.Any);
 		}
@@ -43,7 +43,7 @@ namespace CoCoL
 		/// <param name="channels">The list of channels to call.</param>
 		/// <param name="priority">The priority used to select channels, if multiple channels have a value that can be read.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static void ReadFromAny<T>(ChannelCallback<T> callback, MultiChannelPriority priority, params IContinuationChannel<T>[] channels)
+		public static void ReadFromAny<T>(ChannelCallback<T> callback, MultiChannelPriority priority, params IChannel<T>[] channels)
 		{
 			ReadFromAny(callback, channels.AsEnumerable(), Timeout.Infinite, priority);
 		}
@@ -54,7 +54,7 @@ namespace CoCoL
 		/// <param name="callback">The method to call after the read completes.</param>
 		/// <param name="channels">The list of channels to call.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static void ReadFromAny<T>(ChannelCallback<T> callback, params IContinuationChannel<T>[] channels)
+		public static void ReadFromAny<T>(ChannelCallback<T> callback, params IChannel<T>[] channels)
 		{
 			ReadFromAny(callback, channels.AsEnumerable(), Timeout.Infinite, MultiChannelPriority.Any);
 		}
@@ -66,7 +66,7 @@ namespace CoCoL
 		/// <param name="channels">The list of channels to call.</param>
 		/// <param name="timeout">The maximum time to wait for a value to read.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static void ReadFromAny<T>(ChannelCallback<T> callback, IEnumerable<IContinuationChannel<T>> channels, TimeSpan timeout)
+		public static void ReadFromAny<T>(ChannelCallback<T> callback, IEnumerable<IChannel<T>> channels, TimeSpan timeout)
 		{
 			ReadFromAny(callback, channels, timeout, MultiChannelPriority.Any);
 		}
@@ -78,7 +78,7 @@ namespace CoCoL
 		/// <param name="channels">The list of channels to call.</param>
 		/// <param name="priority">The priority used to select channels, if multiple channels have a value that can be read.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static void ReadFromAny<T>(ChannelCallback<T> callback, IEnumerable<IContinuationChannel<T>> channels, MultiChannelPriority priority)
+		public static void ReadFromAny<T>(ChannelCallback<T> callback, IEnumerable<IChannel<T>> channels, MultiChannelPriority priority)
 		{
 			ReadFromAny(callback, channels, Timeout.Infinite, priority);
 		}
@@ -94,7 +94,7 @@ namespace CoCoL
 		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static void WriteToAny<T>(ChannelCallback<T> callback, T value, TimeSpan timeout, MultiChannelPriority priority, params IContinuationChannel<T>[] channels)
+		public static void WriteToAny<T>(ChannelCallback<T> callback, T value, TimeSpan timeout, MultiChannelPriority priority, params IChannel<T>[] channels)
 		{
 			WriteToAny(callback, value, channels.AsEnumerable(), timeout, priority);
 		}
@@ -107,7 +107,7 @@ namespace CoCoL
 		/// <param name="channels">The list of channels to attempt to write.</param>
 		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static void WriteToAny<T>(ChannelCallback<T> callback, T value, TimeSpan timeout, params IContinuationChannel<T>[] channels)
+		public static void WriteToAny<T>(ChannelCallback<T> callback, T value, TimeSpan timeout, params IChannel<T>[] channels)
 		{
 			WriteToAny(callback, value, channels.AsEnumerable(), timeout, MultiChannelPriority.Any);
 		}
@@ -120,7 +120,7 @@ namespace CoCoL
 		/// <param name="channels">The list of channels to attempt to write.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static void WriteToAny<T>(ChannelCallback<T> callback, T value, MultiChannelPriority priority, params IContinuationChannel<T>[] channels)
+		public static void WriteToAny<T>(ChannelCallback<T> callback, T value, MultiChannelPriority priority, params IChannel<T>[] channels)
 		{
 			WriteToAny(callback, value, channels.AsEnumerable(), Timeout.Infinite, priority);
 		}
@@ -132,7 +132,7 @@ namespace CoCoL
 		/// <param name="value">The value to write to the channel.</param>
 		/// <param name="channels">The list of channels to attempt to write.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static void WriteToAny<T>(ChannelCallback<T> callback, T value, params IContinuationChannel<T>[] channels)
+		public static void WriteToAny<T>(ChannelCallback<T> callback, T value, params IChannel<T>[] channels)
 		{
 			WriteToAny(callback, value, channels.AsEnumerable(), Timeout.Infinite, MultiChannelPriority.Any);
 		}
@@ -145,7 +145,7 @@ namespace CoCoL
 		/// <param name="channels">The list of channels to attempt to write.</param>
 		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static void WriteToAny<T>(ChannelCallback<T> callback, T value, IEnumerable<IContinuationChannel<T>> channels, TimeSpan timeout)
+		public static void WriteToAny<T>(ChannelCallback<T> callback, T value, IEnumerable<IChannel<T>> channels, TimeSpan timeout)
 		{
 			WriteToAny(callback, value, channels, timeout, MultiChannelPriority.Any);
 		}
@@ -158,7 +158,7 @@ namespace CoCoL
 		/// <param name="channels">The list of channels to attempt to write.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static void WriteToAny<T>(ChannelCallback<T> callback, T value, IEnumerable<IContinuationChannel<T>> channels, MultiChannelPriority priority)
+		public static void WriteToAny<T>(ChannelCallback<T> callback, T value, IEnumerable<IChannel<T>> channels, MultiChannelPriority priority)
 		{
 			WriteToAny(callback, value, channels, Timeout.Infinite, priority);
 		}
@@ -172,7 +172,7 @@ namespace CoCoL
 		/// <param name="timeout">The maximum time to wait for a value to read.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be read.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static void ReadFromAny<T>(ChannelCallback<T> callback, IEnumerable<IContinuationChannel<T>> channels, TimeSpan timeout, MultiChannelPriority priority)
+		public static void ReadFromAny<T>(ChannelCallback<T> callback, IEnumerable<IChannel<T>> channels, TimeSpan timeout, MultiChannelPriority priority)
 		{
 			// We only accept the first offer
 			var offer = new SingleOffer();
@@ -209,7 +209,7 @@ namespace CoCoL
 		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static void WriteToAny<T>(ChannelCallback<T> callback, T value, IEnumerable<IContinuationChannel<T>> channels, TimeSpan timeout, MultiChannelPriority priority = MultiChannelPriority.Any)
+		public static void WriteToAny<T>(ChannelCallback<T> callback, T value, IEnumerable<IChannel<T>> channels, TimeSpan timeout, MultiChannelPriority priority = MultiChannelPriority.Any)
 		{
 			// We only accept the first offer
 			var offer = new SingleOffer();

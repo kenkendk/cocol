@@ -1,8 +1,51 @@
 ﻿using System;
 using System.Threading;
+using CoCoL;
+using System.Collections.Generic;
 
-namespace CoCoL
+namespace CommsTimeMinimal
 {
+	public static class SimpleBlockingChannelManager
+	{
+		/// <summary>
+		/// A lookup table with all known channels
+		/// </summary>
+		private static Dictionary<string, object> m_channels = new Dictionary<string, object>();
+
+		/// <summary>
+		/// A lock object for providing exclusive access to the lookup table
+		/// </summary>
+		private static readonly object m_lock = new object();
+
+		/// <summary>
+		/// Gets a named channel.
+		/// </summary>
+		/// <returns>The named channel.</returns>
+		/// <param name="name">The name of the channel to find.</param>
+		/// <param name="buffersize">The number of buffers in the channel.</param>
+		/// <typeparam name="T">The channel type.</typeparam>
+		public static IBlockingChannel<T> GetChannel<T>(string name)
+		{
+			object res;
+
+			if (m_channels.TryGetValue(name, out res))
+				return (IBlockingChannel<T>)res;
+
+			lock (m_lock)
+				if (m_channels.TryGetValue(name, out res))
+					return (IBlockingChannel<T>)res;
+				else
+				{
+					var r = new SimpleBlockingChannel<T>();
+					m_channels.Add(name, r);
+					return r;
+				}
+		}	
+	}
+
+
+
+
 	/// <summary>
 	/// Implementation of a simply channels that blocks the caller until it is avaliable
 	/// </summary>

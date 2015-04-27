@@ -1,9 +1,9 @@
 ﻿using System;
 using CoCoL;
 
-namespace Tester
+namespace CommsTimeCallback
 {
-	class TickCollectorCallback : IProcess
+	class TickCollector : IProcess
 	{
 		public const string TICK_CHANNEL_NAME = "ticks";
 
@@ -21,13 +21,14 @@ namespace Tester
 		private readonly long A_SECOND_IN_TICKS = TimeSpan.FromSeconds(1).Ticks;
 		private readonly long MEASURE_INTERVAL = TimeSpan.FromSeconds(5).Ticks;
 
-		public TickCollectorCallback() { }
-
 		public void Run() { }
 
 		[OnRead(TICK_CHANNEL_NAME)]
 		public void OnData(ICallbackResult<bool> res)
 		{
+			if (res.Exception != null)
+				throw res.Exception;
+
 			switch(m_state)
 			{
 				case States.Init:
@@ -54,7 +55,7 @@ namespace Tester
 					var duration = DateTime.Now - m_last;
 					if ((DateTime.Now - m_last).Ticks > MEASURE_INTERVAL)
 					{
-						Console.WriteLine("Got {0} ticks for {1} processes in {2} seconds, speed is {3} rounds/s ({4} msec/comm)", m_tickcount, CommsTimeCallback.PROCESSES, duration, m_tickcount / duration.TotalSeconds, duration.TotalMilliseconds / ((m_tickcount) * (CommsTimeCallback.PROCESSES + 1)));
+						Console.WriteLine("Got {0} ticks for {1} processes in {2} seconds, speed is {3} rounds/s ({4} msec/comm)", m_tickcount, CommsTime.PROCESSES, duration, m_tickcount / duration.TotalSeconds, duration.TotalMilliseconds / ((m_tickcount) * (CommsTime.PROCESSES + 1)));
 						m_last = DateTime.Now;
 						m_tickcount = 0;
 					}
@@ -65,28 +66,28 @@ namespace Tester
 	}
 
 	[Process(count: PROCESSES)]
-	public class CommsTimeCallback: IProcess
+	public class CommsTime: IProcess
 	{
 		public const int PROCESSES = 4;//10000000;
 
 		private static int _index = -1;
 		private readonly int m_index = System.Threading.Interlocked.Increment(ref _index);
 
-		private IContinuationChannel<bool> m_tickChannel;
-		private IContinuationChannel<bool> m_readChannel;
-		private IContinuationChannel<bool> m_writeChannel;
+		private IChannel<bool> m_tickChannel;
+		private IChannel<bool> m_readChannel;
+		private IChannel<bool> m_writeChannel;
 		private ChannelCallback<bool> m_onData;
 
-		public CommsTimeCallback()
+		public CommsTime()
 		{
 			var next_chan = (m_index + 1) % PROCESSES;
 			var prev_chan = m_index == 0 ? PROCESSES - 1 : m_index - 1;
 
 			m_onData = OnData;
-			m_writeChannel = (IContinuationChannel<bool>)ChannelManager.GetChannel<bool>(m_index + "->" + next_chan);
-			m_readChannel = (IContinuationChannel<bool>)ChannelManager.GetChannel<bool>(prev_chan + "->" + m_index);
+			m_writeChannel = ChannelManager.GetChannel<bool>(m_index + "->" + next_chan);
+			m_readChannel = ChannelManager.GetChannel<bool>(prev_chan + "->" + m_index);
 			if (m_index == 0)
-				m_tickChannel = (IContinuationChannel<bool>)ChannelManager.GetChannel<bool>(TickCollectorCallback.TICK_CHANNEL_NAME);
+				m_tickChannel = ChannelManager.GetChannel<bool>(TickCollector.TICK_CHANNEL_NAME);
 		}
 
 		#region IProcess implementation
@@ -104,10 +105,25 @@ namespace Tester
 			m_readChannel.RegisterRead(m_onData);
 		}
 
+		private void OnWriteCallback(ICallbackResult<bool> res)
+		{
+			if (res.Exception is CoCoL.RetiredException)
+				m_writeChannel.Retire();
+		}
+
 		private void OnData(ICallbackResult<bool> res)
 		{
+			if (res.Exception != null)
+			{
+				if (res.Exception is CoCoL.RetiredException)
+					m_writeChannel.Retire();
+				
+				throw res.Exception;
+			}
+
+
 			if (m_tickChannel != null)
-				m_tickChannel.RegisterWrite(true);
+				m_tickChannel.RegisterWrite(OnWriteCallback, true);
 			
 			m_writeChannel.RegisterWrite(true);
 			m_readChannel.RegisterRead(m_onData);

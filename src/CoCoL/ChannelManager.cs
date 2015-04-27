@@ -20,7 +20,7 @@ namespace CoCoL
 		/// <param name="name">The name of the channel to find.</param>
 		/// <param name="buffersize">The number of buffers in the channel.</param>
 		/// <typeparam name="T">The channel type.</typeparam>
-		public static IBlockingChannel<T> GetChannel<T>(string name, int buffersize = 0) 
+		public static IChannel<T> GetChannel<T>(string name, int buffersize = 0) 
 		{ 
 			return _ch.GetChannel<T>(name, buffersize); 
 		}
@@ -32,7 +32,7 @@ namespace CoCoL
 		/// <param name="name">The name of the channel, or null.</param>
 		/// <param name="buffersize">The number of buffers in the channel.</param>
 		/// <typeparam name="T">The channel type.</typeparam>
-		public static IBlockingChannel<T> CreateChannel<T>(string name = null, int buffersize = 0) 
+		public static IChannel<T> CreateChannel<T>(string name = null, int buffersize = 0) 
 		{ 
 			return new ContinuationChannel<T>(name ?? Guid.NewGuid().ToString("D"), buffersize); 
 		}
@@ -60,16 +60,16 @@ namespace CoCoL
 		/// <param name="name">The name of the channel to find.</param>
 		/// <param name="buffersize">The number of buffers in the channel.</param>
 		/// <typeparam name="T">The channel type.</typeparam>
-		public IBlockingChannel<T> GetChannel<T>(string name, int buffersize)
+		public IChannel<T> GetChannel<T>(string name, int buffersize)
 		{
 			object res;
 
 			if (m_channels.TryGetValue(name, out res))
-				return (IBlockingChannel<T>)res;
+				return (IChannel<T>)res;
 
 			lock (m_lock)
 				if (m_channels.TryGetValue(name, out res))
-					return (IBlockingChannel<T>)res;
+					return (IChannel<T>)res;
 				else
 				{
 					var r = ChannelManager.CreateChannel<T>(name, buffersize);

@@ -14,7 +14,7 @@ namespace CoCoL
 		/// <summary>
 		/// Read from the channel in a blocking manner
 		/// </summary>
-		public static T Read<T>(this IContinuationChannel<T> self)
+		public static T Read<T>(this IChannel<T> self)
 		{
 			using (var evt = new System.Threading.ManualResetEventSlim(false))
 			{
@@ -34,7 +34,7 @@ namespace CoCoL
 		/// Write to the channel in a blocking manner
 		/// </summary>
 		/// <param name="value">The value to write into the channel</param>
-		public static void Write<T>(this IContinuationChannel<T> self, T value)
+		public static void Write<T>(this IChannel<T> self, T value)
 		{
 			using (var evt = new System.Threading.ManualResetEventSlim(false))
 			{

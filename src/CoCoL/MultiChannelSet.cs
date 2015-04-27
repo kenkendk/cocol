@@ -12,7 +12,7 @@ namespace CoCoL
 		/// <summary>
 		/// The channels to consider
 		/// </summary>
-		private readonly IContinuationChannel<T>[] m_channels;
+		private readonly IChannel<T>[] m_channels;
 		/// <summary>
 		/// The usage of the channels, used for tracking fair usage
 		/// </summary>
@@ -36,7 +36,7 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="priority">The priority to use when selecting a channel.</param>
 		/// <param name="channels">The channels to consider.</param>
-		public MultiChannelSet(MultiChannelPriority priority, params IContinuationChannel<T>[] channels)
+		public MultiChannelSet(MultiChannelPriority priority, params IChannel<T>[] channels)
 		{
 			m_channels = channels;
 
@@ -50,7 +50,7 @@ namespace CoCoL
 		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet`1"/> class.
 		/// </summary>
 		/// <param name="channels">The channels to consider.</param>
-		public MultiChannelSet(params IContinuationChannel<T>[] channels)
+		public MultiChannelSet(params IChannel<T>[] channels)
 			: this(MultiChannelPriority.Any, channels) 
 		{
 		}
@@ -60,7 +60,7 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="priority">The priority to use when selecting a channel.</param>
 		/// <param name="channels">The channels to consider.</param>
-		public MultiChannelSet(IEnumerable<IContinuationChannel<T>> channels, MultiChannelPriority priority = MultiChannelPriority.Any)
+		public MultiChannelSet(IEnumerable<IChannel<T>> channels, MultiChannelPriority priority = MultiChannelPriority.Any)
 			: this(priority, channels.ToArray())
 		{
 		}
@@ -70,7 +70,7 @@ namespace CoCoL
 		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet`1"/> class.
 		/// </summary>
 		/// <param name="channels">The channels to consider.</param>
-		public MultiChannelSet(IEnumerable<IContinuationChannel<T>> channels)
+		public MultiChannelSet(IEnumerable<IChannel<T>> channels)
 			: this(MultiChannelPriority.Any, channels.ToArray())
 		{
 		}
@@ -185,7 +185,7 @@ namespace CoCoL
 		/// Gets the channels in priority order based on usage, least used first
 		/// </summary>
 		/// <value>The priority ordered channels.</value>
-		private IEnumerable<IContinuationChannel<T>> PriorityOrderedChannels
+		private IEnumerable<IChannel<T>> PriorityOrderedChannels
 		{
 			get
 			{

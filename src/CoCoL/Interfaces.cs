@@ -71,7 +71,7 @@ namespace CoCoL
 		/// Gets the channel.
 		/// </summary>
 		/// <value>The channel that was read or written.</value>
-		IContinuationChannel<T> Channel { get; }
+		IChannel<T> Channel { get; }
 	}
 
 	/// <summary>
@@ -99,7 +99,7 @@ namespace CoCoL
 	/// <summary>
 	/// Interface for a communication channel the supports continuation
 	/// </summary>
-	public interface IContinuationChannel<T>
+	public interface IChannel<T>
 	{
 		/// <summary>
 		/// Registers a desire to read from the channel

@@ -103,7 +103,7 @@ namespace CoCoL
 				if (channels.Length <= 0)
 					throw new ArgumentException("channels");
 				
-				m_set = new MultiChannelSet<T>(channels.Select(x => (IContinuationChannel<T>)ChannelManager.GetChannel<T>(x)).ToArray(), priority);
+				m_set = new MultiChannelSet<T>(channels.Select(x => (IChannel<T>)ChannelManager.GetChannel<T>(x)).ToArray(), priority);
 				m_callback = callback;
 				m_runner = RunHandler;
 				m_timeout = timeout;

@@ -1,7 +1,7 @@
 ﻿using System;
 using CoCoL;
 
-namespace Tester
+namespace CommsTimeBlocking
 {
 	class TickCollector : IProcess
 	{
@@ -47,7 +47,7 @@ namespace Tester
 	[Process(count: PROCESSES)]
 	class CommsTime : IProcess
 	{
-		public const int PROCESSES = 1000;
+		public const int PROCESSES = 4;
 
 		private static int _index = -1;
 		private readonly int m_index = System.Threading.Interlocked.Increment(ref _index);

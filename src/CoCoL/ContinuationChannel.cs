@@ -8,7 +8,7 @@ namespace CoCoL
 	/// <summary>
 	/// A channel that uses continuation callbacks
 	/// </summary>
-	public class ContinuationChannel<T> : IBlockingChannel<T>, IContinuationChannel<T>, IUntypedContinuationChannel, INamedItem
+	public class ContinuationChannel<T> : IBlockingChannel<T>, IChannel<T>, IUntypedContinuationChannel, INamedItem
 	{
 		/// <summary>
 		/// Structure for keeping a read request
@@ -124,7 +124,7 @@ namespace CoCoL
 		/// </summary>
 		private class HelperCallbackItem : CallbackResult<T>
 		{
-			public HelperCallbackItem(T result, Exception exception, IContinuationChannel<T> channel)
+			public HelperCallbackItem(T result, Exception exception, IChannel<T> channel)
 				: base(result, exception, channel)
 			{
 			}
