@@ -619,10 +619,12 @@ namespace CoCoL
 
 				if (readers != null)
 					foreach (var r in readers)
-						ThreadPool.QueueItem(retiredItem.CallbackWithMethod, r.Callback);
+						if (r.Callback != null)
+							ThreadPool.QueueItem(retiredItem.CallbackWithMethod, r.Callback);
 				if (writers != null)
-					foreach (var r in writers)
-						ThreadPool.QueueItem(retiredItem.CallbackWithMethod, r.Callback);
+					foreach (var w in writers)
+						if (w.Callback != null)
+							ThreadPool.QueueItem(retiredItem.CallbackWithMethod, w.Callback);
 			}
 		}
 
@@ -653,11 +655,13 @@ namespace CoCoL
 
 			// Send the notifications
 			foreach (var r in expiredReaders.OrderBy(x => x.Value.Expires))
-				ThreadPool.QueueItem(TimeoutCallbackItem.CallbackWithMethod, r.Value.Callback);
+				if (r.Value.Callback != null)
+					ThreadPool.QueueItem(TimeoutCallbackItem.CallbackWithMethod, r.Value.Callback);
 
 			// Send the notifications
-			foreach (var r in expiredWriters.OrderBy(x => x.Value.Expires))
-				ThreadPool.QueueItem(TimeoutCallbackItem.CallbackWithMethod, r.Value.Callback);
+			foreach (var w in expiredWriters.OrderBy(x => x.Value.Expires))
+				if (w.Value.Callback != null)
+					ThreadPool.QueueItem(TimeoutCallbackItem.CallbackWithMethod, w.Value.Callback);
 		}
 	}
 }
