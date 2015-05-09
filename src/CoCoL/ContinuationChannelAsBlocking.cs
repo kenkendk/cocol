@@ -14,7 +14,7 @@ namespace CoCoL
 		/// <param name="self">The channel to read from</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		/// <returns>The value read from the channel</returns>
-		public static T Read<T>(this IChannel<T> self)
+		public static T Read<T>(this IReadChannel<T> self)
 		{
 			return DoRead<T>(self, Timeout.Infinite).Result;
 		}
@@ -26,7 +26,7 @@ namespace CoCoL
 		/// <param name="timeout">The maximum time to wait for a value</param>
 		/// <returns>>The value read from the channel</returns>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
-		public static T Read<T>(this IChannel<T> self, TimeSpan timeout)
+		public static T Read<T>(this IReadChannel<T> self, TimeSpan timeout)
 		{
 			return DoRead(self, timeout).Result;
 		}
@@ -38,7 +38,7 @@ namespace CoCoL
 		/// <param name="result">The read result</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		/// <returns>True if the read succeeded, false otherwise</returns>
-		public static bool TryRead<T>(this IChannel<T> self, out T result)
+		public static bool TryRead<T>(this IReadChannel<T> self, out T result)
 		{
 			var res = DoRead(self, Timeout.Immediate);
 
@@ -61,7 +61,7 @@ namespace CoCoL
 		/// <param name="timeout">The maximum time to wait for a value</param>
 		/// <returns>>The value read from the channel</returns>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
-		private static ICallbackResult<T> DoRead<T>(this IChannel<T> self, TimeSpan timeout)
+		private static ICallbackResult<T> DoRead<T>(this IReadChannel<T> self, TimeSpan timeout)
 		{
 			using (var evt = new System.Threading.ManualResetEventSlim(false))
 			{
@@ -84,7 +84,7 @@ namespace CoCoL
 		/// <param name="self">The channel to read from</param>
 		/// <param name="timeout">The maximum time to wait for an available slot</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
-		public static void Write<T>(this IChannel<T> self, T value)
+		public static void Write<T>(this IWriteChannel<T> self, T value)
 		{
 			var ex = DoWrite<T>(self, value, Timeout.Infinite).Exception;
 			if (ex != null)
@@ -98,7 +98,7 @@ namespace CoCoL
 		/// <param name="self">The channel to read from</param>
 		/// <param name="timeout">The maximum time to wait for an available slot</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
-		public static void Write<T>(this IChannel<T> self, T value, TimeSpan timeout)
+		public static void Write<T>(this IWriteChannel<T> self, T value, TimeSpan timeout)
 		{
 			var ex = DoWrite<T>(self, value, timeout).Exception;
 			if (ex != null)
@@ -112,7 +112,7 @@ namespace CoCoL
 		/// <param name="self">The channel to read from</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		/// <returns>True if the write succeeded, false otherwise</returns>
-		public static bool TryWrite<T>(this IChannel<T> self, T value)
+		public static bool TryWrite<T>(this IWriteChannel<T> self, T value)
 		{
 			return DoWrite(self, value, Timeout.Immediate).Exception == null;
 		}
@@ -124,7 +124,7 @@ namespace CoCoL
 		/// <param name="self">The channel to read from</param>
 		/// <param name="timeout">The maximum time to wait for an available slot</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
-		private static ICallbackResult<T> DoWrite<T>(this IChannel<T> self, T value, TimeSpan timeout)
+		private static ICallbackResult<T> DoWrite<T>(this IWriteChannel<T> self, T value, TimeSpan timeout)
 		{
 			using (var evt = new System.Threading.ManualResetEventSlim(false))
 			{

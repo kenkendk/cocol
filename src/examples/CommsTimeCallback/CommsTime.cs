@@ -90,9 +90,9 @@ namespace CommsTimeCallback
 		private static int _index = -1;
 		private readonly int m_index = System.Threading.Interlocked.Increment(ref _index);
 
-		private IChannel<bool> m_tickChannel;
-		private IChannel<bool> m_readChannel;
-		private IChannel<bool> m_writeChannel;
+		private IWriteChannel<bool> m_tickChannel;
+		private IReadChannel<bool> m_readChannel;
+		private IWriteChannel<bool> m_writeChannel;
 		private ChannelCallback<bool> m_onData;
 
 		public CommsTime()
@@ -101,10 +101,10 @@ namespace CommsTimeCallback
 			var prev_chan = m_index == 0 ? PROCESSES - 1 : m_index - 1;
 
 			m_onData = OnData;
-			m_writeChannel = ChannelManager.GetChannel<bool>(m_index + "->" + next_chan);
-			m_readChannel = ChannelManager.GetChannel<bool>(prev_chan + "->" + m_index);
+			m_writeChannel = ChannelManager.GetChannel<bool>(m_index + "->" + next_chan).AsWrite();
+			m_readChannel = ChannelManager.GetChannel<bool>(prev_chan + "->" + m_index).AsRead();
 			if (m_index == 0)
-				m_tickChannel = ChannelManager.GetChannel<bool>(TickCollector.TICK_CHANNEL_NAME);
+				m_tickChannel = ChannelManager.GetChannel<bool>(TickCollector.TICK_CHANNEL_NAME).AsWrite();
 		}
 
 		#region IProcess implementation

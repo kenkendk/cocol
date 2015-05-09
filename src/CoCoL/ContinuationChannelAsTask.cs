@@ -5,14 +5,13 @@ namespace CoCoL
 {
 	public static class ContinuationChannelAsTask
 	{
-
 		/// <summary>
 		/// Read from the channel with a Task result
 		/// </summary>
 		/// <returns>The async task result</returns>
 		/// <param name="self">The channel to read from</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
-		public static Task<T> ReadAsync<T>(this IChannel<T> self)
+		public static Task<T> ReadAsync<T>(this IReadChannel<T> self)
 		{
 			return ReadAsync(self, Timeout.Infinite);
 		}
@@ -24,7 +23,7 @@ namespace CoCoL
 		/// <param name="self">The channel to read from</param>
 		/// <param name="timeout">The maimum time to wait for a value</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
-		public static Task<T> ReadAsync<T>(this IChannel<T> self, TimeSpan timeout)
+		public static Task<T> ReadAsync<T>(this IReadChannel<T> self, TimeSpan timeout)
 		{
 			var tcs = new TaskCompletionSource<T>();
 			self.RegisterRead(new ChannelCallback<T>(x => {
@@ -43,7 +42,7 @@ namespace CoCoL
 		/// <returns>The async task result</returns>
 		/// <param name="self">The channel to write to</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
-		public static Task WriteAsync<T>(this IChannel<T> self, T value)
+		public static Task WriteAsync<T>(this IWriteChannel<T> self, T value)
 		{
 			return WriteAsync(self, value, Timeout.Infinite);
 		}
@@ -56,7 +55,7 @@ namespace CoCoL
 		/// <param name="self">The channel to write to</param>
 		/// <param name="timeout">The maimum time to wait for a slot</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
-		public static Task WriteAsync<T>(this IChannel<T> self, T value, TimeSpan timeout)
+		public static Task WriteAsync<T>(this IWriteChannel<T> self, T value, TimeSpan timeout)
 		{
 			var tcs = new TaskCompletionSource<bool>();
 			self.RegisterWrite(new ChannelCallback<T>(x => {

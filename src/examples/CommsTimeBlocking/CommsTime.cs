@@ -12,7 +12,7 @@ namespace CommsTimeBlocking
 
 		public void Run()
 		{
-			var tick_chan = ChannelManager.GetChannel<bool>(TICK_CHANNEL_NAME);
+			var tick_chan = ChannelManager.GetChannel<bool>(TICK_CHANNEL_NAME).AsRead();
 			var tickcount = 0;
 			var rounds = 0;
 
@@ -79,9 +79,9 @@ namespace CommsTimeBlocking
 			var write_chan_name = string.Format("{0}->{1}", m_index, next_chan);
 			var read_chan_name = string.Format("{0}->{1}", prev_chan, m_index);
 
-			var chan_write = ChannelManager.GetChannel<bool>(write_chan_name);
-			var chan_read = ChannelManager.GetChannel<bool>(read_chan_name);
-			var tick_chan = ChannelManager.GetChannel<bool>(TickCollector.TICK_CHANNEL_NAME);
+			var chan_write = ChannelManager.GetChannel<bool>(write_chan_name).AsWrite();
+			var chan_read = ChannelManager.GetChannel<bool>(read_chan_name).AsRead();
+			var tick_chan = ChannelManager.GetChannel<bool>(TickCollector.TICK_CHANNEL_NAME).AsWrite();
 				
 			if (m_index == 0)
 			{

@@ -8,10 +8,10 @@ namespace CoCoL.Blocks
 	/// </summary>
 	public class Successor : BlockBase
 	{
-		private IChannel<long> m_input;
-		private IChannel<long> m_output;
+		private IReadChannel<long> m_input;
+		private IWriteChannel<long> m_output;
 
-		public Successor(IChannel<long> input, IChannel<long> output)
+		public Successor(IReadChannel<long> input, IWriteChannel<long> output)
 		{
 			if (input == null)
 				throw new ArgumentNullException("input");

@@ -8,12 +8,12 @@ namespace CoCoL.Blocks
 	/// </summary>
 	public class Prefix<T> : BlockBase
 	{
-		private IChannel<T> m_input;
-		private IChannel<T> m_output;
+		private IReadChannel<T> m_input;
+		private IWriteChannel<T> m_output;
 		private T m_value;
 		private long m_repeat;
 
-		public Prefix(IChannel<T> input, IChannel<T> output, T value, long repeat = 1)
+		public Prefix(IReadChannel<T> input, IWriteChannel<T> output, T value, long repeat = 1)
 		{
 			if (input == null)
 				throw new ArgumentNullException("input");

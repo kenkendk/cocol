@@ -8,12 +8,12 @@ namespace Sieve
 	/// </summary>
 	class NoMultiples
 	{
-		public NoMultiples(long number, IChannel<long> input, IChannel<long> output)
+		public NoMultiples(long number, IReadChannel<long> input, IWriteChannel<long> output)
 		{
 			Run(number, input, output);
 		}
 
-		private async void Run(long number, IChannel<long> input, IChannel<long> output)
+		private async void Run(long number, IReadChannel<long> input, IWriteChannel<long> output)
 		{
 			try
 			{
@@ -37,12 +37,12 @@ namespace Sieve
 	/// </summary>
 	class NumbersFrom
 	{
-		public NumbersFrom(long from, long increment, IChannel<long> target)
+		public NumbersFrom(long from, long increment, IWriteChannel<long> target)
 		{
 			Run(from, increment, target);
 		}
 
-		private async void Run(long from, long increment, IChannel<long> target)
+		private async void Run(long from, long increment, IWriteChannel<long> target)
 		{
 			try
 			{
@@ -64,12 +64,12 @@ namespace Sieve
 	/// </summary>
 	class Sieve
 	{
-		public Sieve(IChannel<long> input, IChannel<long> output)
+		public Sieve(IReadChannel<long> input, IWriteChannel<long> output)
 		{
 			Run(input, output);
 		}
 
-		private async void Run(IChannel<long> input, IChannel<long> output)
+		private async void Run(IReadChannel<long> input, IWriteChannel<long> output)
 		{
 			try
 			{
@@ -93,12 +93,12 @@ namespace Sieve
 	/// </summary>
 	class Primes
 	{
-		public Primes(IChannel<long> target)
+		public Primes(IWriteChannel<long> target)
 		{
 			Run(target);
 		}
 
-		private async void Run(IChannel<long> target)
+		private async void Run(IWriteChannel<long> target)
 		{
 			try
 			{

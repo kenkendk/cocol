@@ -11,10 +11,10 @@ namespace CommsTimeBlocks
 		private const long WARMUP = 1000;
 		private const long ROUNDS = 1000000;
 
-		private IChannel<long> m_channel;
+		private IReadChannel<long> m_channel;
 		private System.Threading.ManualResetEventSlim m_evt;
 
-		public Consumer(IChannel<long> channel, System.Threading.ManualResetEventSlim evt)
+		public Consumer(IReadChannel<long> channel, System.Threading.ManualResetEventSlim evt)
 		{
 			m_channel = channel;
 			m_evt = evt;
@@ -22,18 +22,18 @@ namespace CommsTimeBlocks
 
 		public async void Run()
 		{
+			// Do warmup rounds
 			for (var i = 0L; i < WARMUP; i++)
 				await m_channel.ReadAsync();
 
+			// Measure the run
 			var start = DateTime.Now;
-
 			for (var i = 0L; i < ROUNDS; i++)
 				await m_channel.ReadAsync();	
-
 			var finish = DateTime.Now;
 
+			// Cleanup and report
 			m_channel.Retire();
-
 			Console.WriteLine("Time per iteration: {0} milliseconds", (finish - start).TotalMilliseconds / ROUNDS);
 			m_evt.Set();
 		}
@@ -61,6 +61,7 @@ namespace CommsTimeBlocks
 			new CoCoL.Blocks.Successor(channel_b, channel_c).Run();
 			new Consumer(channel_d, evt).Run();
 
+			// Suspend process exit until we are done
 			evt.Wait();
 		}
 	}

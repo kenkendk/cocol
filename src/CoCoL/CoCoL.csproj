@@ -49,6 +49,7 @@
     <Compile Include="MultiChannelSet.cs" />
     <Compile Include="Exceptions.cs" />
     <Compile Include="ContinuationChannelAsTask.cs" />
+    <Compile Include="CastingHelper.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

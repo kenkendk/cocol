@@ -9,11 +9,11 @@ namespace CoCoL.Blocks
 	/// </summary>
 	public class Delta<T> : BlockBase
 	{
-		private IChannel<T> m_input;
-		private IChannel<T> m_outputA;
-		private IChannel<T> m_outputB;
+		private IReadChannel<T> m_input;
+		private IWriteChannel<T> m_outputA;
+		private IWriteChannel<T> m_outputB;
 
-		public Delta(IChannel<T> input, IChannel<T> outputA, IChannel<T> outputB)
+		public Delta(IReadChannel<T> input, IWriteChannel<T> outputA, IWriteChannel<T> outputB)
 		{
 			if (input == null)
 				throw new ArgumentNullException("input");

@@ -8,10 +8,10 @@ namespace CoCoL.Blocks
 	/// </summary>
 	public class Identity<T> : BlockBase
 	{
-		private IChannel<T> m_input;
-		private IChannel<T> m_output;
+		private IReadChannel<T> m_input;
+		private IWriteChannel<T> m_output;
 
-		public Identity(IChannel<T> input, IChannel<T> output)
+		public Identity(IReadChannel<T> input, IWriteChannel<T> output)
 		{
 			if (input == null)
 				throw new ArgumentNullException("input");

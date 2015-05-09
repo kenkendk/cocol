@@ -76,9 +76,9 @@ namespace Mandelbrot
 		public async void Run()
 		{
 			//Set up channels
-			var farmer_channel = ChannelManager.GetChannel<RenderTask>(Farmer.FARMER_CHANNEL);
-			var worker_channel = ChannelManager.GetChannel<Pixel>(Worker.WORKER_INPUT_CHANNEL);
-			var harvester_channel = ChannelManager.GetChannel<RenderTask>(Harvester.HARVESTER_CHANNEL);
+			var farmer_channel = ChannelManager.GetChannel<RenderTask>(Farmer.FARMER_CHANNEL).AsRead();
+			var worker_channel = ChannelManager.GetChannel<Pixel>(Worker.WORKER_INPUT_CHANNEL).AsWrite();
+			var harvester_channel = ChannelManager.GetChannel<RenderTask>(Harvester.HARVESTER_CHANNEL).AsWrite();
 
 			try
 			{
@@ -116,9 +116,9 @@ namespace Mandelbrot
 		public async void Run()
 		{
 			// Set up channels
-			var worker_channel = ChannelManager.GetChannel<Pixel>(Worker.WORKER_OUTPUT_CHANNEL);
-			var harvester_channel = ChannelManager.GetChannel<RenderTask>(Harvester.HARVESTER_CHANNEL);
-			var shutdown_channel = ChannelManager.GetChannel<bool>(Harvester.SHUTDOWN_CHANNEL);
+			var worker_channel = ChannelManager.GetChannel<Pixel>(Worker.WORKER_OUTPUT_CHANNEL).AsRead();
+			var harvester_channel = ChannelManager.GetChannel<RenderTask>(Harvester.HARVESTER_CHANNEL).AsRead();
+			var shutdown_channel = ChannelManager.GetChannel<bool>(Harvester.SHUTDOWN_CHANNEL).AsWrite();
 
 			try
 			{
@@ -173,8 +173,8 @@ namespace Mandelbrot
 		public async void Run()
 		{
 			// Set up the channels
-			var input_channel = ChannelManager.GetChannel<Pixel>(Worker.WORKER_INPUT_CHANNEL);
-			var output_channel = ChannelManager.GetChannel<Pixel>(Worker.WORKER_OUTPUT_CHANNEL);
+			var input_channel = ChannelManager.GetChannel<Pixel>(Worker.WORKER_INPUT_CHANNEL).AsRead();
+			var output_channel = ChannelManager.GetChannel<Pixel>(Worker.WORKER_OUTPUT_CHANNEL).AsWrite();
 
 			try
 			{
@@ -228,8 +228,8 @@ namespace Mandelbrot
 	{
 		public static void Main(string[] args)
 		{
-			var farmer_channel = ChannelManager.GetChannel<RenderTask>(Farmer.FARMER_CHANNEL);
-			var shutdown_channel = ChannelManager.GetChannel<bool>(Harvester.SHUTDOWN_CHANNEL);
+			var farmer_channel = ChannelManager.GetChannel<RenderTask>(Farmer.FARMER_CHANNEL).AsWrite();
+			var shutdown_channel = ChannelManager.GetChannel<bool>(Harvester.SHUTDOWN_CHANNEL).AsRead();
 
 			// Auto-start all defined processes in this assembly
 			CoCoL.Loader.StartFromAssembly(typeof(MainClass).Assembly);
