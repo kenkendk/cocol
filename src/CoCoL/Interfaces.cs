@@ -75,9 +75,26 @@ namespace CoCoL
 	}
 
 	/// <summary>
+	/// Represents and interface that is retire-able
+	/// </summary>
+	public interface IRetireAbleChannel
+	{
+		/// <summary>
+		/// Stops this channel from processing messages
+		/// </summary>
+		void Retire();
+
+		/// <summary>
+		/// Gets a value indicating whether this <see cref="CoCoL.IContinuationChannel`1"/> is retired.
+		/// </summary>
+		/// <value><c>true</c> if is retired; otherwise, <c>false</c>.</value>
+		bool IsRetired { get; }
+	}
+
+	/// <summary>
 	/// Interface for a blocking synchronous communication channel
 	/// </summary>
-	public interface IBlockingChannel<T>
+	public interface IBlockingChannel<T> : IRetireAbleChannel
 	{
 		/// <summary>
 		/// Perform a blocking read
@@ -99,7 +116,7 @@ namespace CoCoL
 	/// <summary>
 	/// Interface for a communication channel the supports continuation
 	/// </summary>
-	public interface IChannel<T>
+	public interface IChannel<T> : IRetireAbleChannel
 	{
 		/// <summary>
 		/// Registers a desire to read from the channel
@@ -181,17 +198,6 @@ namespace CoCoL
 		/// <param name="value">The value to write to the channel.</param>
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
 		void RegisterWrite(ITwoPhaseOffer offer, T value, TimeSpan timeout);
-
-		/// <summary>
-		/// Stops this channel from processing messages
-		/// </summary>
-		void Retire();
-
-		/// <summary>
-		/// Gets a value indicating whether this <see cref="CoCoL.IContinuationChannel`1"/> is retired.
-		/// </summary>
-		/// <value><c>true</c> if is retired; otherwise, <c>false</c>.</value>
-		bool IsRetired { get; }
 	}
 
 	/// <summary>
