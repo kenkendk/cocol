@@ -37,6 +37,8 @@
     <Compile Include="Identity.cs" />
     <Compile Include="BlockBase.cs" />
     <Compile Include="Delta.cs" />
+    <Compile Include="Prefix.cs" />
+    <Compile Include="Successor.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
