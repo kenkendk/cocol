@@ -6,6 +6,9 @@ namespace CommsTimeCallback
 	class TickCollector : IProcess
 	{
 		public const string TICK_CHANNEL_NAME = "ticks";
+		public const string TERM_CHANNEL_NAME = "terminate";
+
+		public const int MEASURE_COUNT = 5;
 
 		private enum States 
 		{
@@ -17,6 +20,7 @@ namespace CommsTimeCallback
 		private States m_state = States.Init;
 		private DateTime m_last;
 		private long m_tickcount = 0;
+		private int m_rounds;
 
 		private readonly long A_SECOND_IN_TICKS = TimeSpan.FromSeconds(1).Ticks;
 		private readonly long MEASURE_INTERVAL = TimeSpan.FromSeconds(5).Ticks;
@@ -26,41 +30,54 @@ namespace CommsTimeCallback
 		[OnRead(TICK_CHANNEL_NAME)]
 		public void OnData(ICallbackResult<bool> res)
 		{
-			if (res.Exception != null)
-				throw res.Exception;
-
-			switch(m_state)
+			try
 			{
-				case States.Init:
-					//Warm up
-					Console.WriteLine("Warming up ...");
-					m_last = DateTime.Now;
-					m_state = States.Warmup;
-					break;
+				if (res.Exception != null)
+					throw res.Exception;
 
-				case States.Warmup:
-					if ((DateTime.Now - m_last).Ticks > A_SECOND_IN_TICKS)
-					{
-						Console.WriteLine("Measuring!");
-						m_state = States.Run;
+				switch(m_state)
+				{
+					case States.Init:
+						//Warm up
+						Console.WriteLine("Warming up ...");
 						m_last = DateTime.Now;
-						m_tickcount = 0;
-					}
-					break;
+						m_state = States.Warmup;
+						break;
 
-				case States.Run:
-				default:
-					
-					m_tickcount++;
-					var duration = DateTime.Now - m_last;
-					if ((DateTime.Now - m_last).Ticks > MEASURE_INTERVAL)
-					{
-						Console.WriteLine("Got {0} ticks for {1} processes in {2} seconds, speed is {3} rounds/s ({4} msec/comm)", m_tickcount, CommsTime.PROCESSES, duration, m_tickcount / duration.TotalSeconds, duration.TotalMilliseconds / ((m_tickcount) * (CommsTime.PROCESSES + 1)));
-						m_last = DateTime.Now;
-						m_tickcount = 0;
-					}
-					break;
+					case States.Warmup:
+						if ((DateTime.Now - m_last).Ticks > A_SECOND_IN_TICKS)
+						{
+							Console.WriteLine("Measuring!");
+							m_state = States.Run;
+							m_last = DateTime.Now;
+							m_tickcount = 0;
+						}
+						break;
 
+					case States.Run:
+					default:
+						
+						m_tickcount++;
+						var duration = DateTime.Now - m_last;
+						if ((DateTime.Now - m_last).Ticks > MEASURE_INTERVAL)
+						{
+							Console.WriteLine("Got {0} ticks for {1} processes in {2} seconds, speed is {3} rounds/s ({4} msec/comm)", m_tickcount, CommsTime.PROCESSES, duration, m_tickcount / duration.TotalSeconds, duration.TotalMilliseconds / ((m_tickcount) * (CommsTime.PROCESSES + 1)));
+							m_last = DateTime.Now;
+							m_tickcount = 0;
+
+							// For shutdown, we retire the initial channel
+							if (++m_rounds >= MEASURE_COUNT)
+								ChannelManager.GetChannel<bool>("0->1").Retire();
+
+						}
+						break;
+
+				}
+			}
+			catch(RetiredException)
+			{
+				//Console.WriteLine("Retired tick writer");
+				ChannelManager.GetChannel<bool>(TERM_CHANNEL_NAME).Retire();
 			}
 		}
 	}
@@ -116,11 +133,18 @@ namespace CommsTimeCallback
 			if (res.Exception != null)
 			{
 				if (res.Exception is CoCoL.RetiredException)
+				{
+					//Console.WriteLine("Retired process {0}", m_index);
 					m_writeChannel.Retire();
+
+					if (m_index == 0)
+						m_tickChannel.Retire();
+
+					return;
+				}
 				
 				throw res.Exception;
 			}
-
 
 			if (m_tickChannel != null)
 				m_tickChannel.RegisterWrite(OnWriteCallback, true);

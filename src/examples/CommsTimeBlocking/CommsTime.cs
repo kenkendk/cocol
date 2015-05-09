@@ -6,11 +6,15 @@ namespace CommsTimeBlocking
 	class TickCollector : IProcess
 	{
 		public const string TICK_CHANNEL_NAME = "ticks";
+		public const string TERM_CHANNEL_NAME = "terminate";
+
+		public const int MEASURE_COUNT = 5;
 
 		public void Run()
 		{
 			var tick_chan = ChannelManager.GetChannel<bool>(TICK_CHANNEL_NAME);
 			var tickcount = 0;
+			var rounds = 0;
 
 			//Initialize
 			tick_chan.Read();
@@ -29,18 +33,31 @@ namespace CommsTimeBlocking
 			var measure_span = TimeSpan.FromSeconds(5).Ticks;
 			m_last = DateTime.Now;
 
-			while (tick_chan.Read())
+			try
 			{
-				tickcount++;
-				var duration = DateTime.Now - m_last;
-				if (duration.Ticks >= measure_span)
+				while (tick_chan.Read())
 				{
-					Console.WriteLine("Got {0} ticks in {1} seconds, speed is {2} rounds/s ({3} msec/comm)", tickcount, duration, tickcount / duration.TotalSeconds, duration.TotalMilliseconds / ((tickcount) * CommsTime.PROCESSES));
+					tickcount++;
+					var duration = DateTime.Now - m_last;
+					if (duration.Ticks >= measure_span)
+					{
+						Console.WriteLine("Got {0} ticks in {1} seconds, speed is {2} rounds/s ({3} msec/comm)", tickcount, duration, tickcount / duration.TotalSeconds, duration.TotalMilliseconds / ((tickcount) * CommsTime.PROCESSES));
 
-					tickcount = 0;
-					m_last = DateTime.Now;
+						tickcount = 0;
+						m_last = DateTime.Now;
+
+						// For shutdown, we retire the initial channel
+						if (++rounds >= MEASURE_COUNT)
+							ChannelManager.GetChannel<bool>("0->1").Retire();
+					}
 				}
 			}
+			catch(RetiredException)
+			{
+				//Console.WriteLine("Retired tick writer");
+				ChannelManager.GetChannel<bool>(TERM_CHANNEL_NAME).Retire();
+			}
+
 		}
 	}
 
@@ -58,7 +75,7 @@ namespace CommsTimeBlocking
 			var next_chan = (m_index + 1) % PROCESSES;
 			var prev_chan = m_index == 0 ? PROCESSES - 1 : m_index - 1;
 
-			Console.WriteLine("Started process {0}", m_index);
+			//Console.WriteLine("Started process {0}", m_index);
 			var write_chan_name = string.Format("{0}->{1}", m_index, next_chan);
 			var read_chan_name = string.Format("{0}->{1}", prev_chan, m_index);
 
@@ -72,18 +89,28 @@ namespace CommsTimeBlocking
 				chan_write.Write(true);
 			}
 
-			while (true)
+			try
 			{
-				//Console.WriteLine("process {0} is reading from {1}", m_index, read_chan_name);
-				var v = chan_read.Read();
+				while (true)
+				{
+					//Console.WriteLine("process {0} is reading from {1}", m_index, read_chan_name);
+					var v = chan_read.Read();
 
-				// Output the tick, should be done in parallel
-				if (m_index == 0)
-					tick_chan.Write(true);
-				
-				//Console.WriteLine("process {0} is writing to {1}", m_index, write_chan_name);
-				chan_write.Write(v);
+					// Output the tick, should be done in parallel
+					if (m_index == 0)
+						tick_chan.Write(true);
 					
+					//Console.WriteLine("process {0} is writing to {1}", m_index, write_chan_name);
+					chan_write.Write(v);
+						
+				}
+			}
+			catch(RetiredException)
+			{
+				//Console.WriteLine("Retired process {0}", m_index);
+				if (m_index == 0)
+					tick_chan.Retire();
+				chan_write.Retire();
 			}
 		}
 		#endregion

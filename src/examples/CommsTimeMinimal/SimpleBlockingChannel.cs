@@ -71,23 +71,50 @@ namespace CommsTimeMinimal
 		/// The value in holding
 		/// </summary>
         private T m_hold = default(T);
+		/// <summary>
+		/// True if the channel is retired, false otherwise
+		/// </summary>
+		private bool m_retired = false;
+
+		/// <summary>
+		/// Retires the channel
+		/// </summary>
+		public void Retire()
+		{
+			m_retired = true;
+			m_readevent.Set();
+			m_writeevent.Set();
+		}
+
+		/// <summary>
+		/// Gets a value indicating whether this instance is retired.
+		/// </summary>
+		/// <value><c>true</c> if this instance is retired; otherwise, <c>false</c>.</value>
+		public bool IsRetired { get { return m_retired; } }
 
 		/// <summary>
 		/// Perform a blocking read
 		/// </summary>
         public T Read() 
         {
-             while(true) {
-                if (m_any)
-                    lock(m_lock)
-                        if (m_any)
-                        {
-                            T n = m_hold;
-                            m_any = false;
-                            m_hold = default(T);
-                            m_writeevent.Set();
-                            return n;                    
-                        }
+			while(true) 
+			{
+				if (m_retired)
+				{
+					Retire();
+					throw new RetiredException();
+				}
+				
+				if (m_any)
+					lock (m_lock)
+						if (m_any)
+						{
+							T n = m_hold;
+							m_any = false;
+							m_hold = default(T);
+							m_writeevent.Set();
+							return n;                    
+						}
 
                 m_readevent.WaitOne();
             }
@@ -99,16 +126,24 @@ namespace CommsTimeMinimal
 		/// <param name="value">The value to write</param>
         public void Write(T value) 
         {
-            while(true) {
-                if (!m_any)
-                    lock(m_lock)
-                        if (!m_any)
-                        {
-                            m_hold = value;
-                            m_any = true;
-                            m_readevent.Set();
-                            return;                    
-                        }
+            while(true) 
+			{
+				if (m_retired)
+				{
+					Retire();
+					throw new RetiredException();
+				}
+
+				if (!m_any)
+					lock (m_lock)
+						if (!m_any)
+						{
+							m_hold = value;
+							m_any = true;
+							m_readevent.Set();
+							return;                    
+						}
+				
                 m_writeevent.WaitOne();
             }
         }

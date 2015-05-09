@@ -63,7 +63,7 @@ namespace CommsTimeAwait
 	[Process(count: PROCESSES)]
 	class CommsTime : IProcess
 	{
-		public const int PROCESSES = 100;
+		public const int PROCESSES = 4;
 
 		private static int _index = -1;
 		private readonly int m_index = System.Threading.Interlocked.Increment(ref _index);
@@ -74,7 +74,7 @@ namespace CommsTimeAwait
 			var next_chan = (m_index + 1) % PROCESSES;
 			var prev_chan = m_index == 0 ? PROCESSES - 1 : m_index - 1;
 
-			Console.WriteLine("Started process {0}", m_index);
+			//Console.WriteLine("Started process {0}", m_index);
 			var write_chan_name = string.Format("{0}->{1}", m_index, next_chan);
 			var read_chan_name = string.Format("{0}->{1}", prev_chan, m_index);
 

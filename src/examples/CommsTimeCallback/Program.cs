@@ -10,8 +10,17 @@ namespace CommsTimeCallback
 			CoCoL.Loader.StartFromTypes(typeof(TickCollector), typeof(CommsTime));
 
 			Console.WriteLine("Running, press CTRL+C to stop");
-			var rv = new System.Threading.ManualResetEventSlim(false);
-			rv.Wait();
+
+			var terminateChannel = CoCoL.ChannelManager.GetChannel<bool>(TickCollector.TERM_CHANNEL_NAME);
+
+			try 
+			{
+				// Blocking read
+				terminateChannel.Read();
+			}
+			catch 
+			{
+			}
 
 		}
 	}
