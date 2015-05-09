@@ -27,7 +27,7 @@ namespace CoCoL.Blocks
 			try
 			{
 				while (true)
-					m_output.WriteAsync(await m_input.ReadAsync());
+					await m_output.WriteAsync(await m_input.ReadAsync());
 			}
 			catch (RetiredException)
 			{
