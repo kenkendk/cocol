@@ -16,7 +16,7 @@ namespace CoCoL
 		/// <summary>
 		/// The usage of the channels, used for tracking fair usage
 		/// </summary>
-		private readonly KeyValuePair<long, int>[] m_usageCounts;
+		private readonly KeyValuePair<long, IChannel<T>>[] m_usageCounts;
 		/// <summary>
 		/// The order in which the channels are picked
 		/// </summary>
@@ -40,7 +40,10 @@ namespace CoCoL
 		{
 			m_channels = channels;
 
-			m_usageCounts = priority == MultiChannelPriority.Fair ? new KeyValuePair<long, int>[m_channels.Length] : null;
+			if (priority == MultiChannelPriority.Fair)
+				m_usageCounts = Enumerable.Range(0, m_channels.Length).Select(x => new KeyValuePair<long, IChannel<T>>(0, m_channels[x])).ToArray();
+			else
+				m_usageCounts = null;
 			m_totalUsage = 0;
 			m_priority = priority;
 		}
@@ -82,10 +85,10 @@ namespace CoCoL
 		private void NotifyUsed(object caller)
 		{
 			for(int i = 0; i < m_usageCounts.Length; i++)
-				if (m_channels[m_usageCounts[i].Value] == caller)
+				if (m_usageCounts[i].Value == caller)
 				{
 					m_totalUsage++;
-					m_usageCounts[i] = new KeyValuePair<long, int>(m_usageCounts[i].Key + 1, i);
+					m_usageCounts[i] = new KeyValuePair<long, IChannel<T>>(m_usageCounts[i].Key + 1, m_usageCounts[i].Value);
 
 					this.BalanceCounts();
 
@@ -110,7 +113,7 @@ namespace CoCoL
 				if (min > 0)
 				{
 					for (var i = 0; i < m_usageCounts.Length; i++)
-						m_usageCounts[i] = new KeyValuePair<long, int>(m_usageCounts[i].Key - min, i);
+						m_usageCounts[i] = new KeyValuePair<long, IChannel<T>>(m_usageCounts[i].Key - min, m_usageCounts[i].Value);
 
 					m_totalUsage -= min;
 				}
@@ -191,7 +194,7 @@ namespace CoCoL
 			{
 				return from n in m_usageCounts
 				       orderby n.Key
-				       select m_channels[n.Value];
+				       select n.Value;
 			}
 		}
 
