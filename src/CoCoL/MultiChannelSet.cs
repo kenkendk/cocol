@@ -195,6 +195,24 @@ namespace CoCoL
 			}
 		}
 
+		/// <summary>
+		/// Retires all channels in the set
+		/// </summary>
+		public void Retire()
+		{
+			foreach (var c in m_channels)
+				c.Retire();
+		}
+
+		/// <summary>
+		/// Gets all channels in the set
+		/// </summary>
+		/// <value>The channels in the set</value>
+		public IEnumerable<IChannel<T>> Channels
+		{
+			get { return m_channels; }
+		}
+
 	}
 }
 
