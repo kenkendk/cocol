@@ -364,6 +364,10 @@ namespace CoCoL
 						if (offer != null && offerReader)
 							offer.Withdraw(this);
 
+						// if the writer bailed, remove it from the queue
+						if (!offerWriter)
+							m_writerQueue.RemoveAt(0);
+
 						// if the reader bailed, the queue is intact but we offer no more
 						if (!offerReader)
 							return;
@@ -458,6 +462,10 @@ namespace CoCoL
 
 						if (offer != null && offerWriter)
 							offer.Withdraw(this);
+
+						// If the reader bailed, remove it from the queue
+						if (!offerReader)
+							m_readerQueue.RemoveAt(0);
 
 						// if the writer bailed, the queue is intact, but we stop offering
 						if (!offerWriter)
