@@ -42,7 +42,7 @@ namespace CoCoL
 		/// <param name="caller">The offer initiator.</param>
 		public bool Offer(object caller)
 		{
-			// We can new be un-taken
+			// We can never be un-taken
 			if (m_taken)
 				return false;
 
