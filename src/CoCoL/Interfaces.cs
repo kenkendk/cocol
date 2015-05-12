@@ -244,6 +244,18 @@ namespace CoCoL
 	}
 
 	/// <summary>
+	/// Interface for a process that runs asyncronously
+	/// </summary>
+	public interface IAsyncProcess : IProcess
+	{
+		/// <summary>
+		/// Runs the process asynchronously.
+		/// </summary>
+		/// <returns>The task.</returns>
+		System.Threading.Tasks.Task RunAsync();
+	}
+
+	/// <summary>
 	/// A two-phase model where a read or write request is offered,
 	/// and either accepted by both or rejected if consensus could not
 	/// be reached

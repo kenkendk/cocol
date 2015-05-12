@@ -69,12 +69,15 @@ namespace CoCoL
 				where n.IsClass && isRunable && n.GetConstructor(new Type[0]) != null
 				select new { Class = n, Decorator = decorator ?? new ProcessAttribute() })
 			{
-				count += StartFromProcesses(Each(c.Decorator.ProcessCount, x => ((IProcess)Activator.CreateInstance(c.Class))));
+				if (typeof(IAsyncProcess).IsAssignableFrom(c.Class)) 
+					count += StartFromProcesses(Each(c.Decorator.ProcessCount, x => ((IAsyncProcess)Activator.CreateInstance(c.Class))));
+				else
+					count += StartFromProcesses(Each(c.Decorator.ProcessCount, x => ((IProcess)Activator.CreateInstance(c.Class))));
 
 				// Register static events
 				SetupEvents(c.Class);
 			}	
-
+				
 			return count;
 		}
 
@@ -201,11 +204,59 @@ namespace CoCoL
 		/// </summary>
 		/// <returns>The number of processes started</returns>
 		/// <param name="processes">The list of process instances to start</param>
-		public static System.Threading.Tasks.Task<int> StartFromProcessesAsync(IEnumerable<IProcess> processes)
+		public static int StartFromProcesses(IEnumerable<IAsyncProcess> processes)
+		{
+			var count = 0;
+			foreach (var p in processes)
+			{
+				count++;
+				p.RunAsync();
+
+				SetupEvents(p);
+			}
+
+			return count;
+		}
+
+		/// <summary>
+		/// Starts processes by scheduling their run method for execution
+		/// </summary>
+		/// <returns>The number of processes started</returns>
+		/// <param name="processes">The list of process instances to start</param>
+		public static System.Threading.Tasks.Task<int> StartAsync(this IEnumerable<IProcess> processes)
 		{
 			return System.Threading.Tasks.Task.Run(() => StartFromProcesses(processes));
 		}
 
+		/// <summary>
+		/// Starts processes by scheduling their run method for execution
+		/// </summary>
+		/// <returns>The number of processes started</returns>
+		/// <param name="processes">The list of process instances to start</param>
+		public static System.Threading.Tasks.Task<int> StartAsync(this IEnumerable<IAsyncProcess> processes)
+		{
+			return System.Threading.Tasks.Task.Run(() => StartFromProcesses(processes));
+		}
+
+		/// <summary>
+		/// Starts processes by scheduling their run method for execution
+		/// </summary>
+		/// <returns>The number of processes started</returns>
+		/// <param name="processes">The list of process instances to start</param>
+		public static int Start(this IEnumerable<IProcess> processes)
+		{
+			return StartFromProcesses(processes);
+		}
+
+		/// <summary>
+		/// Starts processes by scheduling their run method for execution
+		/// </summary>
+		/// <returns>The number of processes started</returns>
+		/// <param name="processes">The list of process instances to start</param>
+		public static int Start(this IEnumerable<IAsyncProcess> processes)
+		{
+			return StartFromProcesses(processes);
+		}
 	}
 }
 
