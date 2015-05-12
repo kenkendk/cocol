@@ -68,7 +68,7 @@ namespace StressedAlt
 					for (var j = 0; j < m_channelCount; j++)
 					{
 						//Console.WriteLine("Running warmup round {0}-{1}", i, j);
-						UpdateTracking(await m_set.ReadFromAnyAsync());
+						UpdateTracking((await m_set.ReadFromAnyAsync()).Value);
 					}
 				}
 
@@ -81,7 +81,7 @@ namespace StressedAlt
 				// Just keep reading
 				for (var i = 0; i < MEASURE_ROUNDS * m_channelCount; i++)
 				{
-					var id = await m_set.ReadFromAnyAsync();
+					var id = (await m_set.ReadFromAnyAsync()).Value;
 
 					// Update counts, but don't check
 					m_tracking[id] = m_tracking[id] + 1;

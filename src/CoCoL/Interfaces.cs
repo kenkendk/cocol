@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace CoCoL
 {
@@ -53,28 +54,6 @@ namespace CoCoL
 	}
 
 	/// <summary>
-	/// The result of a continuation
-	/// </summary>
-	public interface ICallbackResult<T>
-	{
-		/// <summary>
-		/// Gets the value written to a channel, or throws the exception
-		/// </summary>
-		/// <value>The result.</value>
-		T Result { get; }
-		/// <summary>
-		/// Gets the exception found on a channel, or null
-		/// </summary>
-		/// <value>The exception on the channel, or null.</value>
-		Exception Exception { get; }
-		/// <summary>
-		/// Gets the channel.
-		/// </summary>
-		/// <value>The channel that was read or written.</value>
-		IChannel<T> Channel { get; }
-	}
-
-	/// <summary>
 	/// Represents and interface that is retire-able
 	/// </summary>
 	public interface IRetireAbleChannel
@@ -122,11 +101,6 @@ namespace CoCoL
 	}
 
 	/// <summary>
-	/// The delegate for reporting a channel operation
-	/// </summary>
-	public delegate void ChannelCallback<T>(ICallbackResult<T> result);
-
-	/// <summary>
 	/// Interface for the read-end of a channel that supports continuation
 	/// </summary>
 	public interface IReadChannel<T> : IRetireAbleChannel
@@ -134,27 +108,27 @@ namespace CoCoL
 		/// <summary>
 		/// Registers a desire to read from the channel
 		/// </summary>
-		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
 		/// <param name="callback">A callback method that is called with the result of the operation</param>
-		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-		void RegisterRead(ITwoPhaseOffer offer, ChannelCallback<T> commitCallback, TimeSpan timeout);
-		/// <summary>
-		/// Registers a desire to read from the channel
-		/// </summary>
-		/// <param name="callback">A callback method that is called with the result of the operation</param>
-		void RegisterRead(ChannelCallback<T> commitCallback);
+		Task<T> ReadAsync();
 		/// <summary>
 		/// Registers a desire to read from the channel
 		/// </summary>
 		/// <param name="callback">A callback method that is called with the result of the operation</param>
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-		void RegisterRead(ChannelCallback<T> commitCallback, TimeSpan timeout);
+		Task<T> ReadAsync(TimeSpan timeout);
 		/// <summary>
 		/// Registers a desire to read from the channel
 		/// </summary>
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
 		/// <param name="callback">A callback method that is called with the result of the operation</param>
-		void RegisterRead(ITwoPhaseOffer offer, ChannelCallback<T> commitCallback);
+		Task<T> ReadAsync(ITwoPhaseOffer offer);
+		/// <summary>
+		/// Registers a desire to read from the channel
+		/// </summary>
+		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
+		/// <param name="callback">A callback method that is called with the result of the operation</param>
+		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
+		Task<T> ReadAsync(ITwoPhaseOffer offer, TimeSpan timeout);
 	}
 
 	/// <summary>
@@ -165,49 +139,23 @@ namespace CoCoL
 		/// <summary>
 		/// Registers a desire to write to the channel
 		/// </summary>
-		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-		/// <param name="callback">A callback method that is called with the result of the operation</param>
 		/// <param name="value">The value to write to the channel.</param>
-		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-		void RegisterWrite(ITwoPhaseOffer offer, ChannelCallback<T> commitCallback, T value, TimeSpan timeout);
-
-		/// <summary>
-		/// Registers a desire to write to the channel
-		/// </summary>
-		/// <param name="callback">A callback method that is called with the result of the operation</param>
-		/// <param name="value">The value to write to the channel.</param>
-		void RegisterWrite(ChannelCallback<T> commitCallback, T value);
+		Task WriteAsync(T value);
 
 		/// <summary>
 		/// Registers a desire to write to the channel
 		/// </summary>
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-		/// <param name="callback">A callback method that is called with the result of the operation</param>
 		/// <param name="value">The value to write to the channel.</param>
-		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-		void RegisterWrite(ChannelCallback<T> commitCallback, T value, TimeSpan timeout);
+		Task WriteAsync(ITwoPhaseOffer offer, T value);
 
-		/// <summary>
-		/// Registers a desire to write to the channel
-		/// </summary>
-		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-		/// <param name="callback">A callback method that is called with the result of the operation</param>
-		/// <param name="value">The value to write to the channel.</param>
-		void RegisterWrite(ITwoPhaseOffer offer, ChannelCallback<T> commitCallback, T value);
 
 		/// <summary>
 		/// Registers a desire to write to the channel
 		/// </summary>
 		/// <param name="value">The value to write to the channel.</param>
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-		void RegisterWrite(T value);
-
-		/// <summary>
-		/// Registers a desire to write to the channel
-		/// </summary>
-		/// <param name="value">The value to write to the channel.</param>
-		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-		void RegisterWrite(T value, TimeSpan timeout);
+		Task WriteAsync(T value, TimeSpan timeout);
 
 		/// <summary>
 		/// Registers a desire to write to the channel
@@ -215,7 +163,7 @@ namespace CoCoL
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
 		/// <param name="value">The value to write to the channel.</param>
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-		void RegisterWrite(ITwoPhaseOffer offer, T value, TimeSpan timeout);
+		Task WriteAsync(ITwoPhaseOffer offer, T value, TimeSpan timeout);
 	}
 
 	/// <summary>
@@ -238,7 +186,7 @@ namespace CoCoL
 	public interface IProcess
 	{
 		/// <summary>
-		/// The method invoked to run the process
+		/// The method invoked to run the process blocking
 		/// </summary>
 		void Run();
 	}
@@ -252,7 +200,7 @@ namespace CoCoL
 		/// Runs the process asynchronously.
 		/// </summary>
 		/// <returns>The task.</returns>
-		System.Threading.Tasks.Task RunAsync();
+		Task RunAsync();
 	}
 
 	/// <summary>

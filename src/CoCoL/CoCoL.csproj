@@ -46,10 +46,8 @@
     <Compile Include="ContinuationChannel.cs" />
     <Compile Include="SingleOffer.cs" />
     <Compile Include="Interfaces.cs" />
-    <Compile Include="CallbackResult.cs" />
     <Compile Include="MultiChannelSet.cs" />
     <Compile Include="Exceptions.cs" />
-    <Compile Include="ContinuationChannelAsTask.cs" />
     <Compile Include="CastingHelper.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

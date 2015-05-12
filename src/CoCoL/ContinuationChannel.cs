@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace CoCoL
 {
@@ -22,7 +23,7 @@ namespace CoCoL
 			/// <summary>
 			/// The callback method for reporting progress
 			/// </summary>
-			public ChannelCallback<T> Callback;
+			public TaskCompletionSource<T> Source;
 			/// <summary>
 			/// The timeout value
 			/// </summary>
@@ -34,7 +35,7 @@ namespace CoCoL
 			public ReaderEntry() 
 			{
 				Offer = null;	
-				Callback = null;
+				Source = null;
 				Expires = new DateTime(0);
 			}
 
@@ -44,20 +45,11 @@ namespace CoCoL
 			/// <param name="offer">The offer handler</param>
 			/// <param name="callback">The callback method for reporting progress.</param>
 			/// <param name="expires">The timeout value.</param>
-			public ReaderEntry(ITwoPhaseOffer offer, ChannelCallback<T> callback, DateTime expires)
+			public ReaderEntry(ITwoPhaseOffer offer, TaskCompletionSource<T> callback, DateTime expires)
 			{
 				Offer = offer;
-				Callback = callback;
+				Source = callback;
 				Expires = expires;
-			}
-
-			/// <summary>
-			/// Helper method for registering a workitem callback with no additional overhead
-			/// </summary>
-			/// <param name="result">The <see cref="CoCoL.ICallbackResult`1"/> response item</param>
-			public void PerformCallback(object result)
-			{
-				Callback(result as ICallbackResult<T>);
 			}
 		}
 
@@ -73,7 +65,7 @@ namespace CoCoL
 			/// <summary>
 			/// The callback method for reporting progress
 			/// </summary>
-			public ChannelCallback<T> Callback;
+			public TaskCompletionSource<bool> Source;
 			/// <summary>
 			/// The timeout value
 			/// </summary>
@@ -89,7 +81,7 @@ namespace CoCoL
 			public WriterEntry() 
 			{
 				Offer = null;	
-				Callback = null;
+				Source = null;
 				Expires = new DateTime(0);
 				Value = default(T);
 			}
@@ -101,44 +93,14 @@ namespace CoCoL
 			/// <param name="callback">The callback method for reporting progress.</param>
 			/// <param name="expires">The timeout value.</param>
 			/// <param name="value">The value being written.</param>
-			public WriterEntry(ITwoPhaseOffer offer, ChannelCallback<T> callback, DateTime expires, T value)
+			public WriterEntry(ITwoPhaseOffer offer, TaskCompletionSource<bool> callback, DateTime expires, T value)
 			{
 				Offer = offer;
-				Callback = callback;
+				Source = callback;
 				Expires = expires;
 				Value = value;
 			}
-
-			/// <summary>
-			/// Helper method for registering a workitem callback with no additional overhead
-			/// </summary>
-			/// <param name="result">The <see cref="CoCoL.ICallbackResult`1"/> response item</param>
-			public void PerformCallback(object result)
-			{
-				Callback(result as ICallbackResult<T>);
-			}
 		}
-
-		/// <summary>
-		/// The callback entry, with a callback method, so it can be called without creating extra delegates
-		/// </summary>
-		private class HelperCallbackItem : CallbackResult<T>
-		{
-			public HelperCallbackItem(T result, Exception exception, IChannel<T> channel)
-				: base(result, exception, channel)
-			{
-			}
-				
-			/// <summary>
-			/// Callback method for registering a callback
-			/// </summary>
-			/// <param name="dummy">The method to call with the results</param>
-			public void CallbackWithMethod(object channel) 
-			{
-				((ChannelCallback<T>)channel)(this);
-			}				
-		}
-
 
 		/// <summary>
 		/// The queue with pending readers
@@ -181,9 +143,9 @@ namespace CoCoL
 		private static readonly Exception TimeoutException = new TimeoutException();
 
 		/// <summary>
-		/// A cached callback item for timeout issues
+		/// A cached instance of the timeout exception
 		/// </summary>
-		private readonly HelperCallbackItem TimeoutCallbackItem;
+		private static readonly Exception RetiredException = new RetiredException();
 
 		/// <summary>
 		/// Gets or sets the name of the channel
@@ -214,8 +176,6 @@ namespace CoCoL
 			this.Name = name;
 
 			m_bufferSize = size;
-
-			TimeoutCallbackItem = new HelperCallbackItem(default(T), TimeoutException, this);
 		}
 
 		/// <summary>
@@ -223,7 +183,9 @@ namespace CoCoL
 		/// </summary>
 		public T Read()
 		{
-			return ContinuationChannelAsBlocking.Read(this);
+			var t = ReadAsync();
+			t.Wait();
+			return t.Result;
 		}
 
 		/// <summary>
@@ -232,7 +194,10 @@ namespace CoCoL
 		/// <param name="value">The value to write into the channel</param>
 		public void Write(T value)
 		{
-			ContinuationChannelAsBlocking.Write(this, value);
+			var v = WriteAsync(value);
+			v.Wait();
+			if (v.Exception != null)
+				throw v.Exception;
 		}
 
 
@@ -240,9 +205,9 @@ namespace CoCoL
 		/// Registers a desire to read from the channel
 		/// </summary>
 		/// <param name="callback">A callback method that is called with the result of the operation</param>
-		public void RegisterRead(ChannelCallback<T> commitCallback)
+		public Task<T> ReadAsync()
 		{
-			RegisterRead(null, commitCallback, Timeout.Infinite);
+			return ReadAsync(null, Timeout.Infinite);
 		}
 
 		/// <summary>
@@ -250,9 +215,9 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="callback">A callback method that is called with the result of the operation</param>
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-		public void RegisterRead(ChannelCallback<T> commitCallback, TimeSpan timeout)
+		public Task<T> ReadAsync(TimeSpan timeout)
 		{
-			RegisterRead(null, commitCallback, timeout);
+			return ReadAsync(null, timeout);
 		}
 
 		/// <summary>
@@ -260,30 +225,9 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
 		/// <param name="callback">A callback method that is called with the result of the operation</param>
-		public void RegisterRead(ITwoPhaseOffer offer, ChannelCallback<T> commitCallback)
+		public Task<T> ReadAsync(ITwoPhaseOffer offer)
 		{
-			RegisterRead(offer, commitCallback, Timeout.Infinite);
-		}
-
-		/// <summary>
-		/// Registers a desire to write to the channel
-		/// </summary>
-		/// <param name="callback">A callback method that is called with the result of the operation</param>
-		/// <param name="value">The value to write to the channel.</param>
-		public void RegisterWrite(ChannelCallback<T> commitCallback, T value)
-		{
-			RegisterWrite(null, commitCallback, value, Timeout.Infinite);
-		}
-
-		/// <summary>
-		/// Registers a desire to write to the channel
-		/// </summary>
-		/// <param name="callback">A callback method that is called with the result of the operation</param>
-		/// <param name="value">The value to write to the channel.</param>
-		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-		public void RegisterWrite(ChannelCallback<T> commitCallback, T value, TimeSpan timeout)
-		{
-			RegisterWrite(null, commitCallback, value, timeout);
+			return ReadAsync(offer, Timeout.Infinite);
 		}
 
 		/// <summary>
@@ -292,18 +236,18 @@ namespace CoCoL
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
 		/// <param name="callback">A callback method that is called with the result of the operation</param>
 		/// <param name="value">The value to write to the channel.</param>
-		public void RegisterWrite(ITwoPhaseOffer offer, ChannelCallback<T> commitCallback, T value)
+		public Task WriteAsync(ITwoPhaseOffer offer, T value)
 		{
-			RegisterWrite(offer, commitCallback, value, Timeout.Infinite);
+			return WriteAsync(offer, value, Timeout.Infinite);
 		}
 
 		/// <summary>
 		/// Registers a desire to write to the channel
 		/// </summary>
 		/// <param name="value">The value to write to the channel.</param>
-		public void RegisterWrite(T value)
+		public Task WriteAsync(T value)
 		{
-			RegisterWrite(null, null, value, Timeout.Infinite);
+			return WriteAsync(null, value, Timeout.Infinite);
 		}
 
 		/// <summary>
@@ -311,22 +255,10 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="value">The value to write to the channel.</param>
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-		public void RegisterWrite(T value, TimeSpan timeout)
+		public Task WriteAsync(T value, TimeSpan timeout)
 		{
-			RegisterWrite(null, null, value, timeout);
+			return WriteAsync(null, value, timeout);
 		}
-
-		/// <summary>
-		/// Registers a desire to write to the channel
-		/// </summary>
-		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-		/// <param name="value">The value to write to the channel.</param>
-		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-		public void RegisterWrite(ITwoPhaseOffer offer, T value, TimeSpan timeout)
-		{
-			RegisterWrite(offer, null, value, timeout);
-		}
-
 
 		/// <summary>
 		/// Registers a desire to read from the channel
@@ -334,19 +266,18 @@ namespace CoCoL
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
 		/// <param name="callback">A callback method that is called with the result of the operation</param>
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-		public void RegisterRead(ITwoPhaseOffer offer, ChannelCallback<T> callback, TimeSpan timeout)
+		public Task<T> ReadAsync(ITwoPhaseOffer offer, TimeSpan timeout)
 		{				
 			// Store entry time in case we need it and the offer dance takes some time
 			var entry = DateTime.Now;
+			var result = new TaskCompletionSource<T>();
 
 			lock (m_lock)
 			{
 				if (IsRetired)
 				{
-					if (callback != null)
-						ThreadPool.QueueItem(new HelperCallbackItem(default(T), new RetiredException(), this).CallbackWithMethod, callback);
-
-					return;
+					result.SetException(RetiredException);
+					return result.Task;
 				}
 
 				while (m_writerQueue.Count > 0)
@@ -370,7 +301,10 @@ namespace CoCoL
 
 						// if the reader bailed, the queue is intact but we offer no more
 						if (!offerReader)
-							return;
+						{
+							result.SetCanceled();
+							return result.Task;
+						}
 					}
 					else
 					{
@@ -382,15 +316,9 @@ namespace CoCoL
 						if (offer != null)
 							offer.Commit(this);
 						
-						if (callback != null || kp.Callback != null)
-						{
-							var item = new HelperCallbackItem(kp.Value, null, this);
-							if (callback != null)
-								ThreadPool.QueueItem(item.CallbackWithMethod, callback);
-							if (kp.Callback != null)
-								ThreadPool.QueueItem(item.CallbackWithMethod, kp.Callback);
-						}
-						
+							result.SetResult(kp.Value);
+							kp.Source.SetResult(true);
+
 						LastRead = watch.ElapsedTicks;
 
 						// Release items if there is space in the buffer
@@ -400,7 +328,7 @@ namespace CoCoL
 						// flush all following and set the retired flag
 						EmptyQueueIfRetired();
 
-						return;
+						return result.Task;
 					}
 				}
 
@@ -409,20 +337,19 @@ namespace CoCoL
 				// If this was a probe call, return a timeout now
 				if (timeout.Ticks >= 0 && expires < DateTime.Now)
 				{
-					if (callback != null)
-						ThreadPool.QueueItem(TimeoutCallbackItem.CallbackWithMethod, callback);
-					
-					return;
+					result.SetException(TimeoutException);
 				}
 				else
 				{
 					// Register the pending reader
-					m_readerQueue.Add(new ReaderEntry(offer, callback, expires));
+					m_readerQueue.Add(new ReaderEntry(offer, result, expires));
 
 					if (expires != Timeout.InfiniteDateTime)
 						ExpirationManager.AddExpirationCallback(expires, ExpireItems);
 				}
 			}
+
+			return result.Task;
 		}
 			
 		/// <summary>
@@ -432,19 +359,18 @@ namespace CoCoL
 		/// <param name="callback">A callback method that is called with the result of the operation</param>
 		/// <param name="value">The value to write to the channel.</param>
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-		public void RegisterWrite(ITwoPhaseOffer offer, ChannelCallback<T> callback, T value, TimeSpan timeout)
+		public Task WriteAsync(ITwoPhaseOffer offer, T value, TimeSpan timeout)
 		{
 			// Store entry time in case we need it and the offer dance takes some time
 			var entry = DateTime.Now;
+			var result = new TaskCompletionSource<bool>();
 
 			lock (m_lock)
 			{
 				if (IsRetired)
 				{
-					if (callback != null)
-						ThreadPool.QueueItem(new HelperCallbackItem(default(T), new RetiredException(), this).CallbackWithMethod, callback);
-
-					return;
+					result.SetException(RetiredException);
+					return result.Task;
 				}
 
 				while (m_readerQueue.Count > 0)
@@ -469,7 +395,10 @@ namespace CoCoL
 
 						// if the writer bailed, the queue is intact, but we stop offering
 						if (!offerWriter)
-							return;
+						{
+							result.SetCanceled();
+							return result.Task;
+						}
 					}
 					else
 					{
@@ -481,15 +410,8 @@ namespace CoCoL
 						if (offer != null)
 							offer.Commit(this);
 
-						if (callback != null || kp.Callback != null)
-						{
-							var item = new HelperCallbackItem(value, null, this);
-							if (callback != null)
-								ThreadPool.QueueItem(item.CallbackWithMethod, callback);
-
-							if (kp.Callback != null)
-								ThreadPool.QueueItem(item.CallbackWithMethod, kp.Callback);
-						}
+						result.SetResult(true);
+						kp.Source.SetResult(value);
 
 						LastWrite = watch.ElapsedTicks;
 
@@ -497,7 +419,7 @@ namespace CoCoL
 						// flush all following and set the retired flag
 						EmptyQueueIfRetired();
 
-						return;
+						return result.Task;
 					}
 				}
 
@@ -506,9 +428,7 @@ namespace CoCoL
 				// If this was a probe call, return a timeout now
 				if (timeout.Ticks >= 0 && expires < DateTime.Now)
 				{
-					if (callback != null)
-						ThreadPool.QueueItem(TimeoutCallbackItem.CallbackWithMethod, callback);
-					return;
+					result.TrySetException(TimeoutException);
 				}
 				else
 				{
@@ -520,9 +440,8 @@ namespace CoCoL
 							if (offer != null)
 								offer.Commit(this);
 							
-							m_writerQueue.Add(new WriterEntry(null, null, Timeout.InfiniteDateTime, value));
-							if (callback != null)
-								ThreadPool.QueueItem(new HelperCallbackItem(value, null, this).CallbackWithMethod, callback);
+							m_writerQueue.Add(new WriterEntry(null, new TaskCompletionSource<bool>(), Timeout.InfiniteDateTime, value));
+							result.SetResult(true);
 
 							LastWrite = watch.ElapsedTicks;
 						}
@@ -530,12 +449,15 @@ namespace CoCoL
 					else
 					{
 						// Register the pending writer
-						m_writerQueue.Add(new WriterEntry(offer, callback, expires, value));
+						m_writerQueue.Add(new WriterEntry(offer, result, expires, value));
 						if (expires != Timeout.InfiniteDateTime)
 							ExpirationManager.AddExpirationCallback(expires, ExpireItems);
 					}
 				}
 			}
+
+			return result.Task;
+
 		}
 
 		/// <summary>
@@ -555,12 +477,11 @@ namespace CoCoL
 						if (nextItem.Offer != null)
 							nextItem.Offer.Commit(this);
 
-						if (nextItem.Callback != null)
-							ThreadPool.QueueItem(new HelperCallbackItem(nextItem.Value, null, this).CallbackWithMethod, nextItem.Callback);
+						nextItem.Source.SetResult(true);
 
 						// Now that the transaction has completed for the writer, record it as waiting forever
 						if (nextItem.Expires != Timeout.InfiniteDateTime)
-							m_writerQueue[m_bufferSize - 1] = new WriterEntry(nextItem.Offer, nextItem.Callback, Timeout.InfiniteDateTime, nextItem.Value);
+							m_writerQueue[m_bufferSize - 1] = new WriterEntry(nextItem.Offer, nextItem.Source, Timeout.InfiniteDateTime, nextItem.Value);
 
 						LastWrite = watch.ElapsedTicks;
 					}
@@ -623,16 +544,12 @@ namespace CoCoL
 			// If there are pending retire messages, send them
 			if (readers != null || writers != null)
 			{
-				var retiredItem = new HelperCallbackItem(default(T), new RetiredException(), this);
-
 				if (readers != null)
 					foreach (var r in readers)
-						if (r.Callback != null)
-							ThreadPool.QueueItem(retiredItem.CallbackWithMethod, r.Callback);
+						r.Source.SetException(RetiredException);
 				if (writers != null)
 					foreach (var w in writers)
-						if (w.Callback != null)
-							ThreadPool.QueueItem(retiredItem.CallbackWithMethod, w.Callback);
+						w.Source.SetException(RetiredException);
 			}
 		}
 
@@ -663,13 +580,11 @@ namespace CoCoL
 
 			// Send the notifications
 			foreach (var r in expiredReaders.OrderBy(x => x.Value.Expires))
-				if (r.Value.Callback != null)
-					ThreadPool.QueueItem(TimeoutCallbackItem.CallbackWithMethod, r.Value.Callback);
+				r.Value.Source.SetException(TimeoutException);
 
 			// Send the notifications
 			foreach (var w in expiredWriters.OrderBy(x => x.Value.Expires))
-				if (w.Value.Callback != null)
-					ThreadPool.QueueItem(TimeoutCallbackItem.CallbackWithMethod, w.Value.Callback);
+				w.Value.Source.SetException(TimeoutException);
 		}
 	}
 }

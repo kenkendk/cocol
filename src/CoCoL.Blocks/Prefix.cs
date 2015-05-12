@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace CoCoL.Blocks
 {
@@ -26,7 +27,7 @@ namespace CoCoL.Blocks
 			m_repeat = repeat;
 		}
 
-		public async override void Run()
+		public async override Task RunAsync()
 		{
 			try
 			{

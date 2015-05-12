@@ -2,6 +2,7 @@
 using System.Reflection;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace CoCoL
 {
@@ -86,10 +87,18 @@ namespace CoCoL
 		/// </summary>
 		private class OnReadHandler<T>
 		{
+			/// <summary>
+			/// The set to read from
+			/// </summary>
 			private MultiChannelSet<T> m_set;
-			private ChannelCallback<T> m_callback;
+			/// <summary>
+			/// The timeout value
+			/// </summary>
 			private TimeSpan m_timeout;
-			private ChannelCallback<T> m_runner;
+			/// <summary>
+			/// The callback method, invoked on each read
+			/// </summary>
+			private Action<Task<MultisetResult<T>>> m_callback;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="CoCoL.Loader+OnReadHandler`1"/> class.
@@ -98,7 +107,7 @@ namespace CoCoL
 			/// <param name="priority">The channel selection priority.</param>
 			/// <param name="timeout">The time to wait for a read result.</param>
 			/// <param name="callback">The delegate to call when the data is available.</param>
-			public OnReadHandler(string[] channels, MultiChannelPriority priority, TimeSpan timeout, ChannelCallback<T> callback)
+			public OnReadHandler(string[] channels, MultiChannelPriority priority, TimeSpan timeout, Action<Task<MultisetResult<T>>> callback)
 			{
 				if (channels == null)
 					throw new ArgumentNullException("channels");
@@ -108,35 +117,37 @@ namespace CoCoL
 				
 				m_set = new MultiChannelSet<T>(channels.Select(x => (IChannel<T>)ChannelManager.GetChannel<T>(x)).ToArray(), priority);
 				m_callback = callback;
-				m_runner = RunHandler;
 				m_timeout = timeout;
-				m_set.ReadFromAny(m_runner, m_timeout); 
+				RunHandler();
 			}
 				
 			/// <summary>
 			/// The callback delegate method
 			/// </summary>
 			/// <param name="item">The channel result</param>
-			public void RunHandler(ICallbackResult<T> item)
+			public async void RunHandler()
 			{
-				try
+				while(true)
 				{
-					m_callback(item);
+					try
+					{
+							var t = m_set.ReadFromAnyAsync(m_timeout);
+							await t;
+							m_callback(t);
+					}
+					catch(RetiredException)
+					{
+						// Stop reading
+						return;
+					}
+					catch(Exception ex)
+					{
+						System.Diagnostics.Trace.WriteLine(ex);
+					}
 				}
-				catch(RetiredException rex)
-				{
-					// Channel is now retired, stop calling
-					return;
-				}
-				catch(Exception ex)
-				{
-					System.Diagnostics.Trace.WriteLine(ex);
-				}
-
-				m_set.ReadFromAny(m_runner, m_timeout); 
 			}
 		}
-
+			
 		/// <summary>
 		/// Creates a read handler from a method mared with OnRead.
 		/// </summary>
@@ -146,9 +157,9 @@ namespace CoCoL
 		/// <param name="instance">The object instance to register the callback on.</param>
 		private static object CreateReadHandler(OnReadAttribute attr, MethodInfo m, object instance)
 		{
-			var gentype = m.GetParameters()[0].ParameterType.GetGenericArguments();
+			var gentype = m.GetParameters()[0].ParameterType.GetGenericArguments()[0].GetGenericTypeDefinition().GetGenericArguments()[0];
 			var rht = typeof(OnReadHandler<>).MakeGenericType(gentype);
-			var cbt = typeof(ChannelCallback<>).MakeGenericType(gentype);
+			var cbt = typeof(Task<>).MakeGenericType(typeof(MultiChannelSet<>).MakeGenericType(gentype));
 
 			var cb = Delegate.CreateDelegate(cbt, instance, m);
 
@@ -172,7 +183,15 @@ namespace CoCoL
 				from n in ms
 				let decorator = n.GetCustomAttributes(typeof(OnReadAttribute), true).FirstOrDefault() as OnReadAttribute
 				let parameters = n.GetParameters()
-				where decorator != null && decorator.Channels != null && decorator.Channels.Length > 0 && parameters.Length == 1 && parameters[0].ParameterType.GetGenericTypeDefinition() == typeof(ICallbackResult<>)
+					where 
+						decorator != null && 
+						decorator.Channels != null && 
+						decorator.Channels.Length > 0 && 
+						parameters.Length == 1 && 
+						parameters[0].ParameterType.GetGenericTypeDefinition() == typeof(Task<>) && 
+						parameters[0].ParameterType.GetGenericArguments().Length == 1 && 
+						parameters[0].ParameterType.GetGenericArguments()[0].GetGenericTypeDefinition() == typeof(MultiChannelSet<>)
+				
 				select new { Method = n, Decorator = decorator };
 
 			foreach (var m in methods)
@@ -223,7 +242,7 @@ namespace CoCoL
 		/// </summary>
 		/// <returns>The number of processes started</returns>
 		/// <param name="processes">The list of process instances to start</param>
-		public static System.Threading.Tasks.Task<int> StartAsync(this IEnumerable<IProcess> processes)
+		public static Task<int> StartAsync(this IEnumerable<IProcess> processes)
 		{
 			return System.Threading.Tasks.Task.Run(() => StartFromProcesses(processes));
 		}
@@ -233,7 +252,7 @@ namespace CoCoL
 		/// </summary>
 		/// <returns>The number of processes started</returns>
 		/// <param name="processes">The list of process instances to start</param>
-		public static System.Threading.Tasks.Task<int> StartAsync(this IEnumerable<IAsyncProcess> processes)
+		public static Task<int> StartAsync(this IEnumerable<IAsyncProcess> processes)
 		{
 			return System.Threading.Tasks.Task.Run(() => StartFromProcesses(processes));
 		}

@@ -27,7 +27,7 @@ namespace CoCoL.Blocks
 			m_outputB = outputB;
 		}
 
-		public async override void Run()
+		public async override Task RunAsync()
 		{
 
 			try

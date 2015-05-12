@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace CoCoL.Blocks
 {
@@ -22,7 +23,7 @@ namespace CoCoL.Blocks
 			m_output = output;
 		}
 
-		public async override void Run()
+		public async override Task RunAsync()
 		{
 			try
 			{

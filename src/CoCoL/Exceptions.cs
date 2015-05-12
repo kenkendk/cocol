@@ -3,6 +3,9 @@ using System.Runtime.Serialization;
 
 namespace CoCoL
 {
+	/// <summary>
+	/// Exception which is thrown when attempting to access a retired channel
+	/// </summary>
 	[Serializable]
 	public class RetiredException : Exception
 	{

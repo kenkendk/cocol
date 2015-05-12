@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace CoCoL
 {
@@ -7,7 +8,6 @@ namespace CoCoL
 	/// </summary>
 	public static class ContinuationChannelAsBlocking
 	{
-
 		/// <summary>
 		/// Read from the channel in a blocking manner
 		/// </summary>
@@ -16,7 +16,7 @@ namespace CoCoL
 		/// <returns>The value read from the channel</returns>
 		public static T Read<T>(this IReadChannel<T> self)
 		{
-			return DoRead<T>(self, Timeout.Infinite).Result;
+			return self.ReadAsync(Timeout.Infinite).Result;
 		}
 
 		/// <summary>
@@ -28,7 +28,7 @@ namespace CoCoL
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		public static T Read<T>(this IReadChannel<T> self, TimeSpan timeout)
 		{
-			return DoRead(self, timeout).Result;
+			return self.ReadAsync(timeout).Result;
 		}
 
 		/// <summary>
@@ -40,7 +40,7 @@ namespace CoCoL
 		/// <returns>True if the read succeeded, false otherwise</returns>
 		public static bool TryRead<T>(this IReadChannel<T> self, out T result)
 		{
-			var res = DoRead(self, Timeout.Immediate);
+			var res = self.ReadAsync(Timeout.Immediate);
 
 			if (res.Exception != null)
 			{
@@ -53,29 +53,6 @@ namespace CoCoL
 				return true;
 			}
 		}
-			
-		/// <summary>
-		/// Read from the channel in a blocking manner
-		/// </summary>
-		/// <param name="self">The channel to read from</param>
-		/// <param name="timeout">The maximum time to wait for a value</param>
-		/// <returns>>The value read from the channel</returns>
-		/// <typeparam name="T">The channel data type parameter.</typeparam>
-		private static ICallbackResult<T> DoRead<T>(this IReadChannel<T> self, TimeSpan timeout)
-		{
-			using (var evt = new System.Threading.ManualResetEventSlim(false))
-			{
-				ICallbackResult<T> res = null;
-				self.RegisterRead(null, (x) =>
-					{
-						res = x;
-						evt.Set();
-					}, timeout);
-
-				evt.Wait();
-				return res;
-			}
-		}
 
 		/// <summary>
 		/// Write to the channel in a blocking manner
@@ -86,9 +63,11 @@ namespace CoCoL
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		public static void Write<T>(this IWriteChannel<T> self, T value)
 		{
-			var ex = DoWrite<T>(self, value, Timeout.Infinite).Exception;
-			if (ex != null)
-				throw ex;
+			var res = self.WriteAsync(value, Timeout.Infinite);
+			res.Wait();
+
+			if (res.Exception != null)
+				throw res.Exception;
 		}
 
 		/// <summary>
@@ -100,9 +79,11 @@ namespace CoCoL
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		public static void Write<T>(this IWriteChannel<T> self, T value, TimeSpan timeout)
 		{
-			var ex = DoWrite<T>(self, value, timeout).Exception;
-			if (ex != null)
-				throw ex;
+			var res = self.WriteAsync(value, timeout);
+			res.Wait();
+
+			if (res.Exception != null)
+				throw res.Exception;
 		}		
 
 		/// <summary>
@@ -114,32 +95,8 @@ namespace CoCoL
 		/// <returns>True if the write succeeded, false otherwise</returns>
 		public static bool TryWrite<T>(this IWriteChannel<T> self, T value)
 		{
-			return DoWrite(self, value, Timeout.Immediate).Exception == null;
+			return self.WriteAsync(value, Timeout.Immediate).Exception == null;
 		}
-
-		/// <summary>
-		/// Write to the channel in a blocking manner
-		/// </summary>
-		/// <param name="value">The value to write into the channel</param>
-		/// <param name="self">The channel to read from</param>
-		/// <param name="timeout">The maximum time to wait for an available slot</param>
-		/// <typeparam name="T">The channel data type parameter.</typeparam>
-		private static ICallbackResult<T> DoWrite<T>(this IWriteChannel<T> self, T value, TimeSpan timeout)
-		{
-			using (var evt = new System.Threading.ManualResetEventSlim(false))
-			{
-				ICallbackResult<T> res = null;
-				self.RegisterWrite(null, (x) =>
-					{
-						res = x;
-						evt.Set();
-					}, value, timeout);
-
-				evt.Wait();
-
-				return res;
-			}
-		}	
 
 		/// <summary>
 		/// Read from the channel set in a blocking manner
@@ -147,10 +104,9 @@ namespace CoCoL
 		/// <param name="self">The channels to read from</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		/// <returns>The value read from a channel</returns>
-		public static T ReadFromAny<T>(this MultiChannelSet<T> self)
+		public static MultisetResult<T> ReadFromAny<T>(this MultiChannelSet<T> self)
 		{
-			IChannel<T> dummy;
-			return DoReadFromAny<T>(self, Timeout.Infinite).Result;
+			return self.ReadFromAnyAsync(Timeout.Infinite).Result;
 		}
 
 		/// <summary>
@@ -162,9 +118,9 @@ namespace CoCoL
 		/// <returns>The value read from a channel</returns>
 		public static T ReadFromAny<T>(this MultiChannelSet<T> self, out IChannel<T> channel)
 		{
-			var res = DoReadFromAny<T>(self, Timeout.Infinite);
+			var res = self.ReadFromAnyAsync(Timeout.Infinite).Result;
 			channel = res.Channel;
-			return res.Result;
+			return res.Value;
 		}
 
 		/// <summary>
@@ -177,9 +133,9 @@ namespace CoCoL
 		/// <returns>The value read from a channel</returns>
 		public static T ReadFromAny<T>(this MultiChannelSet<T> self, out IChannel<T> channel, TimeSpan timeout)
 		{
-			var res = DoReadFromAny<T>(self, timeout);
+			var res = self.ReadFromAnyAsync(timeout).Result;
 			channel = res.Channel;
-			return res.Result;
+			return res.Value;
 		}
 
 		/// <summary>
@@ -191,17 +147,21 @@ namespace CoCoL
 		/// <returns>The value read from a channel</returns>
 		public static bool TryReadFromAny<T>(this MultiChannelSet<T> self, out T value, out IChannel<T> channel)
 		{
-			var res = DoReadFromAny<T>(self, Timeout.Immediate);
-			channel = res.Channel;
+			var res = self.ReadFromAnyAsync(Timeout.Immediate);
+
+			// Make sure all is good
+			res.Wait();
 
 			if (res.Exception != null)
 			{
+				channel = null;
 				value = default(T);
 				return false;
 			}
 			else
 			{
-				value = res.Result;
+				channel = res.Result.Channel;
+				value = res.Result.Value;
 				return true;
 			}
 		}
@@ -215,18 +175,8 @@ namespace CoCoL
 		/// <returns>The value read from a channel</returns>
 		public static bool TryReadFromAny<T>(this MultiChannelSet<T> self, out T value)
 		{
-			var res = DoReadFromAny<T>(self, Timeout.Immediate);
-
-			if (res.Exception != null)
-			{
-				value = default(T);
-				return false;
-			}
-			else
-			{
-				value = res.Result;
-				return true;
-			}
+			IChannel<T> dummy;
+			return TryReadFromAny<T>(self, out value, out dummy);
 		}
 
 		/// <summary>
@@ -237,68 +187,34 @@ namespace CoCoL
 		/// <param name="timeout">The maximum time to wait for a value</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		/// <returns>The value read from a channel</returns>
-		public static ICallbackResult<T> DoReadFromAny<T>(this MultiChannelSet<T> self, TimeSpan timeout)
+		public static MultisetResult<T> ReadFromAny<T>(this MultiChannelSet<T> self, TimeSpan timeout)
 		{
-			using (var evt = new System.Threading.ManualResetEventSlim(false))
-			{
-				ICallbackResult<T> res = null;
-				self.ReadFromAny((x) =>
-					{
-						res = x;
-						evt.Set();
-					}, timeout);
-
-				evt.Wait();
-
-				return res;
-			}
+			return self.ReadFromAnyAsync(timeout).Result;
 		}
 
 		/// <summary>
-		/// Read from the channel set in a blocking manner
+		/// Write to the channel set in a blocking manner
 		/// </summary>
 		/// <param name="self">The channels to read from</param>
 		/// <param name="channel">The channel written to</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		/// <param name="value">The value to write into the channel</param>
-		public static void WriteToAny<T>(this MultiChannelSet<T> self, T value)
+		public static IChannel<T> WriteToAny<T>(this MultiChannelSet<T> self, T value)
 		{
-			var res = DoWriteToAny(self, value, Timeout.Infinite);
-			if (res.Exception != null)
-				throw res.Exception;			
+			return WriteToAny(self, value, Timeout.Infinite);
 		}
 
 		/// <summary>
-		/// Read from the channel set in a blocking manner
-		/// </summary>
-		/// <param name="self">The channels to read from</param>
-		/// <param name="channel">The channel written to</param>
-		/// <typeparam name="T">The channel data type parameter.</typeparam>
-		/// <param name="value">The value to write into the channel</param>
-		public static void WriteToAny<T>(this MultiChannelSet<T> self, T value, out IChannel<T> channel)
-		{
-			var res = DoWriteToAny(self, value, Timeout.Infinite);
-
-			channel = res.Channel;
-			if (res.Exception != null)
-				throw res.Exception;
-		}
-
-		/// <summary>
-		/// Read from the channel set in a blocking manner
+		/// Write to the channel set in a blocking manner
 		/// </summary>
 		/// <param name="self">The channels to read from</param>
 		/// <param name="channel">The channel written to</param>
 		/// <param name="timeout">The maximum time to wait for a slot</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		/// <param name="value">The value to write into the channel</param>
-		public static void WriteToAny<T>(this MultiChannelSet<T> self, T value, TimeSpan timeout, out IChannel<T> channel)
+		public static IChannel<T> WriteToAny<T>(this MultiChannelSet<T> self, T value, TimeSpan timeout)
 		{
-			var res = DoWriteToAny(self, value, timeout);
-
-			channel = res.Channel;
-			if (res.Exception != null)
-				throw res.Exception;
+			return self.WriteToAnyAsync(value, timeout).Result;
 		}
 
 		/// <summary>
@@ -311,7 +227,8 @@ namespace CoCoL
 		/// <param name="value">The value to write into the channel</param>
 		public static bool TryWriteToAny<T>(this MultiChannelSet<T> self, T value)
 		{
-			return DoWriteToAny(self, value, Timeout.Immediate).Exception == null;
+			IChannel<T> dummy;
+			return TryWriteToAny(self, value, out dummy);
 		}
 
 		/// <summary>
@@ -324,37 +241,20 @@ namespace CoCoL
 		/// <param name="value">The value to write into the channel</param>
 		public static bool TryWriteToAny<T>(this MultiChannelSet<T> self, T value, out IChannel<T> channel)
 		{
-			var res = DoWriteToAny(self, value, Timeout.Immediate);
+			var res = self.WriteToAnyAsync(value, Timeout.Immediate);
+			res.Wait();
 
-			channel = res.Channel;
-			return res.Exception == null;
-		}
-			
-		/// <summary>
-		/// Read from the channel set in a blocking manner
-		/// </summary>
-		/// <param name="self">The channels to read from</param>
-		/// <param name="channel">The channel written to</param>
-		/// <param name="timeout">The maximum time to wait for a slot</param>
-		/// <typeparam name="T">The channel data type parameter.</typeparam>
-		/// <param name="value">The value to write into the channel</param>
-		public static ICallbackResult<T> DoWriteToAny<T>(this MultiChannelSet<T> self, T value, TimeSpan timeout)
-		{
-			using (var evt = new System.Threading.ManualResetEventSlim(false))
+			if (res.Exception == null)
 			{
-				ICallbackResult<T> res = null;
-				self.WriteToAny((x) =>
-					{
-						res = x;
-						evt.Set();
-					}, value, timeout);
-
-				evt.Wait();
-
-				return res;
+				channel = res.Result;
+				return true;
+			}
+			else
+			{
+				channel = null;
+				return false;
 			}
 		}
-
 	}
 }
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace CoCoL
 {
@@ -127,9 +128,9 @@ namespace CoCoL
 		/// Reads from any channel
 		/// </summary>
 		/// <param name="callback">The continuation callback to invoke after reading a value.</param>
-		public void ReadFromAny(ChannelCallback<T> callback)
+		public Task<MultisetResult<T>> ReadFromAnyAsync()
 		{
-			ReadFromAny(callback, Timeout.Infinite);
+			return ReadFromAnyAsync(Timeout.Infinite);
 		}
 
 		/// <summary>
@@ -137,11 +138,9 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="callback">The continuation callback to invoke after reading a value.</param>
 		/// <param name="timeout">The maximum time to wait for a result.</param>
-		public void ReadFromAny(ChannelCallback<T> callback, TimeSpan timeout)
+		public Task<MultisetResult<T>> ReadFromAnyAsync(TimeSpan timeout)
 		{
-			
-			MultiChannelAccess.ReadFromAny(
-				callback, 
+			return MultiChannelAccess.ReadFromAnyAsync(
 				m_priority == MultiChannelPriority.Fair ? PriorityOrderedChannels : m_channels.AsEnumerable(), 
 				timeout,
 				m_priority == MultiChannelPriority.Fair ? MultiChannelPriority.First : m_priority
@@ -152,31 +151,20 @@ namespace CoCoL
 		/// Writes to any of the channels.
 		/// </summary>
 		/// <param name="value">The value to write into the channel.</param>
-		public void WriteToAny(T value)
+		public Task<IChannel<T>> WriteToAnyAsync(T value)
 		{
-			WriteToAny(null, value, Timeout.Infinite);
+			return WriteToAnyAsync(value, Timeout.Infinite);
 		}
-
-		/// <summary>
-		/// Writes to any of the channels.
-		/// </summary>
-		/// <param name="callback">The callback to invoke, or null.</param>
-		/// <param name="value">The value to write into the channel.</param>
-		public void WriteToAny(ChannelCallback<T> callback, T value)
-		{
-			WriteToAny(callback, value, Timeout.Infinite);
-		}
-
+			
 		/// <summary>
 		/// Writes to any of the channels.
 		/// </summary>
 		/// <param name="callback">The callback to invoke, or null.</param>
 		/// <param name="value">The value to write into the channel.</param>
 		/// <param name="timeout">The maximum time to wait for any channel to become ready.</param>
-		public void WriteToAny(ChannelCallback<T> callback, T value, TimeSpan timeout)
+		public Task<IChannel<T>> WriteToAnyAsync(T value, TimeSpan timeout)
 		{
-			MultiChannelAccess.WriteToAny(
-				callback, 
+			return MultiChannelAccess.WriteToAnyAsync(
 				value, 
 				m_priority == MultiChannelPriority.Fair ? PriorityOrderedChannels : m_channels.AsEnumerable(), 
 				timeout,
