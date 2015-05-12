@@ -252,7 +252,7 @@ namespace CoCoL
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
 		public void RegisterRead(ChannelCallback<T> commitCallback, TimeSpan timeout)
 		{
-			RegisterRead(null, commitCallback, Timeout.Infinite);
+			RegisterRead(null, commitCallback, timeout);
 		}
 
 		/// <summary>
