@@ -196,6 +196,16 @@ namespace CoCoL
 			return count;
 		}
 
+		/// <summary>
+		/// Starts processes by scheduling their run method for execution
+		/// </summary>
+		/// <returns>The number of processes started</returns>
+		/// <param name="processes">The list of process instances to start</param>
+		public static System.Threading.Tasks.Task<int> StartFromProcessesAsync(IEnumerable<IProcess> processes)
+		{
+			return System.Threading.Tasks.Task.Run(() => StartFromProcesses(processes));
+		}
+
 	}
 }
 
