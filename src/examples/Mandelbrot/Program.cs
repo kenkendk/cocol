@@ -189,7 +189,7 @@ namespace Mandelbrot
 						n = 0;
 
 					// Write the result
-					output_channel.Write(new Pixel() { x = px.x, y = px.y, value = n });
+					await output_channel.WriteAsync(new Pixel() { x = px.x, y = px.y, value = n });
 				}
 			}
 			catch(RetiredException)
