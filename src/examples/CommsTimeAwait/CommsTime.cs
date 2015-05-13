@@ -85,7 +85,7 @@ namespace CommsTimeAwait
 			if (m_index == 0)
 			{
 				//Console.WriteLine("process {0} is writing to {1}", m_index, write_chan_name);
-				chan_write.WriteAsync(true);
+				chan_write.WriteNoWait(true);
 			}
 
 			try
@@ -97,10 +97,10 @@ namespace CommsTimeAwait
 
 					// Output the tick, should be done in parallel
 					if (m_index == 0)
-						tick_chan.WriteAsync(true);
+						tick_chan.WriteNoWait(true);
 					
 					//Console.WriteLine("process {0} is writing to {1}", m_index, write_chan_name);
-					chan_write.WriteAsync(v);
+					chan_write.WriteNoWait(v);
 						
 				}
 			}

@@ -42,13 +42,12 @@
     <Compile Include="ExpirationManager.cs" />
     <Compile Include="MultiChannelAccess.cs" />
     <Compile Include="Attributes.cs" />
-    <Compile Include="ContinuationChannelAsBlocking.cs" />
     <Compile Include="ContinuationChannel.cs" />
     <Compile Include="SingleOffer.cs" />
     <Compile Include="Interfaces.cs" />
     <Compile Include="MultiChannelSet.cs" />
     <Compile Include="Exceptions.cs" />
-    <Compile Include="CastingHelper.cs" />
+    <Compile Include="ChannelExtensions.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
