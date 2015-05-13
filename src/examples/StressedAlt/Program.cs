@@ -12,11 +12,6 @@ namespace StressedAlt
 	class Reader
 	{
 		/// <summary>
-		/// The name of the termination channel
-		/// </summary>
-		public const string TERMINATE_CHANNEL = "terminate";
-
-		/// <summary>
 		/// The number of reads to do before counting
 		/// </summary>
 		private const int WARMUP_ROUNDS = 10;
@@ -51,10 +46,14 @@ namespace StressedAlt
 			m_set = new MultiChannelSet<long>(channels, MultiChannelPriority.Fair);
 			m_tracking = new Dictionary<long, long>();
 			m_channelCount = m_set.Channels.Count();
-			Run();
 		}
 
-		private async void Run()
+		public void Run()
+		{
+			RunAsync().Wait();
+		}
+
+		public async Task RunAsync()
 		{
 			try
 			{
@@ -63,14 +62,8 @@ namespace StressedAlt
 				var startWarmup = DateTime.Now;
 
 				for (var i = 0; i < WARMUP_ROUNDS; i++)
-				{
-					Console.WriteLine("Running warmup round {0}", i);
 					for (var j = 0; j < m_channelCount; j++)
-					{
-						//Console.WriteLine("Running warmup round {0}-{1}", i, j);
 						UpdateTracking((await m_set.ReadFromAnyAsync()).Value);
-					}
-				}
 
 				var expected = ((DateTime.Now - startWarmup).Ticks / WARMUP_ROUNDS) * MEASURE_ROUNDS;
 
@@ -80,34 +73,20 @@ namespace StressedAlt
 
 				// Just keep reading
 				for (var i = 0; i < MEASURE_ROUNDS * m_channelCount; i++)
-				{
-					var id = (await m_set.ReadFromAnyAsync()).Value;
+					await m_set.ReadFromAnyAsync();
+				
+				var elapsed = DateTime.Now - startMeasure;
 
-					// Update counts, but don't check
-					m_tracking[id] = m_tracking[id] + 1;
-				}
-
-				Console.WriteLine("Performed {0}x{1} priority alternation reads in {2}", MEASURE_ROUNDS, m_channelCount, DateTime.Now - startMeasure);
-
-				// Verify correctness
-				var counts = m_tracking.OrderBy(x => x.Value);
-				if (counts.First().Value != counts.Last().Value)
-					throw new Exception("Error in fair alternation");
-
-				// Cleanup
-				m_set.Retire();
-				ChannelManager.GetChannel<bool>(TERMINATE_CHANNEL).Retire();
+				Console.WriteLine("Performed {0}x{1} priority alternation reads in {2}", MEASURE_ROUNDS, m_channelCount, elapsed);
+				Console.WriteLine("Communication time is {0} microseconds", (elapsed.TotalMilliseconds * 1000) / (MEASURE_ROUNDS * m_channelCount));
 			}
 			catch(RetiredException)
+			{				
+			}
+			finally
 			{
 				m_set.Retire();
-				ChannelManager.GetChannel<bool>(TERMINATE_CHANNEL).Retire();
 			}
-			catch(Exception ex)
-			{
-				Console.WriteLine(ex);
-			}
-				
 		}
 
 		private void UpdateTracking(long value)
@@ -144,12 +123,12 @@ namespace StressedAlt
 			m_channels = Enumerable.Range(0, channel_count)
 				.Select(x => ChannelManager.CreateChannel<long>()).ToArray();
 			
-			Run();
+			RunAsync();
 		}
 
 		public IChannel<long>[] Channels { get { return m_channels; } }
 
-		private async void Run()
+		private async void RunAsync()
 		{
 			try
 			{
@@ -162,6 +141,7 @@ namespace StressedAlt
 			}
 			catch(RetiredException)
 			{
+				m_channels.Retire();
 			}
 		}
 	}
@@ -178,16 +158,7 @@ namespace StressedAlt
 				Enumerable.Range(0, WRITER_PROCCESSES)
 					.SelectMany(id => new Writer(id, CHANNELS_PR_WRITER).Channels);
 
-			new Reader(allchannels);
-
-			// Wait for completion
-			try
-			{
-				ChannelManager.GetChannel<bool>(Reader.TERMINATE_CHANNEL).Read();
-			}
-			catch(RetiredException)
-			{
-			}
+			new Reader(allchannels).Run();
 		}
 	}
 }
