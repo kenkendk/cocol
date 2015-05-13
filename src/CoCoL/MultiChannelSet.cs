@@ -6,6 +6,126 @@ using System.Threading.Tasks;
 namespace CoCoL
 {
 	/// <summary>
+	/// Helper class for optimized storage of a fair-priority sorted list
+	/// </summary>
+	internal class SortedChannelList<T>
+	{
+		/// <summary>
+		/// The index where the arrays are split, such that
+		/// any index &lt; split is in the top half, where
+		/// all values are the same
+		/// </summary>
+		private int m_split;
+
+		/// <summary>
+		/// The total number of usages
+		/// </summary>
+		private long m_totalUsage = 0;
+
+		/// <summary>
+		/// The count for the number of times each channel has been used
+		/// </summary>
+		private long[] m_usageCounts;
+		/// <summary>
+		/// The sorted list of channels, such that the index in
+		/// m_channels and m_usageCounts match
+		/// </summary>
+		private IChannel<T>[] m_channels;
+
+		/// <summary>
+		/// A channel lookup for constant time mapping a channel to the index
+		/// </summary>
+		private Dictionary<object, int> m_channelLookup;
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="CoCoL.SortedChannelList`1"/> class.
+		/// </summary>
+		/// <param name="channels">The channels to keep sorted</param>
+		public SortedChannelList(IChannel<T>[] channels)
+		{
+			m_channels = channels;
+			m_usageCounts = new long[m_channels.Length];
+			m_split = m_channels.Length;
+			m_channelLookup = new Dictionary<object, int>(m_channels.Length);
+			for (var i = 0; i < m_channels.Length; i++)
+				m_channelLookup[m_channels[i]] = i;
+		}
+
+		/// <summary>
+		/// Callback method invoked when a channel has been used
+		/// </summary>
+		/// <param name="item">The channel that was used</param>
+		public void NotifyUsed(object item)
+		{
+			var ix = m_channelLookup[item];
+			m_usageCounts[ix]++;
+			m_totalUsage++;
+
+			// If we were in the upper part, move to the lower part
+			if (ix < m_split)
+			{
+				// Move to right after the split
+				Swap(ix, m_split - 1);
+
+				// Update the split, and reset the split 
+				// if all items are now in the lower part
+				if (--m_split == 0)
+				{
+					var min = m_usageCounts[0];
+					m_split = m_channels.Length;
+					while (m_usageCounts[m_split - 1] > min)
+						m_split--;
+				}
+			}
+			else
+			{
+				// If we are the last in the list, don't care
+				while (ix < m_channels.Length - 1)
+				{
+					// Partially bubble-sort the list
+					if (m_usageCounts[ix] > m_usageCounts[ix + 1])
+					{
+						Swap(ix, ix + 1);
+						ix++;
+					}
+					else
+						break;
+				}
+			}
+		}
+
+		/// <summary>
+		/// Swaps the elements with index a and b
+		/// </summary>
+		/// <param name="a">One index</param>
+		/// <param name="b">Another index</param>
+		private void Swap(int a, int b)
+		{
+			// Update the lookup table
+			m_channelLookup[m_channels[a]] = b;
+			m_channelLookup[m_channels[b]] = a;
+
+			//... and no, it is NOT faster to use XOR
+			var t0 = m_channels[a];
+			var t1 = m_usageCounts[a];
+
+			m_channels[a] = m_channels[b];
+			m_usageCounts[a] = m_usageCounts[b];
+			m_channels[b] = t0;
+			m_usageCounts[b] = t1;
+		}
+
+		/// <summary>
+		/// Gets the channels in sorted order
+		/// </summary>
+		/// <value>The channels.</value>
+		public IChannel<T>[] Channels
+		{
+			get { return m_channels; }
+		}
+	}
+
+	/// <summary>
 	/// A collection of channels that can be read or written
 	/// </summary>
 	public class MultiChannelSet<T>
@@ -17,20 +137,11 @@ namespace CoCoL
 		/// <summary>
 		/// The usage of the channels, used for tracking fair usage
 		/// </summary>
-		private readonly KeyValuePair<long, IChannel<T>>[] m_usageCounts;
+		private readonly SortedChannelList<T> m_sortedChannels;
 		/// <summary>
 		/// The order in which the channels are picked
 		/// </summary>
 		private readonly MultiChannelPriority m_priority;
-
-		/// <summary>
-		/// The number of total item usages
-		/// </summary>
-		private long m_totalUsage;
-		/// <summary>
-		/// A helper value for preventing repeated rebalancing of the usage counts
-		/// </summary>
-		private int m_skipRebalancing;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet`1"/> class.
@@ -39,13 +150,9 @@ namespace CoCoL
 		/// <param name="channels">The channels to consider.</param>
 		public MultiChannelSet(MultiChannelPriority priority, params IChannel<T>[] channels)
 		{
+			
 			m_channels = channels;
-
-			if (priority == MultiChannelPriority.Fair)
-				m_usageCounts = Enumerable.Range(0, m_channels.Length).Select(x => new KeyValuePair<long, IChannel<T>>(0, m_channels[x])).ToArray();
-			else
-				m_usageCounts = null;
-			m_totalUsage = 0;
+			m_sortedChannels = priority == MultiChannelPriority.Fair ? new SortedChannelList<T>(channels) : null;
 			m_priority = priority;
 		}
 
@@ -80,51 +187,6 @@ namespace CoCoL
 		}
 
 		/// <summary>
-		/// Update usage counters after an item has been used
-		/// </summary>
-		/// <param name="caller">The channel that has been used.</param>
-		private void NotifyUsed(object caller)
-		{
-			for(int i = 0; i < m_usageCounts.Length; i++)
-				if (m_usageCounts[i].Value == caller)
-				{
-					m_totalUsage++;
-					m_usageCounts[i] = new KeyValuePair<long, IChannel<T>>(m_usageCounts[i].Key + 1, m_usageCounts[i].Value);
-
-					this.BalanceCounts();
-
-					return;
-				}
-
-			System.Diagnostics.Debug.Fail("Notify for Priority matched no entries");
-		}
-
-		/// <summary>
-		/// Reduces the usage counts by substracting the smallest value from all counts
-		/// </summary>
-		private void BalanceCounts()
-		{
-			// Countdown
-			if (m_skipRebalancing > 0)
-				m_skipRebalancing--;
-			else
-			{
-				// Do rebalancing if required
-				var min = m_usageCounts.Select(x => x.Key).Min();
-				if (min > 0)
-				{
-					for (var i = 0; i < m_usageCounts.Length; i++)
-						m_usageCounts[i] = new KeyValuePair<long, IChannel<T>>(m_usageCounts[i].Key - min, m_usageCounts[i].Value);
-
-					m_totalUsage -= min;
-				}
-
-				// Wait for a while before we try again
-				m_skipRebalancing = Math.Max(100, m_usageCounts.Length);
-			}
-		}
-
-		/// <summary>
 		/// Reads from any channel
 		/// </summary>
 		/// <param name="callback">The continuation callback to invoke after reading a value.</param>
@@ -140,11 +202,20 @@ namespace CoCoL
 		/// <param name="timeout">The maximum time to wait for a result.</param>
 		public Task<MultisetResult<T>> ReadFromAnyAsync(TimeSpan timeout)
 		{
-			return MultiChannelAccess.ReadFromAnyAsync(
-				m_priority == MultiChannelPriority.Fair ? PriorityOrderedChannels : m_channels.AsEnumerable(), 
-				timeout,
-				m_priority == MultiChannelPriority.Fair ? MultiChannelPriority.First : m_priority
-			);
+			if (m_priority == MultiChannelPriority.Fair)
+				return MultiChannelAccess.ReadFromAnyAsync(
+					m_sortedChannels.NotifyUsed,
+					m_sortedChannels.Channels, 
+					timeout,
+					MultiChannelPriority.First
+				);
+			else
+				return MultiChannelAccess.ReadFromAnyAsync(
+					null,
+					m_channels, 
+					timeout,
+					m_priority
+				);
 		}
 
 		/// <summary>
@@ -164,26 +235,22 @@ namespace CoCoL
 		/// <param name="timeout">The maximum time to wait for any channel to become ready.</param>
 		public Task<IChannel<T>> WriteToAnyAsync(T value, TimeSpan timeout)
 		{
-			return MultiChannelAccess.WriteToAnyAsync(
-				value, 
-				m_priority == MultiChannelPriority.Fair ? PriorityOrderedChannels : m_channels.AsEnumerable(), 
-				timeout,
-				m_priority == MultiChannelPriority.Fair ? MultiChannelPriority.First : m_priority
+			if (m_priority == MultiChannelPriority.Fair)
+				return MultiChannelAccess.WriteToAnyAsync(
+					m_sortedChannels.NotifyUsed,
+					value, 
+					m_sortedChannels.Channels, 
+					timeout,
+					MultiChannelPriority.First
 				);
-		}
-
-		/// <summary>
-		/// Gets the channels in priority order based on usage, least used first
-		/// </summary>
-		/// <value>The priority ordered channels.</value>
-		private IEnumerable<IChannel<T>> PriorityOrderedChannels
-		{
-			get
-			{
-				return from n in m_usageCounts
-				       orderby n.Key
-				       select n.Value;
-			}
+			else
+				return MultiChannelAccess.WriteToAnyAsync(
+					null,
+					value, 
+					m_channels, 
+					timeout,
+					m_priority
+				);
 		}
 
 		/// <summary>
