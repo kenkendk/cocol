@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace CoCoL
 {
@@ -411,6 +412,30 @@ namespace CoCoL
 		public static IBlockingWriteableChannel<T> AsWrite<T>(this IBlockingChannel<T> channel)
 		{
 			return channel;
+		}
+		#endregion
+
+		#region Operations on lists of channels
+		/// <summary>
+		/// Retires all channels in the list
+		/// </summary>
+		/// <param name="list">The list of channels to retire</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static void Retire<T>(this IEnumerable<IChannel<T>> list)
+		{
+			foreach (var c in list)
+				c.Retire();
+		}
+
+		/// <summary>
+		/// Retires all channels in the list
+		/// </summary>
+		/// <param name="list">The list of channels to retire</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static void Retire<T>(this IEnumerable<IBlockingChannel<T>> list)
+		{
+			foreach (var c in list)
+				c.Retire();
 		}
 		#endregion
 	}
