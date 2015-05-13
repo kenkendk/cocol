@@ -44,7 +44,17 @@ namespace CoCoL
 		/// <returns>The value read from the channel</returns>
 		public static T Read<T>(this IReadChannel<T> self)
 		{
-			return self.ReadAsync(Timeout.Infinite).Result;
+			try
+			{
+				return self.ReadAsync(Timeout.Infinite).Result;
+			}
+			catch(AggregateException aex)
+			{
+				if (aex.Flatten().InnerExceptions.Count == 1)
+					throw aex.InnerException;
+				
+				throw;
+			}
 		}
 
 		/// <summary>
@@ -56,7 +66,17 @@ namespace CoCoL
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		public static T Read<T>(this IReadChannel<T> self, TimeSpan timeout)
 		{
-			return self.ReadAsync(timeout).Result;
+			try
+			{
+				return self.ReadAsync(timeout).Result;
+			}
+			catch(AggregateException aex)
+			{
+				if (aex.Flatten().InnerExceptions.Count == 1)
+					throw aex.InnerException;
+
+				throw;
+			}
 		}
 
 		/// <summary>
@@ -95,7 +115,12 @@ namespace CoCoL
 			res.Wait();
 
 			if (res.Exception != null)
+			{
+				if (res.Exception is AggregateException && ((AggregateException)res.Exception).Flatten().InnerExceptions.Count == 1)
+					throw ((AggregateException)res.Exception).InnerException;
+				
 				throw res.Exception;
+			}
 		}
 
 		/// <summary>
@@ -111,7 +136,12 @@ namespace CoCoL
 			res.Wait();
 
 			if (res.Exception != null)
+			{
+				if (res.Exception is AggregateException && ((AggregateException)res.Exception).Flatten().InnerExceptions.Count == 1)
+					throw ((AggregateException)res.Exception).InnerException;
+
 				throw res.Exception;
+			}
 		}		
 
 		/// <summary>
@@ -136,7 +166,17 @@ namespace CoCoL
 		/// <returns>The value read from a channel</returns>
 		public static MultisetResult<T> ReadFromAny<T>(this MultiChannelSet<T> self)
 		{
-			return self.ReadFromAnyAsync(Timeout.Infinite).Result;
+			try
+			{
+				return self.ReadFromAnyAsync(Timeout.Infinite).Result;
+			}
+			catch(AggregateException aex)
+			{
+				if (aex.Flatten().InnerExceptions.Count == 1)
+					throw aex.InnerException;
+
+				throw;
+			}
 		}
 
 		/// <summary>
@@ -148,9 +188,20 @@ namespace CoCoL
 		/// <returns>The value read from a channel</returns>
 		public static T ReadFromAny<T>(this MultiChannelSet<T> self, out IChannel<T> channel)
 		{
-			var res = self.ReadFromAnyAsync(Timeout.Infinite).Result;
-			channel = res.Channel;
-			return res.Value;
+			try
+			{
+				var res = self.ReadFromAnyAsync(Timeout.Infinite).Result;
+				channel = res.Channel;
+				return res.Value;
+			}
+			catch(AggregateException aex)
+			{
+				if (aex.Flatten().InnerExceptions.Count == 1)
+					throw aex.InnerException;
+
+				throw;
+			}
+
 		}
 
 		/// <summary>
@@ -163,9 +214,19 @@ namespace CoCoL
 		/// <returns>The value read from a channel</returns>
 		public static T ReadFromAny<T>(this MultiChannelSet<T> self, out IChannel<T> channel, TimeSpan timeout)
 		{
-			var res = self.ReadFromAnyAsync(timeout).Result;
-			channel = res.Channel;
-			return res.Value;
+			try
+			{
+				var res = self.ReadFromAnyAsync(timeout).Result;
+				channel = res.Channel;
+				return res.Value;
+			}
+			catch(AggregateException aex)
+			{
+				if (aex.Flatten().InnerExceptions.Count == 1)
+					throw aex.InnerException;
+
+				throw;
+			}
 		}
 
 		/// <summary>
@@ -219,7 +280,17 @@ namespace CoCoL
 		/// <returns>The value read from a channel</returns>
 		public static MultisetResult<T> ReadFromAny<T>(this MultiChannelSet<T> self, TimeSpan timeout)
 		{
-			return self.ReadFromAnyAsync(timeout).Result;
+			try
+			{
+				return self.ReadFromAnyAsync(timeout).Result;
+			}
+			catch(AggregateException aex)
+			{
+				if (aex.Flatten().InnerExceptions.Count == 1)
+					throw aex.InnerException;
+
+				throw;
+			}
 		}
 
 		/// <summary>
@@ -244,7 +315,17 @@ namespace CoCoL
 		/// <param name="value">The value to write into the channel</param>
 		public static IChannel<T> WriteToAny<T>(this MultiChannelSet<T> self, T value, TimeSpan timeout)
 		{
-			return self.WriteToAnyAsync(value, timeout).Result;
+			try
+			{
+				return self.WriteToAnyAsync(value, timeout).Result;
+			}
+			catch(AggregateException aex)
+			{
+				if (aex.Flatten().InnerExceptions.Count == 1)
+					throw aex.InnerException;
+
+				throw;
+			}
 		}
 
 		/// <summary>
