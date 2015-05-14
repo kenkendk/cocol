@@ -123,21 +123,6 @@ namespace CoCoL
 		private readonly object m_lock = new object();
 
 		/// <summary>
-		/// A stopwatch instance shared by all instances of the queue
-		/// </summary>
-		private static Stopwatch watch = Stopwatch.StartNew();
-
-		/// <summary>
-		/// Gets the last time the channel was read, in ticks from the library was loaded
-		/// </summary>
-		public long LastRead { get; private set; }
-
-		/// <summary>
-		/// Gets the last time the channel was written, in ticks from library was loaded
-		/// </summary>
-		public long LastWrite { get; private set; }
-
-		/// <summary>
 		/// A cached instance of the timeout exception
 		/// </summary>
 		private static readonly Exception TimeoutException = new TimeoutException();
@@ -319,8 +304,6 @@ namespace CoCoL
 							result.SetResult(kp.Value);
 							kp.Source.SetResult(true);
 
-						LastRead = watch.ElapsedTicks;
-
 						// Release items if there is space in the buffer
 						ProcessWriteQueueBuffer();
 
@@ -413,8 +396,6 @@ namespace CoCoL
 						result.SetResult(true);
 						kp.Source.SetResult(value);
 
-						LastWrite = watch.ElapsedTicks;
-
 						// If this was the last item before the retirement, 
 						// flush all following and set the retired flag
 						EmptyQueueIfRetired();
@@ -442,8 +423,6 @@ namespace CoCoL
 							
 							m_writerQueue.Add(new WriterEntry(null, new TaskCompletionSource<bool>(), Timeout.InfiniteDateTime, value));
 							result.SetResult(true);
-
-							LastWrite = watch.ElapsedTicks;
 						}
 					}
 					else
@@ -482,8 +461,6 @@ namespace CoCoL
 						// Now that the transaction has completed for the writer, record it as waiting forever
 						if (nextItem.Expires != Timeout.InfiniteDateTime)
 							m_writerQueue[m_bufferSize - 1] = new WriterEntry(nextItem.Offer, nextItem.Source, Timeout.InfiniteDateTime, nextItem.Value);
-
-						LastWrite = watch.ElapsedTicks;
 					}
 					else
 						m_writerQueue.RemoveAt(m_bufferSize - 1);
