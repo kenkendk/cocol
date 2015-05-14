@@ -1,19 +1,108 @@
 ﻿using System;
 using CoCoL;
+using System.Threading.Tasks;
 
 namespace Sieve
 {
 	/// <summary>
-	/// A filter process which ensures that there are no duplicates
+	/// The main class with all functionality
 	/// </summary>
-	class NoMultiples
+	class MainClass
 	{
-		public NoMultiples(long number, IReadChannel<long> input, IWriteChannel<long> output)
+		// The Primes process
+
+		/// <summary>
+		/// A process that outputs the number 2, then
+		/// spawns the sieve and a number generating process
+		/// that produces numbers from 3 and forward
+		/// </summary>
+		/// <returns>The awaitable task that represents the process</returns>
+		/// <param name="target">The channel the numbers are written into.</param>
+		private static async Task RunPrimesAsync(IWriteChannel<long> target)
 		{
-			Run(number, input, output);
+			var chan = ChannelManager.CreateChannel<long>();
+			try
+			{
+				await target.WriteAsync(2);
+
+				await Task.WhenAll(
+					RunNumbersFromAsync(3, 2, chan),
+					RunSieveAsync(chan, target)
+				);
+			} 
+			catch (RetiredException)
+			{
+				chan.Retire();
+				target.Retire();
+			}
+		}
+			
+		/// <summary>
+		/// A process that spawns a new set of processes
+		/// when a number is received.
+		/// By inserting a NoMultiples into the chain,
+		/// it is guaranteed that no numbers that are divisible
+		/// with any number in the chain can be retrieved by the
+		/// Sieve.
+		/// </summary>
+		/// <returns>The awaitable task that represents the process</returns>
+		/// <param name="input">The channel to read numbers from</param>
+		/// <param name="output">The channel to write numbers to</param>
+		private static async Task RunSieveAsync(IReadChannel<long> input, IWriteChannel<long> output)
+		{
+			var chan = ChannelManager.CreateChannel<long>();
+
+			try
+			{
+				var n = await input.ReadAsync();
+				await output.WriteAsync(n);
+
+				await Task.WhenAll(
+					RunNoMultiplesAsync(n, input, chan),
+					RunSieveAsync(chan, output)
+				);
+			}
+			catch (RetiredException)
+			{
+				chan.Retire();
+				input.Retire();
+				output.Retire();
+			}
 		}
 
-		private async void Run(long number, IReadChannel<long> input, IWriteChannel<long> output)
+		/// <summary>
+		/// A process that produces an infinite amount of numbers,
+		/// given an offset and an increment
+		/// </summary>
+		/// <returns>The awaitable task that represents the process</returns>
+		/// <param name="from">The number offset.</param>
+		/// <param name="increment">The increment.</param>
+		/// <param name="target">The channel to which the numbers are written.</param>
+		private static async Task RunNumbersFromAsync(long from, long increment, IWriteChannel<long> target)
+		{
+			var n = from;
+			try
+			{
+				while(true)
+				{
+					await target.WriteAsync(n);
+					n += increment;
+				}
+			}
+			catch (RetiredException)
+			{
+			}
+		}
+
+		/// <summary>
+		/// A process that reads numbers and discards those that are
+		/// divisible by a certain number and forwards the rest
+		/// </summary>
+		/// <returns>The awaitable task that represents the process</returns>
+		/// <param name="number">The number used to test and filter divisible numbers with.</param>
+		/// <param name="input">The channel where data is read from.</param>
+		/// <param name="output">The channel where non-multiple values are written to.</param>
+		private static async Task RunNoMultiplesAsync(long number, IReadChannel<long> input, IWriteChannel<long> output)
 		{
 			try
 			{
@@ -24,121 +113,37 @@ namespace Sieve
 						await output.WriteAsync(v);
 				}
 			}
-			catch(RetiredException)
+			catch (RetiredException)
 			{
 				input.Retire();
 				output.Retire();
 			}
 		}
-	}
 
-	/// <summary>
-	/// A generator that creates a stream of numbers
-	/// </summary>
-	class NumbersFrom
-	{
-		public NumbersFrom(long from, long increment, IWriteChannel<long> target)
-		{
-			Run(from, increment, target);
-		}
-
-		private async void Run(long from, long increment, IWriteChannel<long> target)
-		{
-			try
-			{
-				var n = from;
-				while(true)
-				{
-					await target.WriteAsync(n);
-					n += increment;
-				}
-			}
-			catch(RetiredException)
-			{
-			}
-		}
-	}
-
-	/// <summary>
-	/// The sieve that spawns a new sieve for each prime
-	/// </summary>
-	class Sieve
-	{
-		public Sieve(IReadChannel<long> input, IWriteChannel<long> output)
-		{
-			Run(input, output);
-		}
-
-		private async void Run(IReadChannel<long> input, IWriteChannel<long> output)
-		{
-			try
-			{
-				var n = await input.ReadAsync();
-				await output.WriteAsync(n);
-
-				var chan = ChannelManager.CreateChannel<long>();
-				new NoMultiples(n, input, chan);
-				new Sieve(chan, output);
-			}
-			catch(RetiredException)
-			{
-				input.Retire();
-				output.Retire();
-			}
-		}
-	}
-
-	/// <summary>
-	/// The prime number generator
-	/// </summary>
-	class Primes
-	{
-		public Primes(IWriteChannel<long> target)
-		{
-			Run(target);
-		}
-
-		private async void Run(IWriteChannel<long> target)
-		{
-			try
-			{
-				await target.WriteAsync(2);
-				var chan = ChannelManager.CreateChannel<long>();
-				new NumbersFrom(3, 2, chan);
-				new Sieve(chan, target);
-			}
-			catch(RetiredException)
-			{
-			}
-		}
-	}
-
-	/// <summary>
-	/// The driver class that starts the process and handles printout
-	/// </summary>
-	class MainClass
-	{
+		/// <summary>
+		/// The entry point of the program, where the program control starts and ends.
+		/// </summary>
+		/// <param name="args">The command-line arguments.</param>
 		public static void Main(string[] args)
 		{
+			// Create a result channel
 			var chan = ChannelManager.CreateChannel<long>();
-			new Primes(chan);
 
-			try
+			// Start producing numbers as a parallel process
+			var primeProcess = RunPrimesAsync(chan);
+
+			// Read primes from the Sieve chain
+			var prime = 0L;
+			while(prime < 50000)
 			{
-				var prime = 0L;
-
-				while(prime < 50000)
-				{
-					prime = chan.Read();
-					Console.WriteLine(prime);
-				}
-
-				chan.Retire();
-			}
-			catch(RetiredException)
-			{
+				prime = chan.Read();
+				Console.WriteLine(prime);
 			}
 
+			chan.Retire();
+				
+			// Wait for the retirement to flow through the network
+			primeProcess.Wait();
 		}
 	}
 }
