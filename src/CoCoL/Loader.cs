@@ -229,7 +229,7 @@ namespace CoCoL
 			foreach (var p in processes)
 			{
 				count++;
-				p.RunAsync();
+				ThreadPool.QueueItem(() => { p.RunAsync(); });
 
 				SetupEvents(p);
 			}
