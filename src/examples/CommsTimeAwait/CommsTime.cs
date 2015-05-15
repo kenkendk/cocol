@@ -1,16 +1,21 @@
 ﻿using System;
 using CoCoL;
+using System.Threading.Tasks;
 
 namespace CommsTimeAwait
 {
-	class TickCollector : IProcess
+	class TickCollector : IAsyncProcess
 	{
 		public const string TICK_CHANNEL_NAME = "ticks";
-		public const string TERM_CHANNEL_NAME = "terminate";
 
 		public const int MEASURE_COUNT = 5;
 
-		public async void Run()
+		public void Run()
+		{
+			RunAsync().Wait();
+		}
+
+		public async Task RunAsync()
 		{
 			var tick_chan = ChannelManager.GetChannel<bool>(TICK_CHANNEL_NAME).AsRead();
 			var tickcount = 0;
@@ -54,14 +59,12 @@ namespace CommsTimeAwait
 			}
 			catch(RetiredException)
 			{
-				//Console.WriteLine("Retired tick writer");
-				ChannelManager.GetChannel<bool>(TERM_CHANNEL_NAME).Retire();
 			}
 		}
 	}
 
 	[Process(count: PROCESSES)]
-	class CommsTime : IProcess
+	class CommsTime : IAsyncProcess
 	{
 		public const int PROCESSES = 4;
 
@@ -69,7 +72,12 @@ namespace CommsTimeAwait
 		private readonly int m_index = System.Threading.Interlocked.Increment(ref _index);
 
 		#region IProcess implementation
-		public async void Run()
+		public void Run()
+		{
+			RunAsync().Wait();
+		}
+
+		public async Task RunAsync()
 		{
 			var next_chan = (m_index + 1) % PROCESSES;
 			var prev_chan = m_index == 0 ? PROCESSES - 1 : m_index - 1;

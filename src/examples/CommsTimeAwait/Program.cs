@@ -7,21 +7,13 @@ namespace CommsTimeAwait
 	{
 		public static void Main(string[] args)
 		{
-			CoCoL.Loader.StartFromTypes(typeof(TickCollector), typeof(CommsTime));
+			CoCoL.Loader.StartFromTypes(typeof(CommsTime));
 
+			var p = new TickCollector();
 			Console.WriteLine("Running, press CTRL+C to stop");
 
-			var terminateChannel = CoCoL.ChannelManager.GetChannel<bool>(TickCollector.TERM_CHANNEL_NAME);
-
-			try 
-			{
-				// Blocking read
-				terminateChannel.Read();
-			}
-			catch 
-			{
-			}
-
+			// Start the collector and wait for exit
+			p.Run();
 
 
 		}
