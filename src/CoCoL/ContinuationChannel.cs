@@ -261,7 +261,7 @@ namespace CoCoL
 			{
 				if (IsRetired)
 				{
-					result.SetException(RetiredException);
+					ThreadPool.QueueItem(() => result.SetException(RetiredException));
 					return result.Task;
 				}
 
@@ -320,7 +320,7 @@ namespace CoCoL
 				// If this was a probe call, return a timeout now
 				if (timeout.Ticks >= 0 && expires < DateTime.Now)
 				{
-					result.SetException(TimeoutException);
+					ThreadPool.QueueItem(() => result.SetException(TimeoutException));
 				}
 				else
 				{
@@ -352,7 +352,7 @@ namespace CoCoL
 			{
 				if (IsRetired)
 				{
-					result.SetException(RetiredException);
+					ThreadPool.QueueItem(() => result.SetException(RetiredException));
 					return result.Task;
 				}
 
@@ -409,7 +409,7 @@ namespace CoCoL
 				// If this was a probe call, return a timeout now
 				if (timeout.Ticks >= 0 && expires < DateTime.Now)
 				{
-					result.TrySetException(TimeoutException);
+					ThreadPool.QueueItem(() => result.SetException(TimeoutException));
 				}
 				else
 				{
