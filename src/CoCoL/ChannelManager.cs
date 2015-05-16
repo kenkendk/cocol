@@ -34,7 +34,7 @@ namespace CoCoL
 		/// <typeparam name="T">The channel type.</typeparam>
 		public static IChannel<T> CreateChannel<T>(string name = null, int buffersize = 0) 
 		{ 
-			return new ContinuationChannel<T>(name ?? Guid.NewGuid().ToString("D"), buffersize); 
+			return new ContinuationChannel<T>(name, buffersize); 
 		}
 	}
 
