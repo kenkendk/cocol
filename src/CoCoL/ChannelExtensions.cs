@@ -20,7 +20,10 @@ namespace CoCoL
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		public static void WriteNoWait<T>(this IWriteChannel<T> self, T value)
 		{
-			self.WriteAsync(value, Timeout.Infinite);
+			ThreadPool.QueueItem(() =>
+				{
+					self.WriteAsync(value, Timeout.Infinite);
+				});
 		}
 
 		/// <summary>
@@ -32,7 +35,10 @@ namespace CoCoL
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		public static void WriteNoWait<T>(this IWriteChannel<T> self, T value, TimeSpan timeout)
 		{
-			self.WriteAsync(value, timeout);
+			ThreadPool.QueueItem(() =>
+				{
+					self.WriteAsync(value, timeout);
+				});
 		}
 		#endregion
 

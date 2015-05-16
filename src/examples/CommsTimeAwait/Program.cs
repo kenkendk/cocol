@@ -146,7 +146,7 @@ namespace CommsTimeAwait
 			var t = RunTickCollectorAsync(chan_tick, chan_in);
 
 			// Inject a value into the ring
-			ThreadPool.QueueItem(() => { chan_in.Write(1); });
+			chan_in.WriteNoWait(1);
 
 			Console.WriteLine("Running, press CTRL+C to stop");
 
