@@ -111,12 +111,12 @@ namespace CommsTimeAwait
 		/// <summary>
 		/// The number of measurements to perform in the tick collector before exiting
 		/// </summary>
-		public const int MEASURE_COUNT = 1;
+		public const int MEASURE_COUNT = 5;
 
 		/// <summary>
 		/// The number of processes in the ring
 		/// </summary>
-		public const int PROCESSES = 4;
+		public const int PROCESSES = 4; //10000000;
 
 
 		public static void Main(string[] args)
