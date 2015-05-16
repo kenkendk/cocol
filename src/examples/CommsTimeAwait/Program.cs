@@ -133,7 +133,7 @@ namespace CommsTimeAwait
 			// Spin up the forwarders
 			for (var i = 0; i < PROCESSES - 2; i++)
 			{
-				Console.WriteLine("Starting process {0}", i);
+				//Console.WriteLine("Starting process {0}", i);
 				chan_new = ChannelManager.CreateChannel<T>();
 				RunIdentity(chan_out, chan_new);
 				chan_out = chan_new;
