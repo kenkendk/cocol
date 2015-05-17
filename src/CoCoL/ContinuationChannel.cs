@@ -189,7 +189,6 @@ namespace CoCoL
 		/// <summary>
 		/// Registers a desire to read from the channel
 		/// </summary>
-		/// <param name="callback">A callback method that is called with the result of the operation</param>
 		public Task<T> ReadAsync()
 		{
 			return ReadAsync(null, Timeout.Infinite);
@@ -198,7 +197,6 @@ namespace CoCoL
 		/// <summary>
 		/// Registers a desire to read from the channel
 		/// </summary>
-		/// <param name="callback">A callback method that is called with the result of the operation</param>
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
 		public Task<T> ReadAsync(TimeSpan timeout)
 		{
@@ -209,7 +207,6 @@ namespace CoCoL
 		/// Registers a desire to read from the channel
 		/// </summary>
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-		/// <param name="callback">A callback method that is called with the result of the operation</param>
 		public Task<T> ReadAsync(ITwoPhaseOffer offer)
 		{
 			return ReadAsync(offer, Timeout.Infinite);
@@ -219,7 +216,6 @@ namespace CoCoL
 		/// Registers a desire to write to the channel
 		/// </summary>
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-		/// <param name="callback">A callback method that is called with the result of the operation</param>
 		/// <param name="value">The value to write to the channel.</param>
 		public Task WriteAsync(ITwoPhaseOffer offer, T value)
 		{
@@ -249,7 +245,6 @@ namespace CoCoL
 		/// Registers a desire to read from the channel
 		/// </summary>
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-		/// <param name="callback">A callback method that is called with the result of the operation</param>
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
 		public Task<T> ReadAsync(ITwoPhaseOffer offer, TimeSpan timeout)
 		{				
@@ -339,7 +334,6 @@ namespace CoCoL
 		/// Registers a desire to write to the channel
 		/// </summary>
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-		/// <param name="callback">A callback method that is called with the result of the operation</param>
 		/// <param name="value">The value to write to the channel.</param>
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
 		public Task WriteAsync(ITwoPhaseOffer offer, T value, TimeSpan timeout)
