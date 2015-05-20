@@ -10,7 +10,8 @@ namespace CommsTimeBlocks
 	class Consumer
 	{
 		private const long WARMUP = 1000;
-		private const long ROUNDS = 1000000;
+		private const long ROUNDS = 10000;
+		private const long REPEATS = 5;
 
 		private IReadChannel<long> m_channel;
 
@@ -27,15 +28,21 @@ namespace CommsTimeBlocks
 
 			Console.WriteLine("Warmup complete, measuring");
 
-			// Measure the run
-			var start = DateTime.Now;
-			for (var i = 0L; i < ROUNDS; i++)
-				await m_channel.ReadAsync();	
-			var finish = DateTime.Now;
+			for (int r = 0; r < REPEATS; r++)
+			{
+				// Measure the run
+				var start = DateTime.Now;
+				for (var i = 0L; i < ROUNDS; i++)
+					await m_channel.ReadAsync();	
+				var finish = DateTime.Now;
 
-			// Cleanup and report
+				// Report
+				Console.WriteLine("Time per iteration: {0} microseconds", ((finish - start).TotalMilliseconds * 1000) / ROUNDS);
+				Console.WriteLine("Time per communication: {0} microseconds", ((finish - start).TotalMilliseconds * 1000) / ROUNDS / 4);
+			}
+
+			// Cleanup
 			m_channel.Retire();
-			Console.WriteLine("Time per iteration: {0} milliseconds", (finish - start).TotalMilliseconds / ROUNDS);
 		}
 	}
 
@@ -58,7 +65,7 @@ namespace CommsTimeBlocks
 				new CoCoL.Blocks.Delta<long>(channel_a, channel_d, channel_b).RunAsync(),
 				new CoCoL.Blocks.Successor(channel_b, channel_c).RunAsync(),
 				new Consumer(channel_d).RunAsync()
-			);
+			).Wait();
 
 		}
 	}
