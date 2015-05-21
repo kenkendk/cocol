@@ -47,7 +47,7 @@ namespace CommsTimeMinimal
 
 
 	/// <summary>
-	/// Implementation of a simply channels that blocks the caller until it is avaliable
+	/// Implementation of a channel that simply blocks the caller until it is avaliable
 	/// </summary>
     public class SimpleBlockingChannel<T> : IBlockingChannel<T>
     {
