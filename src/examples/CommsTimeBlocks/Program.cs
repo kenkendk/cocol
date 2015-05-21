@@ -9,9 +9,9 @@ namespace CommsTimeBlocks
 	/// </summary>
 	class Consumer
 	{
-		private const long WARMUP = 1000;
-		private const long ROUNDS = 10000;
-		private const long REPEATS = 5;
+		private const long WARMUP = 10000;
+		private const long ROUNDS = 1000000;
+		private const long REPEATS = 10;
 
 		private IReadChannel<long> m_channel;
 

@@ -8,7 +8,8 @@ namespace CommsTimeBlocking
 		public const string TICK_CHANNEL_NAME = "ticks";
 		public const string TERM_CHANNEL_NAME = "terminate";
 
-		public const int MEASURE_COUNT = 5;
+		public const int MEASURE_COUNT = 10;
+		public const int TICK_COUNT = 1000000;
 
 		public void Run()
 		{
@@ -38,10 +39,14 @@ namespace CommsTimeBlocking
 				while (tick_chan.Read())
 				{
 					tickcount++;
-					var duration = DateTime.Now - m_last;
-					if (duration.Ticks >= measure_span)
+					//var duration = DateTime.Now - m_last;
+					//if (duration.Ticks >= measure_span)
+					if (tickcount >= TICK_COUNT)
 					{
+						var duration = DateTime.Now - m_last;
 						Console.WriteLine("Got {0} ticks in {1} seconds, speed is {2} rounds/s ({3} msec/comm)", tickcount, duration, tickcount / duration.TotalSeconds, duration.TotalMilliseconds / ((tickcount) * CommsTime.PROCESSES));
+						Console.WriteLine("Time per iteration: {0} microseconds", (duration.TotalMilliseconds * 1000) / tickcount);
+						Console.WriteLine("Time per communication: {0} microseconds", (duration.TotalMilliseconds * 1000) / tickcount / 4);
 
 						tickcount = 0;
 						m_last = DateTime.Now;
@@ -64,7 +69,7 @@ namespace CommsTimeBlocking
 	[Process(count: PROCESSES)]
 	class CommsTime : IProcess
 	{
-		public const int PROCESSES = 4;
+		public const int PROCESSES = 3;
 
 		private static int _index = -1;
 		private readonly int m_index = System.Threading.Interlocked.Increment(ref _index);

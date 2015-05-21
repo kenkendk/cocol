@@ -88,10 +88,14 @@ namespace CommsTimeAwait
 				while (await chan.ReadAsync() != 0)
 				{
 					tickcount++;
-					var duration = DateTime.Now - m_last;
-					if (duration.Ticks >= measure_span)
+					//var duration = DateTime.Now - m_last;
+					//if (duration.Ticks >= measure_span)
+					if (tickcount >= TICKS)
 					{
+						var duration = DateTime.Now - m_last;
 						Console.WriteLine("Got {0} ticks in {1} seconds, speed is {2} rounds/s ({3} msec/comm)", tickcount, duration, tickcount / duration.TotalSeconds, duration.TotalMilliseconds / ((tickcount) * PROCESSES));
+						Console.WriteLine("Time per iteration: {0} microseconds", (duration.TotalMilliseconds * 1000) / tickcount);
+						Console.WriteLine("Time per communication: {0} microseconds", (duration.TotalMilliseconds * 1000) / tickcount / 4);
 
 						tickcount = 0;
 						m_last = DateTime.Now;
@@ -111,12 +115,17 @@ namespace CommsTimeAwait
 		/// <summary>
 		/// The number of measurements to perform in the tick collector before exiting
 		/// </summary>
-		public const int MEASURE_COUNT = 5;
+		public const int MEASURE_COUNT = 10;
 
 		/// <summary>
 		/// The number of processes in the ring
 		/// </summary>
-		public const int PROCESSES = 4; //10000000;
+		public const int PROCESSES = 3; //10000000;
+
+		/// <summary>
+		/// The number of ticks to measure in each round
+		/// </summary>
+		public const int TICKS = 1000000;
 
 
 		public static void Main(string[] args)
@@ -138,9 +147,9 @@ namespace CommsTimeAwait
 				RunIdentity(chan_out, chan_new);
 				chan_out = chan_new;
 			}
-
+				
 			// Close the ring
-			RunIdentity(chan_new, chan_in);
+			RunIdentity(chan_out, chan_in);
 
 			// Start the tick collector 
 			var t = RunTickCollectorAsync(chan_tick, chan_in);
