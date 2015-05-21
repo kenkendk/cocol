@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StressedAlt", "examples\Str
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MandelbrotDynamic", "examples\MandelbrotDynamic\MandelbrotDynamic.csproj", "{FDFE3C31-A44C-4211-B61F-D1E4198A6A10}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommsTimeBlockingCollection", "examples\CommsTimeBlockingCollection\CommsTimeBlockingCollection.csproj", "{CE061464-F239-4AC7-B730-FB4C8809793A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,6 +49,10 @@ Global
 		{8C22B8AB-FCA8-4630-9B77-E73FC0481DA2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8C22B8AB-FCA8-4630-9B77-E73FC0481DA2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8C22B8AB-FCA8-4630-9B77-E73FC0481DA2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CE061464-F239-4AC7-B730-FB4C8809793A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE061464-F239-4AC7-B730-FB4C8809793A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE061464-F239-4AC7-B730-FB4C8809793A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE061464-F239-4AC7-B730-FB4C8809793A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DF30D1D1-5683-444B-A60B-CA477B3AD6E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DF30D1D1-5683-444B-A60B-CA477B3AD6E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DF30D1D1-5683-444B-A60B-CA477B3AD6E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
