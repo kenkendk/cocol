@@ -517,10 +517,10 @@ namespace CoCoL
 			{
 				if (readers != null)
 					foreach (var r in readers)
-						r.Source.SetException(RetiredException);
+						ThreadPool.QueueItem(() => r.Source.SetException(RetiredException));
 				if (writers != null)
 					foreach (var w in writers)
-						w.Source.SetException(RetiredException);
+						ThreadPool.QueueItem(() => w.Source.SetException(RetiredException));
 			}
 		}
 
