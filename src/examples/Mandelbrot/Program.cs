@@ -234,11 +234,18 @@ namespace Mandelbrot
 			// Auto-start all defined processes in this assembly
 			CoCoL.Loader.StartFromAssembly(typeof(MainClass).Assembly);
 
-			// Send jobs into the network
-			farmer_channel.Write(new RenderTask(500, 500, 10));
-			farmer_channel.Write(new RenderTask(500, 500, 100));
-			farmer_channel.Write(new RenderTask(500, 500, 256));
-			farmer_channel.Write(new RenderTask(500, 500, 1000));
+			if (args.Length == 3)
+			{
+				farmer_channel.Write(new RenderTask(int.Parse(args[0]), int.Parse(args[1]), int.Parse(args[2])));
+			}
+			else
+			{
+				// Send jobs into the network
+				farmer_channel.Write(new RenderTask(500, 500, 10));
+				farmer_channel.Write(new RenderTask(500, 500, 100));
+				farmer_channel.Write(new RenderTask(500, 500, 256));
+				farmer_channel.Write(new RenderTask(500, 500, 1000));
+			}
 
 			// Signal completion
 			farmer_channel.Retire();

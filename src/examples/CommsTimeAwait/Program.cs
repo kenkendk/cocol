@@ -61,7 +61,7 @@ namespace CommsTimeAwait
 		/// <returns>The awaitable tick collector task.</returns>
 		/// <param name="chan">The tick channel.</param>
 		/// <param name="stop">The channel used to shut down the network.</param>
-		private static async Task RunTickCollectorAsync(IReadChannel<T> chan, IChannel<T> stop)
+		private static async Task RunTickCollectorAsync(IReadChannel<T> chan, IChannel<T> stop, bool stop_after_tickcount)
 		{
 			var tickcount = 0;
 			var rounds = 0;
@@ -88,9 +88,14 @@ namespace CommsTimeAwait
 				while (await chan.ReadAsync() != 0)
 				{
 					tickcount++;
-					//var duration = DateTime.Now - m_last;
-					//if (duration.Ticks >= measure_span)
-					if (tickcount >= TICKS)
+
+					bool round_complete;
+					if (stop_after_tickcount)
+						round_complete = tickcount >= TICKS;
+					else
+						round_complete = (DateTime.Now - m_last).Ticks >= measure_span;
+
+					if (round_complete)
 					{
 						var duration = DateTime.Now - m_last;
 						Console.WriteLine("Got {0} ticks in {1} seconds, speed is {2} rounds/s ({3} msec/comm)", tickcount, duration, tickcount / duration.TotalSeconds, duration.TotalMilliseconds / ((tickcount) * PROCESSES));
@@ -120,7 +125,7 @@ namespace CommsTimeAwait
 		/// <summary>
 		/// The number of processes in the ring
 		/// </summary>
-		public const int PROCESSES = 3; //10000000;
+		public static int PROCESSES = 3; //10000000;
 
 		/// <summary>
 		/// The number of ticks to measure in each round
@@ -130,6 +135,15 @@ namespace CommsTimeAwait
 
 		public static void Main(string[] args)
 		{
+			var stop_with_ticks = true;
+
+			if (args.Length != 0)
+			{
+				PROCESSES = int.Parse(args[0]);
+				Console.WriteLine("Running with {0} processes", PROCESSES);
+				stop_with_ticks = false;
+			}
+
 			var chan_in = ChannelManager.CreateChannel<T>();
 			var chan_tick = ChannelManager.CreateChannel<T>();
 			var chan_out = ChannelManager.CreateChannel<T>();
@@ -152,7 +166,7 @@ namespace CommsTimeAwait
 			RunIdentity(chan_out, chan_in);
 
 			// Start the tick collector 
-			var t = RunTickCollectorAsync(chan_tick, chan_in);
+			var t = RunTickCollectorAsync(chan_tick, chan_in, stop_with_ticks);
 
 			// Inject a value into the ring
 			chan_in.WriteNoWait(1);

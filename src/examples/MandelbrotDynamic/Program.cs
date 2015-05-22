@@ -163,14 +163,24 @@ namespace MandelbrotDynamic
 		{
 			// Send jobs into the network
 
-			var jobs = new Render[] {
-				new Render(500, 500, 10),	
-				new Render(500, 500, 10),	
-				new Render(500, 500, 100),
-				new Render(500, 500, 256),
-				new Render(500, 500, 1000)
-			};
+			Render[] jobs;
 
+			if (args.Length == 3)
+			{
+				jobs = new Render[] {
+					new Render(int.Parse(args[0]), int.Parse(args[1]), int.Parse(args[2]))
+				};
+			}
+			else
+			{
+				jobs = new Render[] {
+					new Render(500, 500, 10),	
+					new Render(500, 500, 10),	
+					new Render(500, 500, 100),
+					new Render(500, 500, 256),
+					new Render(500, 500, 1000)
+				};
+			}
 			foreach (var job in jobs)
 				job.Run();
 		}
