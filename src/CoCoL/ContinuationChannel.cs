@@ -296,7 +296,7 @@ namespace CoCoL
 						if (offer != null)
 							offer.Commit(this);
 						
-						result.SetResult(kp.Value);
+						ThreadPool.QueueItem(() => result.SetResult(kp.Value));
 						ThreadPool.QueueItem(() => kp.Source.SetResult(true));
 
 						// Release items if there is space in the buffer
@@ -387,7 +387,7 @@ namespace CoCoL
 						if (offer != null)
 							offer.Commit(this);
 
-						result.SetResult(true);
+						ThreadPool.QueueItem(() => result.SetResult(true));
 						ThreadPool.QueueItem(() => kp.Source.SetResult(value));
 
 						// If this was the last item before the retirement, 
