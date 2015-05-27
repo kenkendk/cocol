@@ -10,6 +10,79 @@ namespace CoCoL
 	/// </summary>
 	public static class ChannelExtensions
 	{
+		/// <summary>
+		/// Single-shot variable that is set if we are running under the Mono runtime
+		/// </summary>
+		private static readonly bool IsRunningMono = Type.GetType ("Mono.Runtime") != null;
+
+		/// <summary>
+		/// Blocking wait for a task, equivalent to calling Task.Wait(),
+		/// but works around a race in Mono that causes Wait() to hang
+		/// </summary>
+		/// <param name="t">The task to wait for</param>
+		/// <returns>The task</returns>
+		public static Task<T> WaitForTask<T>(this Task<T> task)
+		{
+			// Mono has a race when waiting for a
+			// task to complete, this workaround
+			// ensures that the wait call does not hang
+			if (IsRunningMono)
+			{
+				using (var lck = new System.Threading.ManualResetEventSlim(false))
+				{
+					task.ContinueWith(x => lck.Set());
+					// This ensures we never return with 
+					// an incomplete task, but may casue
+					// some spin waiting
+					while (!task.IsCompleted)
+						lck.Wait();
+				}
+			}
+			else
+			{
+				// Don't throw the exception here
+				// let the caller access the task
+				try { task.Wait(); } 
+				catch {	}
+			}
+
+			return task;
+		}
+
+		/// <summary>
+		/// Blocking wait for a task, equivalent to calling Task.Wait(),
+		/// but works around a race in Mono that causes Wait() to hang
+		/// </summary>
+		/// <param name="t">The task to wait for</param>
+		/// <returns>The task</returns>
+		public static Task WaitForTask(this Task task)
+		{
+			// Mono has a race when waiting for a
+			// task to complete, this workaround
+			// ensures that the wait call does not hang
+			if (IsRunningMono)
+			{
+				using (var lck = new System.Threading.ManualResetEventSlim(false))
+				{
+					task.ContinueWith(x => lck.Set());
+					// This ensures we never return with 
+					// an incomplete task, but may casue
+					// some spin waiting
+					while (!task.IsCompleted)
+						lck.Wait();
+				}
+			}
+			else
+			{
+				// Don't throw the exception here
+				// let the caller access the task
+				try { task.Wait(); } 
+				catch {	}
+			}
+
+			return task;
+		}
+
 		#region Avoid compile warnings when using the write method in fire-n-forget mode
 		/// <summary>
 		/// Write to the channel in a blocking manner
@@ -53,7 +126,7 @@ namespace CoCoL
 		{
 			try
 			{
-				return self.ReadAsync(Timeout.Infinite).Result;
+				return self.ReadAsync(Timeout.Infinite).WaitForTask().Result;
 			}
 			catch(AggregateException aex)
 			{
@@ -75,7 +148,7 @@ namespace CoCoL
 		{
 			try
 			{
-				return self.ReadAsync(timeout).Result;
+				return self.ReadAsync(timeout).WaitForTask().Result;
 			}
 			catch(AggregateException aex)
 			{
@@ -118,8 +191,7 @@ namespace CoCoL
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		public static void Write<T>(this IWriteChannel<T> self, T value)
 		{
-			var res = self.WriteAsync(value, Timeout.Infinite);
-			res.Wait();
+			var res = self.WriteAsync(value, Timeout.Infinite).WaitForTask();
 
 			if (res.Exception != null)
 			{
@@ -139,8 +211,7 @@ namespace CoCoL
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		public static void Write<T>(this IWriteChannel<T> self, T value, TimeSpan timeout)
 		{
-			var res = self.WriteAsync(value, timeout);
-			res.Wait();
+			var res = self.WriteAsync(value, timeout).WaitForTask();
 
 			if (res.Exception != null)
 			{
@@ -175,7 +246,7 @@ namespace CoCoL
 		{
 			try
 			{
-				return self.ReadFromAnyAsync(Timeout.Infinite).Result;
+				return self.ReadFromAnyAsync(Timeout.Infinite).WaitForTask().Result;
 			}
 			catch(AggregateException aex)
 			{
@@ -197,7 +268,7 @@ namespace CoCoL
 		{
 			try
 			{
-				var res = self.ReadFromAnyAsync(Timeout.Infinite).Result;
+				var res = self.ReadFromAnyAsync(Timeout.Infinite).WaitForTask().Result;
 				channel = res.Channel;
 				return res.Value;
 			}
@@ -223,7 +294,7 @@ namespace CoCoL
 		{
 			try
 			{
-				var res = self.ReadFromAnyAsync(timeout).Result;
+				var res = self.ReadFromAnyAsync(timeout).WaitForTask().Result;
 				channel = res.Channel;
 				return res.Value;
 			}
@@ -245,10 +316,7 @@ namespace CoCoL
 		/// <returns>The value read from a channel</returns>
 		public static bool TryReadFromAny<T>(this MultiChannelSet<T> self, out T value, out IChannel<T> channel)
 		{
-			var res = self.ReadFromAnyAsync(Timeout.Immediate);
-
-			// Make sure all is good
-			res.Wait();
+			var res = self.ReadFromAnyAsync(Timeout.Immediate).WaitForTask();
 
 			if (res.Exception != null)
 			{
@@ -289,7 +357,7 @@ namespace CoCoL
 		{
 			try
 			{
-				return self.ReadFromAnyAsync(timeout).Result;
+				return self.ReadFromAnyAsync(timeout).WaitForTask().Result;
 			}
 			catch(AggregateException aex)
 			{
@@ -324,7 +392,7 @@ namespace CoCoL
 		{
 			try
 			{
-				return self.WriteToAnyAsync(value, timeout).Result;
+				return self.WriteToAnyAsync(value, timeout).WaitForTask().Result;
 			}
 			catch(AggregateException aex)
 			{
@@ -359,8 +427,7 @@ namespace CoCoL
 		/// <param name="value">The value to write into the channel</param>
 		public static bool TryWriteToAny<T>(this MultiChannelSet<T> self, T value, out IChannel<T> channel)
 		{
-			var res = self.WriteToAnyAsync(value, Timeout.Immediate);
-			res.Wait();
+			var res = self.WriteToAnyAsync(value, Timeout.Immediate).WaitForTask();
 
 			if (res.Exception == null)
 			{
