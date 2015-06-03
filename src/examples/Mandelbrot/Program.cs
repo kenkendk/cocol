@@ -236,7 +236,8 @@ namespace Mandelbrot
 
 			if (args.Length == 3)
 			{
-				farmer_channel.Write(new RenderTask(int.Parse(args[0]), int.Parse(args[1]), int.Parse(args[2])));
+				for (var i = 0; i < 11; i++)
+					farmer_channel.Write(new RenderTask(int.Parse(args[0]), int.Parse(args[1]), int.Parse(args[2])));
 			}
 			else
 			{

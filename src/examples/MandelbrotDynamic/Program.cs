@@ -167,9 +167,10 @@ namespace MandelbrotDynamic
 
 			if (args.Length == 3)
 			{
-				jobs = new Render[] {
-					new Render(int.Parse(args[0]), int.Parse(args[1]), int.Parse(args[2]))
-				};
+				jobs = (
+					from n in Enumerable.Range(0, 11)
+					select new Render(int.Parse(args[0]), int.Parse(args[1]), int.Parse(args[2]))
+				).ToArray();
 			}
 			else
 			{
