@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package >
+  <metadata>
+    <id>CoCoL.dll</id>
+    <version>1.0</version>
+    <title>CoCoL</title>
+    <authors>Kenneth Skovhede</authors>
+    <owners>Kenneth Skovhede</owners>
+    <licenseUrl>https://github.com/kenkendk/cocol/blob/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/kenkendk/cocol</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Concurrent Communications Library</description>
+    <releaseNotes>Initial library release.</releaseNotes>
+    <copyright>Copyright 2015, Kenneth Skovhede</copyright>
+    <tags>Multithreading Concurrency CSP</tags>
+  </metadata>
+  <files>
+    <file src="bin/Release/CoCoL.dll" target="lib/net45" />
+  </files>
+</package>
