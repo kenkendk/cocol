@@ -5,11 +5,11 @@ using System.Runtime.CompilerServices;
 // Change them to the values specific to your project.
 
 [assembly: AssemblyTitle("CoCoL")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Concurrent Communications Library")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("")]
-[assembly: AssemblyCopyright("")]
+[assembly: AssemblyProduct("CoCoL")]
+[assembly: AssemblyCopyright("Copyright 2015, Kenneth Skovhede")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
