@@ -4,10 +4,10 @@ CoCoL is a fresh multi-programming approach, leveraging the C# `await` keyword t
 
 Installation
 ------------
-The [NuGet package](https://www.nuget.org/packages/CoCoL.dll) is the recommended way of installing CoCoL:
+The [NuGet package](https://www.nuget.org/packages/CoCoL) is the recommended way of installing CoCoL:
 
 ```
-PM> Install-Package CoCoL.dll
+PM> Install-Package CoCoL
 ```
 
 
