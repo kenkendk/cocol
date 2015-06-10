@@ -1,6 +1,6 @@
 # CoCoL - Concurrent Communications Library
 
-CoCoL is a fresh multi-programming approach, leveraging the C# `await` keyword to produce sequential and easily understandable multithreading code. With a shared-nothing approach and explicit communication programs written with CoCoL are automatically free from race conditions and other threading hazards.
+CoCoL is a fresh multi-programming approach, leveraging the C# `await` keyword to produce sequential and easily understandable multithreading code. With a shared-nothing approach and explicit communication, programs written with CoCoL are automatically free from race conditions and other threading hazards.
 
 Hello World
 -----------
