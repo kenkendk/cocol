@@ -2,6 +2,8 @@
 
 CoCoL is a fresh multi-programming approach, leveraging the C# `await` keyword to produce sequential and easily understandable multithreading code. With a shared-nothing approach and explicit communication, programs written with CoCoL are automatically free from race conditions and other threading hazards.
 
+If you are familiar with the [Go Language](https://golang.org/), you can think of CoCoL as providing the Go programming model inside the CLR.
+
 Installation
 ------------
 The [NuGet package](https://www.nuget.org/packages/CoCoL) is the recommended way of installing CoCoL:
