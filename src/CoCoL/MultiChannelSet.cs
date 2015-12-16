@@ -222,7 +222,7 @@ namespace CoCoL
 		/// Writes to any of the channels.
 		/// </summary>
 		/// <param name="value">The value to write into the channel.</param>
-		public Task<IChannel<T>> WriteToAnyAsync(T value)
+		public Task<IWriteChannel<T>> WriteToAnyAsync(T value)
 		{
 			return WriteToAnyAsync(value, Timeout.Infinite);
 		}
@@ -233,7 +233,7 @@ namespace CoCoL
 		/// <param name="callback">The callback to invoke, or null.</param>
 		/// <param name="value">The value to write into the channel.</param>
 		/// <param name="timeout">The maximum time to wait for any channel to become ready.</param>
-		public Task<IChannel<T>> WriteToAnyAsync(T value, TimeSpan timeout)
+		public Task<IWriteChannel<T>> WriteToAnyAsync(T value, TimeSpan timeout)
 		{
 			if (m_priority == MultiChannelPriority.Fair)
 				return MultiChannelAccess.WriteToAnyAsync(

@@ -9,7 +9,7 @@ namespace CoCoL
 	/// <summary>
 	/// A channel that uses continuation callbacks
 	/// </summary>
-	public class ContinuationChannel<T> : IBlockingChannel<T>, IChannel<T>, IUntypedContinuationChannel, INamedItem
+	public class Channel<T> : IBlockingChannel<T>, IChannel<T>, IUntypedChannel, INamedItem
 	{
 		/// <summary>
 		/// Structure for keeping a read request
@@ -28,16 +28,6 @@ namespace CoCoL
 			/// The timeout value
 			/// </summary>
 			public DateTime Expires;
-
-			/// <summary>
-			/// Initializes a new instance of the <see cref="CoCoL.ContinuationChannel`1+ReaderEntry"/> struct.
-			/// </summary>
-			public ReaderEntry() 
-			{
-				Offer = null;	
-				Source = null;
-				Expires = new DateTime(0);
-			}
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="CoCoL.ContinuationChannel`1+ReaderEntry"/> struct.
@@ -74,17 +64,6 @@ namespace CoCoL
 			/// The value being written
 			/// </summary>
 			public T Value;
-
-			/// <summary>
-			/// Initializes a new instance of the <see cref="CoCoL.ContinuationChannel`1+WriterEntry"/> struct.
-			/// </summary>
-			public WriterEntry() 
-			{
-				Offer = null;	
-				Source = null;
-				Expires = new DateTime(0);
-				Value = default(T);
-			}
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="CoCoL.ContinuationChannel`1+WriterEntry"/> struct.
@@ -153,7 +132,7 @@ namespace CoCoL
 		/// Initializes a new instance of the <see cref="CoCoL.ContinuationChannel`1"/> class.
 		/// </summary>
 		/// <param name="size">The size of the write buffer</param>
-		internal ContinuationChannel(string name = null, int size = 0)
+		internal Channel(string name = null, int size = 0)
 		{
 			if (size < 0)
 				throw new ArgumentOutOfRangeException("size", "The size parameter must be greater than or equal to zero");

@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace CoCoL
 {
+	/// <summary>
+	/// Result from a mult-channel operation
+	/// </summary>
 	public struct MultisetResult<T>
 	{
 		/// <summary>
@@ -15,17 +18,64 @@ namespace CoCoL
 		/// <summary>
 		/// The channel being read from
 		/// </summary>
-		public readonly IChannel<T> Channel;
+		public readonly IReadChannel<T> Channel;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.MultisetResult`1"/> struct.
 		/// </summary>
 		/// <param name="value">The value read</param>
 		/// <param name="channel">The channel read from</param>
-		public MultisetResult(T value, IChannel<T> channel)
+		public MultisetResult(T value, IReadChannel<T> channel)
 		{
 			Value = value;
 			Channel = channel;
+		}
+	}
+
+	/// <summary>
+	/// A request in a multi-channel operation
+	/// </summary>
+	public struct MultisetRequest<T>
+	{
+		/// <summary>
+		/// The result value
+		/// </summary>
+		public readonly T Value;
+		/// <summary>
+		/// The channel being read from
+		/// </summary>
+		public readonly IReadChannel<T> ReadChannel;
+		/// <summary>
+		/// The channel being read from
+		/// </summary>
+		public readonly IWriteChannel<T> WriteChannel;
+		/// <summary>
+		/// Gets a value indicating if this is a read operation
+		/// </summary>
+		public readonly bool IsRead;
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="CoCoL.MultisetRequest`1"/> struct.
+		/// </summary>
+		/// <param name="value">The value to write</param>
+		/// <param name="channel">The channel to read or write.</param>
+		/// <param name="read"><c>true</c> if this is a read operation, <c>false</c> otherwise</param>
+		internal MultisetRequest(T value, IReadChannel<T> readChannel, IWriteChannel<T> writeChannel, bool read)
+		{
+			Value = value;
+			ReadChannel = readChannel;
+			WriteChannel = writeChannel;
+			IsRead = read;
+		}
+
+		public static MultisetRequest<T> Read(IReadChannel<T> channel)
+		{
+			return new MultisetRequest<T>(default(T), channel, null, true);
+		}
+
+		public static MultisetRequest<T> Write(T value, IWriteChannel<T> channel)
+		{
+			return new MultisetRequest<T>(value, null, channel, true);
 		}
 	}
 
@@ -131,7 +181,7 @@ namespace CoCoL
 		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static Task<IChannel<T>> WriteToAnyAsync<T>(T value, TimeSpan timeout, MultiChannelPriority priority, params IChannel<T>[] channels)
+		public static Task<IWriteChannel<T>> WriteToAnyAsync<T>(T value, TimeSpan timeout, MultiChannelPriority priority, params IWriteChannel<T>[] channels)
 		{
 			return WriteToAnyAsync(null, value, channels.AsEnumerable(), timeout, priority);
 		}
@@ -144,7 +194,7 @@ namespace CoCoL
 		/// <param name="channels">The list of channels to attempt to write.</param>
 		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static Task<IChannel<T>> WriteToAnyAsync<T>(T value, TimeSpan timeout, params IChannel<T>[] channels)
+		public static Task<IWriteChannel<T>> WriteToAnyAsync<T>(T value, TimeSpan timeout, params IWriteChannel<T>[] channels)
 		{
 			return WriteToAnyAsync(null, value, channels.AsEnumerable(), timeout, MultiChannelPriority.Any);
 		}
@@ -157,7 +207,7 @@ namespace CoCoL
 		/// <param name="channels">The list of channels to attempt to write.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static Task<IChannel<T>> WriteToAnyAsync<T>(T value, MultiChannelPriority priority, params IChannel<T>[] channels)
+		public static Task<IWriteChannel<T>> WriteToAnyAsync<T>(T value, MultiChannelPriority priority, params IChannel<T>[] channels)
 		{
 			return WriteToAnyAsync(value, channels.AsEnumerable(), Timeout.Infinite, priority);
 		}
@@ -169,7 +219,7 @@ namespace CoCoL
 		/// <param name="value">The value to write to the channel.</param>
 		/// <param name="channels">The list of channels to attempt to write.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static Task<IChannel<T>> WriteToAnyAsync<T>(T value, params IChannel<T>[] channels)
+		public static Task<IWriteChannel<T>> WriteToAnyAsync<T>(T value, params IWriteChannel<T>[] channels)
 		{
 			return WriteToAnyAsync(null, value, channels.AsEnumerable(), Timeout.Infinite, MultiChannelPriority.Any);
 		}
@@ -182,7 +232,7 @@ namespace CoCoL
 		/// <param name="channels">The list of channels to attempt to write.</param>
 		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static Task<IChannel<T>> WriteToAnyAsync<T>(T value, IEnumerable<IChannel<T>> channels, TimeSpan timeout)
+		public static Task<IWriteChannel<T>> WriteToAnyAsync<T>(T value, IEnumerable<IWriteChannel<T>> channels, TimeSpan timeout)
 		{
 			return WriteToAnyAsync(null, value, channels, timeout, MultiChannelPriority.Any);
 		}
@@ -195,7 +245,7 @@ namespace CoCoL
 		/// <param name="channels">The list of channels to attempt to write.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static Task<IChannel<T>> WriteToAnyAsync<T>(T value, IEnumerable<IChannel<T>> channels, MultiChannelPriority priority)
+		public static Task<IWriteChannel<T>> WriteToAnyAsync<T>(T value, IEnumerable<IWriteChannel<T>> channels, MultiChannelPriority priority)
 		{
 			return WriteToAnyAsync(null, value, channels, Timeout.Infinite, priority);
 		}
@@ -209,7 +259,7 @@ namespace CoCoL
 		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static Task<IChannel<T>> WriteToAnyAsync<T>(T value, IEnumerable<IChannel<T>> channels, TimeSpan timeout, MultiChannelPriority priority)
+		public static Task<IWriteChannel<T>> WriteToAnyAsync<T>(T value, IEnumerable<IWriteChannel<T>> channels, TimeSpan timeout, MultiChannelPriority priority)
 		{
 			return WriteToAnyAsync(null, value, channels, timeout, priority);
 		}
@@ -223,59 +273,10 @@ namespace CoCoL
 		/// <param name="timeout">The maximum time to wait for a value to read.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be read.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static Task<MultisetResult<T>> ReadFromAnyAsync<T>(Action<object> callback, IEnumerable<IChannel<T>> channels, TimeSpan timeout, MultiChannelPriority priority)
+		public static async Task<MultisetResult<T>> ReadFromAnyAsync<T>(Action<object> callback, IEnumerable<IReadChannel<T>> channels, TimeSpan timeout, MultiChannelPriority priority)
 		{
-			var tcs = new TaskCompletionSource<MultisetResult<T>>();
-
-			// We only accept the first offer
-			var offer = new SingleOffer<MultisetResult<T>>(tcs, timeout == Timeout.Infinite ? Timeout.InfiniteDateTime : DateTime.Now + timeout);
-			offer.SetCommitCallback(callback);
-
-			switch (priority)
-			{
-				case MultiChannelPriority.Fair:
-					throw new Exception(string.Format("Construct a {0} object to use fair multichannel reads", typeof(MultiChannelSet<>).Name));
-				case MultiChannelPriority.Random:
-					channels = ShuffleList(channels);
-					break;
-				default:
-					// Use the order the input has
-					break;
-			}
-
-			// Keep a map of awaitable items
-			var tasks = new Dictionary<Task<T>, IChannel<T>>();
-
-			// Then we register the intent to read from a channel in order
-			foreach (var c in channels)
-			{
-				// Timeout is handled by offer instance
-				tasks[c.ReadAsync(offer, Timeout.Infinite)] = c;
-
-				// Fast exit to avoid littering the channels if we are done
-				if (offer.IsTaken)
-					break;
-			}
-
-			offer.ProbePhaseComplete();
-
-			Task.WhenAny(tasks.Keys).ContinueWith(item => Task.Run(() =>
-				{
-					if (offer.AtomicIsFirst())
-					{
-						var n = item.Result;
-
-						// Figure out which item was found
-						if (n.IsCanceled)
-							tcs.SetCanceled();
-						else if (n.IsFaulted)
-							tcs.SetException(n.Exception);
-						else
-							tcs.SetResult(new MultisetResult<T>(n.Result, tasks[n]));
-					}
-				}));
-			
-			return tcs.Task;
+			var res = await ReadOrWriteFromAnyAsync<T>(callback, channels.Select(x => MultisetRequest<T>.Read(x)), timeout, priority);
+			return new MultisetResult<T>(res.Value, res.ReadChannel);
 		}
 			
 		/// <summary>
@@ -287,20 +288,33 @@ namespace CoCoL
 		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static Task<IChannel<T>> WriteToAnyAsync<T>(Action<object> callback, T value, IEnumerable<IChannel<T>> channels, TimeSpan timeout, MultiChannelPriority priority)
+		public static async Task<IWriteChannel<T>> WriteToAnyAsync<T>(Action<object> callback, T value, IEnumerable<IWriteChannel<T>> channels, TimeSpan timeout, MultiChannelPriority priority)
 		{
-			var tcs = new TaskCompletionSource<IChannel<T>>();
+			return (await ReadOrWriteFromAnyAsync<T>(callback, channels.Select(x => MultisetRequest<T>.Write(value, x)), timeout, priority)).WriteChannel;
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call when the read completes, or null.</param>
+		/// <param name="channels">The list of channels to attempt to read from.</param>
+		/// <param name="timeout">The maximum time to wait for a value to read.</param>
+		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be read.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<MultisetRequest<T>> ReadOrWriteFromAnyAsync<T>(Action<object> callback, IEnumerable<MultisetRequest<T>> requests, TimeSpan timeout, MultiChannelPriority priority)
+		{
+			var tcs = new TaskCompletionSource<MultisetRequest<T>>();
 
 			// We only accept the first offer
-			var offer = new SingleOffer<IChannel<T>>(tcs, timeout == Timeout.Infinite ? Timeout.InfiniteDateTime : DateTime.Now + timeout);
+			var offer = new SingleOffer<MultisetRequest<T>>(tcs, timeout == Timeout.Infinite ? Timeout.InfiniteDateTime : DateTime.Now + timeout);
 			offer.SetCommitCallback(callback);
 
 			switch (priority)
 			{
 				case MultiChannelPriority.Fair:
-					throw new Exception(string.Format("Construct a {0} object to use fair multichannel writes", typeof(MultiChannelSet<>).Name));
+					throw new Exception(string.Format("Construct a {0} object to use fair multichannel operations", typeof(MultiChannelSet<>).Name));
 				case MultiChannelPriority.Random:
-					channels = ShuffleList(channels);
+					requests = ShuffleList(requests);
 					break;
 				default:
 					// Use the order the input has
@@ -308,13 +322,16 @@ namespace CoCoL
 			}
 
 			// Keep a map of awaitable items
-			var tasks = new Dictionary<Task, IChannel<T>>();
+			var tasks = new Dictionary<Task, MultisetRequest<T>>();
 
 			// Then we register the intent to read from a channel in order
-			foreach (var c in channels)
+			foreach (var c in requests)
 			{
 				// Timeout is handled by offer instance
-				tasks[c.WriteAsync(offer, value, Timeout.Infinite)] = c;
+				if (c.IsRead)
+					tasks[c.ReadChannel.ReadAsync(offer, Timeout.Infinite)] = c;
+				else
+					tasks[c.WriteChannel.WriteAsync(offer, c.Value, Timeout.Infinite)] = c;
 
 				// Fast exit to avoid littering the channels if we are done
 				if (offer.IsTaken)
@@ -322,7 +339,8 @@ namespace CoCoL
 			}
 
 			offer.ProbePhaseComplete();
-			Task.WhenAny(tasks.Keys).ContinueWith(item => Task.Run(() =>
+
+			Task.WhenAny(tasks.Keys).ContinueWith((Task<Task> item) => Task.Run(() =>
 				{
 					if (offer.AtomicIsFirst())
 					{
@@ -334,10 +352,16 @@ namespace CoCoL
 						else if (n.IsFaulted)
 							tcs.SetException(n.Exception);
 						else
-							tcs.SetResult(tasks[n]);
+						{
+							var orig = tasks[n];
+							if (orig.IsRead)
+								tcs.SetResult(new MultisetRequest<T>(((Task<T>)n).Result, orig.ReadChannel, null, true));
+							else
+								tcs.SetResult(new MultisetRequest<T>(default(T), null, orig.WriteChannel, false));
+						}
 					}
 				}));
-			
+
 			return tcs.Task;
 		}
 

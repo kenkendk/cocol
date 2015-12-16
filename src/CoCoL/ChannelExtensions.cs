@@ -264,7 +264,7 @@ namespace CoCoL
 		/// <param name="channel">The channel written to</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		/// <returns>The value read from a channel</returns>
-		public static T ReadFromAny<T>(this MultiChannelSet<T> self, out IChannel<T> channel)
+		public static T ReadFromAny<T>(this MultiChannelSet<T> self, out IReadChannel<T> channel)
 		{
 			try
 			{
@@ -290,7 +290,7 @@ namespace CoCoL
 		/// <param name="timeout">The maximum time to wait for a value</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		/// <returns>The value read from a channel</returns>
-		public static T ReadFromAny<T>(this MultiChannelSet<T> self, out IChannel<T> channel, TimeSpan timeout)
+		public static T ReadFromAny<T>(this MultiChannelSet<T> self, out IReadChannel<T> channel, TimeSpan timeout)
 		{
 			try
 			{
@@ -314,7 +314,7 @@ namespace CoCoL
 		/// <param name="channel">The channel written to</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		/// <returns>The value read from a channel</returns>
-		public static bool TryReadFromAny<T>(this MultiChannelSet<T> self, out T value, out IChannel<T> channel)
+		public static bool TryReadFromAny<T>(this MultiChannelSet<T> self, out T value, out IReadChannel<T> channel)
 		{
 			var res = self.ReadFromAnyAsync(Timeout.Immediate).WaitForTask();
 
@@ -341,7 +341,7 @@ namespace CoCoL
 		/// <returns>The value read from a channel</returns>
 		public static bool TryReadFromAny<T>(this MultiChannelSet<T> self, out T value)
 		{
-			IChannel<T> dummy;
+			IReadChannel<T> dummy;
 			return TryReadFromAny<T>(self, out value, out dummy);
 		}
 
@@ -375,7 +375,7 @@ namespace CoCoL
 		/// <param name="channel">The channel written to</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		/// <param name="value">The value to write into the channel</param>
-		public static IChannel<T> WriteToAny<T>(this MultiChannelSet<T> self, T value)
+		public static IWriteChannel<T> WriteToAny<T>(this MultiChannelSet<T> self, T value)
 		{
 			return WriteToAny(self, value, Timeout.Infinite);
 		}
@@ -388,7 +388,7 @@ namespace CoCoL
 		/// <param name="timeout">The maximum time to wait for a slot</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		/// <param name="value">The value to write into the channel</param>
-		public static IChannel<T> WriteToAny<T>(this MultiChannelSet<T> self, T value, TimeSpan timeout)
+		public static IWriteChannel<T> WriteToAny<T>(this MultiChannelSet<T> self, T value, TimeSpan timeout)
 		{
 			try
 			{
@@ -413,7 +413,7 @@ namespace CoCoL
 		/// <param name="value">The value to write into the channel</param>
 		public static bool TryWriteToAny<T>(this MultiChannelSet<T> self, T value)
 		{
-			IChannel<T> dummy;
+			IWriteChannel<T> dummy;
 			return TryWriteToAny(self, value, out dummy);
 		}
 
@@ -425,7 +425,7 @@ namespace CoCoL
 		/// <param name="timeout">The maximum time to wait for a slot</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		/// <param name="value">The value to write into the channel</param>
-		public static bool TryWriteToAny<T>(this MultiChannelSet<T> self, T value, out IChannel<T> channel)
+		public static bool TryWriteToAny<T>(this MultiChannelSet<T> self, T value, out IWriteChannel<T> channel)
 		{
 			var res = self.WriteToAnyAsync(value, Timeout.Immediate).WaitForTask();
 
