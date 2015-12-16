@@ -176,7 +176,7 @@ namespace CoCoL
 	/// <summary>
 	/// Marker interface to work with mixed-type channels
 	/// </summary>
-	public interface IUntypedContinuationChannel
+	public interface IUntypedChannel
 	{
 	}
 
@@ -246,7 +246,7 @@ namespace CoCoL
 		/// <summary>
 		/// The channel to which the communication should be performed
 		/// </summary>
-		IUntypedContinuationChannel Channel { get; }
+		IUntypedChannel Channel { get; }
 
 		/// <summary>
 		/// The value being written, or null
