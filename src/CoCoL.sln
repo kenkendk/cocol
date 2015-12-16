@@ -3,10 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoCoL", "CoCoL\CoCoL.csproj", "{00058DF8-C13F-4DD9-BD8E-775DDF72BF87}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommsTimeBlocking", "examples\CommsTimeBlocking\CommsTimeBlocking.csproj", "{FBC1DAFD-1B76-423D-B471-44EFB983B782}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommsTimeMinimal", "examples\CommsTimeMinimal\CommsTimeMinimal.csproj", "{E50881B8-2A21-46B3-A526-D042FCA1D92C}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommsTimeAwait", "examples\CommsTimeAwait\CommsTimeAwait.csproj", "{8C22B8AB-FCA8-4630-9B77-E73FC0481DA2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoCoL.Blocks", "CoCoL.Blocks\CoCoL.Blocks.csproj", "{6CAAAC87-F520-4227-A9D1-3123AC0E0E93}"
@@ -20,8 +16,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StressedAlt", "examples\StressedAlt\StressedAlt.csproj", "{77453E91-BE0A-4994-A95C-30D2059A01F1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MandelbrotDynamic", "examples\MandelbrotDynamic\MandelbrotDynamic.csproj", "{FDFE3C31-A44C-4211-B61F-D1E4198A6A10}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommsTimeBlockingCollection", "examples\CommsTimeBlockingCollection\CommsTimeBlockingCollection.csproj", "{CE061464-F239-4AC7-B730-FB4C8809793A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -49,26 +43,14 @@ Global
 		{8C22B8AB-FCA8-4630-9B77-E73FC0481DA2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8C22B8AB-FCA8-4630-9B77-E73FC0481DA2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8C22B8AB-FCA8-4630-9B77-E73FC0481DA2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CE061464-F239-4AC7-B730-FB4C8809793A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CE061464-F239-4AC7-B730-FB4C8809793A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CE061464-F239-4AC7-B730-FB4C8809793A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CE061464-F239-4AC7-B730-FB4C8809793A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DF30D1D1-5683-444B-A60B-CA477B3AD6E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DF30D1D1-5683-444B-A60B-CA477B3AD6E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DF30D1D1-5683-444B-A60B-CA477B3AD6E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DF30D1D1-5683-444B-A60B-CA477B3AD6E0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E50881B8-2A21-46B3-A526-D042FCA1D92C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E50881B8-2A21-46B3-A526-D042FCA1D92C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E50881B8-2A21-46B3-A526-D042FCA1D92C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E50881B8-2A21-46B3-A526-D042FCA1D92C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EE02049C-4D9E-4FF1-87D6-D07BA33AE2CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{EE02049C-4D9E-4FF1-87D6-D07BA33AE2CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EE02049C-4D9E-4FF1-87D6-D07BA33AE2CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EE02049C-4D9E-4FF1-87D6-D07BA33AE2CB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FBC1DAFD-1B76-423D-B471-44EFB983B782}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FBC1DAFD-1B76-423D-B471-44EFB983B782}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FBC1DAFD-1B76-423D-B471-44EFB983B782}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FBC1DAFD-1B76-423D-B471-44EFB983B782}.Release|Any CPU.Build.0 = Release|Any CPU
 		{FDFE3C31-A44C-4211-B61F-D1E4198A6A10}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{FDFE3C31-A44C-4211-B61F-D1E4198A6A10}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FDFE3C31-A44C-4211-B61F-D1E4198A6A10}.Release|Any CPU.ActiveCfg = Release|Any CPU
