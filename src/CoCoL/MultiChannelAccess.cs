@@ -84,7 +84,7 @@ namespace CoCoL
 		/// <param name="channel">The channel to write to.</param>
 		public static MultisetRequest<T> Write(T value, IWriteChannel<T> channel)
 		{
-			return new MultisetRequest<T>(value, null, channel, true);
+			return new MultisetRequest<T>(value, null, channel, false);
 		}
 	}
 
