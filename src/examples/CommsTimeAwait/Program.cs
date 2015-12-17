@@ -5,7 +5,7 @@ using T = System.Int32;
 
 namespace CommsTimeAwait
 {
-	class MainClass
+	public class MainClass
 	{
 		/// <summary>
 		/// Runs the identity process, which simply forwards a value.
@@ -130,7 +130,7 @@ namespace CommsTimeAwait
 		/// <summary>
 		/// The number of ticks to measure in each round
 		/// </summary>
-		public const int TICKS = 1000000;
+		public static int TICKS = 1000000;
 
 
 		public static void Main(string[] args)
@@ -142,6 +142,13 @@ namespace CommsTimeAwait
 				PROCESSES = int.Parse(args[0]);
 				Console.WriteLine("Running with {0} processes", PROCESSES);
 				stop_with_ticks = false;
+
+				if (args.Length >= 2)
+				{
+					TICKS = int.Parse(args[1]);
+					Console.WriteLine("Running with {0} ticks", TICKS);
+					stop_with_ticks = true;
+				}
 			}
 
 			var chan_in = ChannelManager.CreateChannel<T>();

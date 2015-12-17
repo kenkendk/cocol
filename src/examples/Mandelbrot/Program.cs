@@ -224,7 +224,7 @@ namespace Mandelbrot
 	/// <summary>
 	/// The main class provides the driver for starting jobs
 	/// </summary>
-	class MainClass
+	public class MainClass
 	{
 		public static void Main(string[] args)
 		{

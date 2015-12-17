@@ -127,7 +127,7 @@ namespace StressedAlt
 	}
 
 
-	class MainClass
+	public class MainClass
 	{
 
 		private static int WRITERS_PR_CHANNEL = 100;
