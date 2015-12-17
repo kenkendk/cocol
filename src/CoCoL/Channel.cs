@@ -148,8 +148,7 @@ namespace CoCoL
 		public T Read()
 		{
 			var t = ReadAsync();
-			t.Wait();
-			return t.Result;
+			return t .WaitForTask().Result;
 		}
 
 		/// <summary>
@@ -159,9 +158,11 @@ namespace CoCoL
 		public void Write(T value)
 		{
 			var v = WriteAsync(value);
-			v.Wait();
+			v.WaitForTask();
 			if (v.Exception != null)
 				throw v.Exception;
+			else if (v.IsCanceled)
+				throw new OperationCanceledException();
 		}
 
 

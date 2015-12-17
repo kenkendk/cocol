@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
@@ -170,7 +171,7 @@ namespace CoCoL
 		{
 			var res = self.ReadAsync(Timeout.Immediate);
 
-			if (res.Exception != null)
+			if (res.IsFaulted || res.IsCanceled)
 			{
 				result = default(T);
 				return false;
@@ -200,6 +201,10 @@ namespace CoCoL
 				
 				throw res.Exception;
 			}
+			else if (res.IsCanceled)
+			{
+				throw new OperationCanceledException();
+			}
 		}
 
 		/// <summary>
@@ -220,6 +225,10 @@ namespace CoCoL
 
 				throw res.Exception;
 			}
+			else if (res.IsCanceled)
+			{
+				throw new OperationCanceledException();
+			}
 		}		
 
 		/// <summary>
@@ -231,7 +240,7 @@ namespace CoCoL
 		/// <returns>True if the write succeeded, false otherwise</returns>
 		public static bool TryWrite<T>(this IWriteChannel<T> self, T value)
 		{
-			return self.WriteAsync(value, Timeout.Immediate).Exception == null;
+			return self.WriteAsync(value, Timeout.Immediate).IsCompleted;
 		}
 		#endregion
 
@@ -318,7 +327,7 @@ namespace CoCoL
 		{
 			var res = self.ReadFromAnyAsync(Timeout.Immediate).WaitForTask();
 
-			if (res.Exception != null)
+			if (res.IsFaulted || res.IsCanceled)
 			{
 				channel = null;
 				value = default(T);
@@ -429,7 +438,7 @@ namespace CoCoL
 		{
 			var res = self.WriteToAnyAsync(value, Timeout.Immediate).WaitForTask();
 
-			if (res.Exception == null)
+			if (res.IsFaulted || res.IsCanceled)
 			{
 				channel = res.Result;
 				return true;
@@ -509,6 +518,223 @@ namespace CoCoL
 		{
 			foreach (var c in list)
 				c.Retire();
+		}
+		#endregion
+
+		#region Operations on untyped channels
+		/// <summary>
+		/// Reads the channel synchronously.
+		/// </summary>
+		/// <returns>The value read.</returns>
+		/// <param name="self">The channel to read.</param>
+		public static object Read(this IUntypedChannel self)
+		{
+			return Read(self, null, Timeout.Infinite);
+		}
+
+		/// <summary>
+		/// Reads the channel synchronously.
+		/// </summary>
+		/// <returns>The value read.</returns>
+		/// <param name="self">The channel to read.</param>
+		/// <param name="offer">The two-phase offer.</param>
+		public static object Read(this IUntypedChannel self, ITwoPhaseOffer offer)
+		{
+			return Read(self, offer, Timeout.Infinite);
+		}
+
+		/// <summary>
+		/// Reads the channel synchronously.
+		/// </summary>
+		/// <returns>The value read.</returns>
+		/// <param name="self">The channel to read.</param>
+		/// <param name="timeout">The read timeout.</param>
+		public static object Read(this IUntypedChannel self, TimeSpan timeout)
+		{
+			return Read(self, null, timeout);
+		}
+
+		/// <summary>
+		/// Reads the channel asynchronously.
+		/// </summary>
+		/// <returns>The value read.</returns>
+		/// <param name="self">The channel to read.</param>
+		/// <param name="offer">The two-phase offer.</param>
+		/// <param name="timeout">The read timeout.</param>
+		public static object Read(this IUntypedChannel self, ITwoPhaseOffer offer, TimeSpan timeout)
+		{
+			return WaitForTask<object>(ReadAsync(self, offer, timeout)).Result;
+		}
+
+		/// <summary>
+		/// Reads the channel asynchronously.
+		/// </summary>
+		/// <returns>The task for awaiting completion.</returns>
+		/// <param name="self">The channel to read.</param>
+		public static Task<object> ReadAsync(this IUntypedChannel self)
+		{
+			return ReadAsync(self, null, Timeout.Infinite);
+		}
+
+		/// <summary>
+		/// Reads the channel asynchronously.
+		/// </summary>
+		/// <returns>The task for awaiting completion.</returns>
+		/// <param name="self">The channel to read.</param>
+		/// <param name="offer">The two-phase offer.</param>
+		/// <param name="timeout">The read timeout.</param>
+		public static Task<object> ReadAsync(this IUntypedChannel self, ITwoPhaseOffer offer)
+		{
+			return ReadAsync(self, offer, Timeout.Infinite);
+		}
+
+		/// <summary>
+		/// Reads the channel asynchronously.
+		/// </summary>
+		/// <returns>The task for awaiting completion.</returns>
+		/// <param name="self">The channel to read.</param>
+		/// <param name="offer">The two-phase offer.</param>
+		/// <param name="timeout">The read timeout.</param>
+		public static Task<object> ReadAsync(this IUntypedChannel self, TimeSpan timeout)
+		{
+			return ReadAsync(self, null, timeout);
+		}
+
+		/// <summary>
+		/// Writes the channel synchronously
+		/// </summary>
+		/// <param name="self">The channel to write.</param>
+		/// <param name="value">The value to write.</param>
+		public static void Write(this IUntypedChannel self, object value)
+		{
+			Write(self, null, value, Timeout.Infinite);
+		}
+
+		/// <summary>
+		/// Writes the channel synchronously
+		/// </summary>
+		/// <param name="self">The channel to write.</param>
+		/// <param name="offer">The two-phase offer.</param>
+		/// <param name="value">The value to write.</param>
+		public static void Write(this IUntypedChannel self, ITwoPhaseOffer offer, object value)
+		{
+			Write(self, offer, value, Timeout.Infinite);
+		}
+
+		/// <summary>
+		/// Writes the channel synchronously
+		/// </summary>
+		/// <param name="self">The channel to write.</param>
+		/// <param name="value">The value to write.</param>
+		/// <param name="timeout">The write timeout.</param>
+		public static void Write(this IUntypedChannel self, object value, TimeSpan timeout)
+		{
+			Write(self, null, value, timeout);
+		}
+
+		/// <summary>
+		/// Writes the channel synchronously
+		/// </summary>
+		/// <param name="self">The channel to write.</param>
+		/// <param name="offer">The two-phase offer.</param>
+		/// <param name="value">The value to write.</param>
+		/// <param name="timeout">The write timeout.</param>
+		public static void Write(this IUntypedChannel self, ITwoPhaseOffer offer, object value, TimeSpan timeout)
+		{
+			var res = WriteAsync(self, offer, value, timeout).WaitForTask();
+
+			if (res.Exception != null)
+			{
+				if (res.Exception is AggregateException && ((AggregateException)res.Exception).Flatten().InnerExceptions.Count == 1)
+					throw ((AggregateException)res.Exception).InnerException;
+
+				throw res.Exception;
+			}
+			else if (res.IsCanceled)
+			{
+				throw new OperationCanceledException();
+			}
+		}
+
+		/// <summary>
+		/// Writes the channel asynchronously
+		/// </summary>
+		/// <returns>The task for awaiting completion.</returns>
+		/// <param name="self">The channel to write.</param>
+		/// <param name="value">The value to write.</param>
+		public static Task WriteAsync(this IUntypedChannel self, object value)
+		{
+			return WriteAsync(self, null, value, Timeout.Infinite);
+		}
+
+		/// <summary>
+		/// Writes the channel asynchronously
+		/// </summary>
+		/// <returns>The task for awaiting completion.</returns>
+		/// <param name="self">The channel to write.</param>
+		/// <param name="offer">The two-phase offer.</param>
+		/// <param name="value">The value to write.</param>
+		public static Task WriteAsync(this IUntypedChannel self, ITwoPhaseOffer offer, object value)
+		{
+			return WriteAsync(self, offer, value, Timeout.Infinite);
+		}
+
+		/// <summary>
+		/// Writes the channel asynchronously
+		/// </summary>
+		/// <returns>The task for awaiting completion.</returns>
+		/// <param name="self">The channel to write.</param>
+		/// <param name="value">The value to write.</param>
+		/// <param name="timeout">The write timeout.</param>
+		public static Task WriteAsync(this IUntypedChannel self, object value, TimeSpan timeout)
+		{
+			return WriteAsync(self, null, value, timeout);
+		}
+
+			
+		/// <summary>
+		/// Reads the channel asynchronously.
+		/// </summary>
+		/// <returns>The task for awaiting completion.</returns>
+		/// <param name="self">The channel to read.</param>
+		/// <param name="offer">The two-phase offer.</param>
+		/// <param name="timeout">The read timeout.</param>
+		public static async Task<object> ReadAsync(this IUntypedChannel self, ITwoPhaseOffer offer, TimeSpan timeout)
+		{
+			if (self == null)
+				throw new ArgumentNullException();
+
+			var readinterface = self.GetType().GetInterfaces().Where(x => x.IsGenericType && !x.IsGenericTypeDefinition).Where(x => x.GetGenericTypeDefinition() == typeof(IReadChannel<>)).FirstOrDefault();
+
+			if (readinterface == null)
+				throw new ArgumentException(string.Format("Given type {0} does not implement interface {1}", self.GetType(), typeof(IReadChannel<>)));
+
+			var m = readinterface.GetMethod("ReadAsync", new Type[] { typeof(ITwoPhaseOffer), typeof(TimeSpan) });
+			var t = (Task)m.Invoke(self, new object[] { offer, timeout });
+			await t;
+			return t.GetType().GetProperty("Result").GetValue(t);
+		}
+			
+		/// <summary>
+		/// Writes the channel asynchronously
+		/// </summary>
+		/// <returns>The task for awaiting completion.</returns>
+		/// <param name="self">The channel to write.</param>
+		/// <param name="offer">The two-phase offer.</param>
+		/// <param name="value">The value to write.</param>
+		/// <param name="timeout">The write timeout.</param>
+		public static Task WriteAsync(this IUntypedChannel self, ITwoPhaseOffer offer, object value, TimeSpan timeout)
+		{
+			if (self == null)
+				throw new ArgumentNullException();
+
+			var writeinterface = self.GetType().GetInterfaces().Where(x => x.IsGenericType && !x.IsGenericTypeDefinition).Where(x => x.GetGenericTypeDefinition() == typeof(IWriteChannel<>)).FirstOrDefault();
+
+			if (writeinterface == null)
+				throw new ArgumentException(string.Format("Given type {0} does not implement interface {1}", self.GetType(), typeof(IWriteChannel<>)));
+
+			var m = writeinterface.GetMethod("WriteAsync", new Type[] { typeof(ITwoPhaseOffer), self.GetType().GetGenericArguments()[0], typeof(TimeSpan) });
+			return (Task)m.Invoke(self, new object[] { offer, value, timeout });
 		}
 		#endregion
 	}
