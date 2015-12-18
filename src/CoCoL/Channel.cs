@@ -244,8 +244,34 @@ namespace CoCoL
 				{
 					var kp = m_writerQueue[0];
 
-					var offerReader = offer == null || offer.Offer(this);
-					var offerWriter = kp.Offer == null || kp.Offer.Offer(this);
+					var offerWriter = kp.Offer == null;
+					var offerReader = offer == null;
+
+					if (!offerWriter)
+						try
+						{
+							offerWriter = kp.Offer.Offer(this);
+						}
+						catch(Exception ex)
+						{
+							result.SetException(ex);
+							return result.Task;
+						}
+
+					if (!offerReader)
+						try 
+						{						
+							offerReader = offer.Offer(this); 
+						}
+						catch(Exception ex) 
+						{ 
+							if (offerWriter)
+								kp.Offer.Withdraw(this);
+							
+							result.SetException(ex);
+							return result.Task;
+						}
+
 
 					if (!(offerReader && offerWriter))
 					{
@@ -334,8 +360,34 @@ namespace CoCoL
 				{
 					var kp = m_readerQueue[0];
 
-					var offerReader = kp.Offer == null || kp.Offer.Offer(this);
-					var offerWriter = offer == null || offer.Offer(this);
+					var offerWriter = offer == null; 
+					var offerReader = kp.Offer == null;
+
+					if (!offerReader)
+						try 
+						{
+							offerReader = kp.Offer.Offer(this);
+						}
+						catch(Exception ex)
+						{
+							result.SetException(ex);
+							return result.Task;
+						}
+
+					if (!offerWriter)
+						try 
+						{ 
+							offerWriter = offer.Offer(this); 
+						}
+						catch(Exception ex)
+						{
+							if (offerReader)
+								kp.Offer.Withdraw(this);
+							result.SetException(ex);
+
+							return result.Task;
+						}
+
 
 					// If the reader accepts ...
 					if (!(offerReader && offerWriter))

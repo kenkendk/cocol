@@ -10,6 +10,12 @@ namespace CoCoL
 	public class SingleOffer<T> : ITwoPhaseOffer
 	{
 		/// <summary>
+		/// Workaround to use System.Thread.Interlocked.Increment,
+		/// which does not work on booleans
+		/// </summary>
+		private const int TRUE = 1;
+
+		/// <summary>
 		/// True if this item is already taken, false otherwise
 		/// </summary>
 		private bool m_taken = false;
@@ -32,7 +38,11 @@ namespace CoCoL
 		/// <summary>
 		/// A value indicating if the request is the first to set the TaskCompletionSource
 		/// </summary>
-		private bool m_isFirst = true;
+		private int m_isFirst = TRUE;
+		/// <summary>
+		/// Keeping track of the lock state
+		/// </summary>
+		private bool m_isLocked = false;
 
 		/// <summary>
 		/// Creates a new SingleOffer instance
@@ -67,20 +77,32 @@ namespace CoCoL
 		public bool Offer(object caller)
 		{
 			// We can never be un-taken
-			if (m_taken || !m_isFirst)
+			if (m_taken || m_isFirst != TRUE)
 				return false;
 
 			// Atomic access
 			Monitor.Enter(m_lock);
 
-			if (m_taken || !m_isFirst)
+			// If we are already locked, then we arrived
+			// here from the same thread, because the lock
+			// is re-entrant
+			if (m_isLocked)
+			{
+				Monitor.Exit(m_lock);
+				throw new InvalidOperationException("Attempted to use same channel in both read and write during a multiset operation, which is not supported");
+			}
+
+			if (m_taken || m_isFirst != TRUE)
 			{
 				// We do not offer, so release the lock
 				Monitor.Exit(m_lock);
 				return false;
 			}
 			else
+			{
+				m_isLocked = true;
 				return true;
+			}
 		}
 
 		/// <summary>
@@ -105,7 +127,7 @@ namespace CoCoL
 		public void Withdraw(object caller)
 		{
 			System.Diagnostics.Debug.Assert(m_taken == false, "Item was taken before commit");
-
+			m_isLocked = false;
 			Monitor.Exit(m_lock);
 		}
 
@@ -116,12 +138,7 @@ namespace CoCoL
 		/// <returns><c>true</c>, if the call is the first, <c>false</c> otherwise.</returns>
 		public bool AtomicIsFirst()
 		{
-			lock (m_lock)
-			{
-				var r = m_isFirst;
-				m_isFirst = false;
-				return r;
-			}
+			return System.Threading.Interlocked.Exchange(ref m_isFirst, 0) == TRUE;
 		}
 
 		/// <summary>
