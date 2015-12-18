@@ -126,6 +126,38 @@ namespace UnitTest
 					throw;
 			}
 		}
+
+		[Test]
+		public void TestMultiTypeReadWrite()
+		{
+			var c1 = ChannelManager.CreateChannel<int>();
+			var c2 = ChannelManager.CreateChannel<string>();
+
+			c1.WriteNoWait(1);
+			c2.WriteNoWait("2");
+
+			var channels = new [] { c1.AsUntyped(), c2.AsUntyped() };
+
+			var r = MultiChannelAccess.ReadFromAnyAsync(channels).WaitForTask().Result;
+			if (!(r is int))
+				throw new Exception("Priority changed?");
+			if ((int)r != 1)
+				throw new Exception("Bad value?");
+
+			r = MultiChannelAccess.ReadFromAnyAsync(c1.RequestRead(), c2.RequestRead()).WaitForTask().Result;
+			if (!(r is string))
+				throw new Exception("Priority changed?");
+			if ((string)r != "2")
+				throw new Exception("Bad value?");
+
+			var t = MultiChannelAccess.WriteToAnyAsync(4, c1.AsUntyped());
+			if (c1.Read() != 4)
+				throw new Exception("Bad value?");
+
+			t.WaitForTask();
+				
+		}
+
 	}
 }
 

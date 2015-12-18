@@ -150,6 +150,57 @@ namespace CoCoL
 	/// </summary>
 	public static class MultiChannelAccess
 	{
+		#region Creating requests from the channel
+		/// <summary>
+		/// Creates a read request for the given channel.
+		/// </summary>
+		/// <param name="self">The channel to request the read from.</param>
+		/// <typeparam name="T">The type of the channel.</typeparam>
+		/// <returns>The created request</returns>
+		public static MultisetRequest<T> RequestRead<T>(this IReadChannel<T> self)
+		{
+			return MultisetRequest<T>.Read(self);
+		}
+
+		/// <summary>
+		/// Create a write request for the given channel.
+		/// </summary>
+		/// <param name="self">The channel to request the write to.</param>
+		/// <param name="value">The value to write.</param>
+		/// <typeparam name="T">The type of the channel.</typeparam>
+		/// <returns>The created request</returns>
+		public static MultisetRequest<T> RequestWrite<T>(this IWriteChannel<T> self, T value)
+		{
+			return MultisetRequest<T>.Write(value, self);
+		}
+
+		/// <summary>
+		/// Creates a read request for the given channel.
+		/// </summary>
+		/// <param name="self">The channel to request the read from.</param>
+		/// <returns>The created request</returns>
+		public static IMultisetRequestUntyped RequestRead(this IUntypedChannel self)
+		{
+			var readinterface = self.ReadInterface();
+			var mr = typeof(MultisetRequest<>).MakeGenericType(readinterface.GetGenericArguments());
+			return (IMultisetRequestUntyped)mr.GetMethod("Read", new Type[] { readinterface }).Invoke(null, new object[] { self });
+		}
+
+		/// <summary>
+		/// Create a write request for the given channel.
+		/// </summary>
+		/// <param name="self">The channel to request the write to.</param>
+		/// <param name="value">The value to write.</param>
+		/// <returns>The created request</returns>
+		public static IMultisetRequestUntyped RequestWrite(this IUntypedChannel self, object value)
+		{
+			var writeinterface = self.WriteInterface();
+			var mr = typeof(MultisetRequest<>).MakeGenericType(writeinterface.GetGenericArguments());
+			return (IMultisetRequestUntyped)mr.GetMethod("Write", new Type[] { writeinterface.GetGenericArguments()[0], writeinterface }).Invoke(null, new object[] { value, self });
+		}
+		#endregion
+
+
 		#region Creating channel sets from lists of channels
 		/// <summary>
 		/// Creates a multichannelset from a list of channels
@@ -248,6 +299,218 @@ namespace CoCoL
 		public static Task<MultisetResult<T>> ReadFromAnyAsync<T>(this IEnumerable<IReadChannel<T>> channels, TimeSpan timeout, MultiChannelPriority priority)
 		{
 			return ReadFromAnyAsync(null, channels, timeout, priority);
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call when the read completes, or null.</param>
+		/// <param name="channels">The list of channels to attempt to read from.</param>
+		/// <param name="timeout">The maximum time to wait for a value to read.</param>
+		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be read.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static async Task<MultisetResult<T>> ReadFromAnyAsync<T>(Action<object> callback, IEnumerable<IReadChannel<T>> channels, TimeSpan timeout, MultiChannelPriority priority)
+		{
+			var res = await ReadOrWriteAnyAsync<T>(callback, channels.Select(x => x.RequestRead()), timeout, priority);
+			return new MultisetResult<T>(res.Value, res.ReadChannel);
+		}
+		#endregion
+
+		#region Overloads for setting default parameters in the untyped read method
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the read completes.</param>
+		/// <param name="channels">The list of channels to call.</param>
+		/// <param name="timeout">The maximum time to wait for a value to read.</param>
+		/// <param name="priority">The priority used to select channels, if multiple channels have a value that can be read.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<object> ReadFromAnyAsync(TimeSpan timeout, MultiChannelPriority priority, params IUntypedChannel[] channels)
+		{
+			return ReadFromAnyAsync(null, channels.AsEnumerable(), timeout, priority);
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the read completes.</param>
+		/// <param name="channels">The list of channels to call.</param>
+		/// <param name="timeout">The maximum time to wait for a value to read.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<object> ReadFromAnyAsync(TimeSpan timeout, params IUntypedChannel[] channels)
+		{
+			return ReadFromAnyAsync(null, channels.AsEnumerable(), timeout, MultiChannelPriority.Any);
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the read completes.</param>
+		/// <param name="channels">The list of channels to call.</param>
+		/// <param name="priority">The priority used to select channels, if multiple channels have a value that can be read.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<object> ReadFromAnyAsync(MultiChannelPriority priority, params IUntypedChannel[] channels)
+		{
+			return ReadFromAnyAsync(null, channels.AsEnumerable(), Timeout.Infinite, priority);
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the read completes.</param>
+		/// <param name="channels">The list of channels to call.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<object> ReadFromAnyAsync(params IUntypedChannel[] channels)
+		{
+			return ReadFromAnyAsync(null, channels.AsEnumerable(), Timeout.Infinite, MultiChannelPriority.Any);
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the read completes.</param>
+		/// <param name="channels">The list of channels to call.</param>
+		/// <param name="timeout">The maximum time to wait for a value to read.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<object> ReadFromAnyAsync(this IEnumerable<IUntypedChannel> channels, TimeSpan timeout)
+		{
+			return ReadFromAnyAsync(null, channels, timeout, MultiChannelPriority.Any);
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the read completes.</param>
+		/// <param name="channels">The list of channels to call.</param>
+		/// <param name="priority">The priority used to select channels, if multiple channels have a value that can be read.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<object> ReadFromAnyAsync(this IEnumerable<IUntypedChannel> channels, MultiChannelPriority priority)
+		{
+			return ReadFromAnyAsync(null, channels, Timeout.Infinite, priority);
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the read completes, or null.</param>
+		/// <param name="channels">The list of channels to attempt to read from.</param>
+		/// <param name="timeout">The maximum time to wait for a value to read.</param>
+		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be read.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<object> ReadFromAnyAsync(this IEnumerable<IUntypedChannel> channels, TimeSpan timeout, MultiChannelPriority priority)
+		{
+			return ReadFromAnyAsync(null, channels, timeout, priority);
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call when the read completes, or null.</param>
+		/// <param name="channels">The list of channels to attempt to read from.</param>
+		/// <param name="timeout">The maximum time to wait for a value to read.</param>
+		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be read.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static async Task<object> ReadFromAnyAsync(Action<object> callback, IEnumerable<IUntypedChannel> channels, TimeSpan timeout, MultiChannelPriority priority)
+		{
+			return (await ReadOrWriteAnyAsync(callback, channels.Select(x => x.RequestRead()), timeout, priority)).Value;
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the read completes.</param>
+		/// <param name="channels">The list of channels to call.</param>
+		/// <param name="timeout">The maximum time to wait for a value to read.</param>
+		/// <param name="priority">The priority used to select channels, if multiple channels have a value that can be read.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<object> ReadFromAnyAsync(TimeSpan timeout, MultiChannelPriority priority, params IMultisetRequestUntyped[] requests)
+		{
+			return ReadFromAnyAsync(null, requests.AsEnumerable(), timeout, priority);
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the read completes.</param>
+		/// <param name="channels">The list of channels to call.</param>
+		/// <param name="timeout">The maximum time to wait for a value to read.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<object> ReadFromAnyAsync(TimeSpan timeout, params IMultisetRequestUntyped[] requests)
+		{
+			return ReadFromAnyAsync(null, requests.AsEnumerable(), timeout, MultiChannelPriority.Any);
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the read completes.</param>
+		/// <param name="channels">The list of channels to call.</param>
+		/// <param name="priority">The priority used to select channels, if multiple channels have a value that can be read.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<object> ReadFromAnyAsync(MultiChannelPriority priority, params IMultisetRequestUntyped[] requests)
+		{
+			return ReadFromAnyAsync(null, requests.AsEnumerable(), Timeout.Infinite, priority);
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the read completes.</param>
+		/// <param name="channels">The list of channels to call.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<object> ReadFromAnyAsync(params IMultisetRequestUntyped[] requests)
+		{
+			return ReadFromAnyAsync(null, requests.AsEnumerable(), Timeout.Infinite, MultiChannelPriority.Any);
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the read completes.</param>
+		/// <param name="channels">The list of channels to call.</param>
+		/// <param name="timeout">The maximum time to wait for a value to read.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<object> ReadFromAnyAsync(this IEnumerable<IMultisetRequestUntyped> requests, TimeSpan timeout)
+		{
+			return ReadFromAnyAsync(null, requests, timeout, MultiChannelPriority.Any);
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the read completes.</param>
+		/// <param name="channels">The list of channels to call.</param>
+		/// <param name="priority">The priority used to select channels, if multiple channels have a value that can be read.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<object> ReadFromAnyAsync(this IEnumerable<IMultisetRequestUntyped> requests, MultiChannelPriority priority)
+		{
+			return ReadFromAnyAsync(null, requests, Timeout.Infinite, priority);
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the read completes, or null.</param>
+		/// <param name="channels">The list of channels to attempt to read from.</param>
+		/// <param name="timeout">The maximum time to wait for a value to read.</param>
+		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be read.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<object> ReadFromAnyAsync(this IEnumerable<IMultisetRequestUntyped> requests, TimeSpan timeout, MultiChannelPriority priority)
+		{
+			return ReadFromAnyAsync(null, requests, timeout, priority);
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call when the read completes, or null.</param>
+		/// <param name="channels">The list of channels to attempt to read from.</param>
+		/// <param name="timeout">The maximum time to wait for a value to read.</param>
+		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be read.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static async Task<object> ReadFromAnyAsync(Action<object> callback, IEnumerable<IMultisetRequestUntyped> requests, TimeSpan timeout, MultiChannelPriority priority)
+		{
+			return (await ReadOrWriteAnyAsync(callback, requests, timeout, priority)).Value;
 		}
 		#endregion
 
@@ -382,6 +645,314 @@ namespace CoCoL
 		public static Task<IWriteChannel<T>> WriteToAnyAsync<T>(this IEnumerable<IWriteChannel<T>> channels, T value, TimeSpan timeout, MultiChannelPriority priority)
 		{
 			return WriteToAnyAsync(null, value, channels, timeout, priority);
+		}
+
+		/// <summary>
+		/// Writes to any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call when the write completes, or null.</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channels">The list of channels to attempt to write.</param>
+		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
+		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static async Task<IWriteChannel<T>> WriteToAnyAsync<T>(Action<object> callback, T value, IEnumerable<IWriteChannel<T>> channels, TimeSpan timeout, MultiChannelPriority priority)
+		{
+			return (await ReadOrWriteAnyAsync<T>(callback, channels.Select(x => x.RequestWrite(value)), timeout, priority)).WriteChannel;
+		}
+		#endregion
+
+		#region Overloads for setting default parameters in the untyped write method
+		/// <summary>
+		/// Writes to any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the write completes, or null.</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channels">The list of channels to attempt to write.</param>
+		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
+		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IUntypedChannel> WriteToAnyAsync(object value, TimeSpan timeout, MultiChannelPriority priority, params IUntypedChannel[] channels)
+		{
+			return WriteToAnyAsync(null, value, channels.AsEnumerable(), timeout, priority);
+		}
+
+		/// <summary>
+		/// Writes to any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the write completes, or null.</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channels">The list of channels to attempt to write.</param>
+		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IUntypedChannel> WriteToAnyAsync(object value, TimeSpan timeout, params IUntypedChannel[] channels)
+		{
+			return WriteToAnyAsync(null, value, channels.AsEnumerable(), timeout, MultiChannelPriority.Any);
+		}
+
+		/// <summary>
+		/// Writes to any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the write completes, or null.</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channels">The list of channels to attempt to write.</param>
+		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IUntypedChannel> WriteToAnyAsync(object value, MultiChannelPriority priority, params IUntypedChannel[] channels)
+		{
+			return WriteToAnyAsync(value, channels.AsEnumerable(), Timeout.Infinite, priority);
+		}
+
+		/// <summary>
+		/// Writes to any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the write completes, or null.</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channels">The list of channels to attempt to write.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IUntypedChannel> WriteToAnyAsync(object value, params IUntypedChannel[] channels)
+		{
+			return WriteToAnyAsync(null, value, channels.AsEnumerable(), Timeout.Infinite, MultiChannelPriority.Any);
+		}
+
+		/// <summary>
+		/// Writes to any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the write completes, or null.</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channels">The list of channels to attempt to write.</param>
+		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IUntypedChannel> WriteToAnyAsync(object value, IEnumerable<IUntypedChannel> channels, TimeSpan timeout)
+		{
+			return WriteToAnyAsync(null, value, channels, timeout, MultiChannelPriority.Any);
+		}
+
+		/// <summary>
+		/// Writes to any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the write completes, or null.</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channels">The list of channels to attempt to write.</param>
+		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IUntypedChannel> WriteToAnyAsync(object value, IEnumerable<IUntypedChannel> channels, MultiChannelPriority priority)
+		{
+			return WriteToAnyAsync(null, value, channels, Timeout.Infinite, priority);
+		}
+
+		/// <summary>
+		/// Writes to any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the write completes, or null.</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channels">The list of channels to attempt to write.</param>
+		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
+		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IUntypedChannel> WriteToAnyAsync(object value, IEnumerable<IUntypedChannel> channels, TimeSpan timeout, MultiChannelPriority priority)
+		{
+			return WriteToAnyAsync(null, value, channels, timeout, priority);
+		}
+
+		/// <summary>
+		/// Writes to any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the write completes, or null.</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channels">The list of channels to attempt to write.</param>
+		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IUntypedChannel> WriteToAnyAsync(this IEnumerable<IUntypedChannel> channels, object value, TimeSpan timeout)
+		{
+			return WriteToAnyAsync(null, value, channels, timeout, MultiChannelPriority.Any);
+		}
+
+		/// <summary>
+		/// Writes to any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the write completes, or null.</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channels">The list of channels to attempt to write.</param>
+		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IUntypedChannel> WriteToAnyAsync(this IEnumerable<IUntypedChannel> channels, object value, MultiChannelPriority priority)
+		{
+			return WriteToAnyAsync(null, value, channels, Timeout.Infinite, priority);
+		}
+
+		/// <summary>
+		/// Writes to any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the write completes, or null.</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channels">The list of channels to attempt to write.</param>
+		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
+		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IUntypedChannel> WriteToAnyAsync(this IEnumerable<IUntypedChannel> channels, object value, TimeSpan timeout, MultiChannelPriority priority)
+		{
+			return WriteToAnyAsync(null, value, channels, timeout, priority);
+		}
+
+		/// <summary>
+		/// Writes to any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call when the write completes, or null.</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channels">The list of channels to attempt to write.</param>
+		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
+		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static async Task<IUntypedChannel> WriteToAnyAsync(Action<object> callback, object value, IEnumerable<IUntypedChannel> channels, TimeSpan timeout, MultiChannelPriority priority)
+		{
+			return (await ReadOrWriteAnyAsync(callback, channels.Select(x => x.RequestWrite(value)), timeout, priority)).Channel;
+		}
+
+		/// <summary>
+		/// Writes to any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the write completes, or null.</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channels">The list of channels to attempt to write.</param>
+		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
+		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IUntypedChannel> WriteToAnyAsync(object value, TimeSpan timeout, MultiChannelPriority priority, params IMultisetRequestUntyped[] requests)
+		{
+			return WriteToAnyAsync(null, value, requests.AsEnumerable(), timeout, priority);
+		}
+
+		/// <summary>
+		/// Writes to any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the write completes, or null.</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channels">The list of channels to attempt to write.</param>
+		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IUntypedChannel> WriteToAnyAsync(object value, TimeSpan timeout, params IMultisetRequestUntyped[] requests)
+		{
+			return WriteToAnyAsync(null, value, requests.AsEnumerable(), timeout, MultiChannelPriority.Any);
+		}
+
+		/// <summary>
+		/// Writes to any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the write completes, or null.</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channels">The list of channels to attempt to write.</param>
+		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IUntypedChannel> WriteToAnyAsync(object value, MultiChannelPriority priority, params IMultisetRequestUntyped[] requests)
+		{
+			return WriteToAnyAsync(value, requests.AsEnumerable(), Timeout.Infinite, priority);
+		}
+
+		/// <summary>
+		/// Writes to any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the write completes, or null.</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channels">The list of channels to attempt to write.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IUntypedChannel> WriteToAnyAsync(object value, params IMultisetRequestUntyped[] requests)
+		{
+			return WriteToAnyAsync(null, value, requests.AsEnumerable(), Timeout.Infinite, MultiChannelPriority.Any);
+		}
+
+		/// <summary>
+		/// Writes to any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the write completes, or null.</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channels">The list of channels to attempt to write.</param>
+		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IUntypedChannel> WriteToAnyAsync(object value, IEnumerable<IMultisetRequestUntyped> requests, TimeSpan timeout)
+		{
+			return WriteToAnyAsync(null, value, requests, timeout, MultiChannelPriority.Any);
+		}
+
+		/// <summary>
+		/// Writes to any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the write completes, or null.</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channels">The list of channels to attempt to write.</param>
+		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IUntypedChannel> WriteToAnyAsync(object value, IEnumerable<IMultisetRequestUntyped> requests, MultiChannelPriority priority)
+		{
+			return WriteToAnyAsync(null, value, requests, Timeout.Infinite, priority);
+		}
+
+		/// <summary>
+		/// Writes to any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the write completes, or null.</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channels">The list of channels to attempt to write.</param>
+		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
+		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IUntypedChannel> WriteToAnyAsync(object value, IEnumerable<IMultisetRequestUntyped> requests, TimeSpan timeout, MultiChannelPriority priority)
+		{
+			return WriteToAnyAsync(null, value, requests, timeout, priority);
+		}
+
+		/// <summary>
+		/// Writes to any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the write completes, or null.</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channels">The list of channels to attempt to write.</param>
+		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IUntypedChannel> WriteToAnyAsync(this IEnumerable<IMultisetRequestUntyped> requests, object value, TimeSpan timeout)
+		{
+			return WriteToAnyAsync(null, value, requests, timeout, MultiChannelPriority.Any);
+		}
+
+		/// <summary>
+		/// Writes to any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the write completes, or null.</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channels">The list of channels to attempt to write.</param>
+		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IUntypedChannel> WriteToAnyAsync(this IEnumerable<IMultisetRequestUntyped> requests, object value, MultiChannelPriority priority)
+		{
+			return WriteToAnyAsync(null, value, requests, Timeout.Infinite, priority);
+		}
+
+		/// <summary>
+		/// Writes to any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the write completes, or null.</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channels">The list of channels to attempt to write.</param>
+		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
+		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IUntypedChannel> WriteToAnyAsync(this IEnumerable<IMultisetRequestUntyped> requests, object value, TimeSpan timeout, MultiChannelPriority priority)
+		{
+			return WriteToAnyAsync(null, value, requests, timeout, priority);
+		}
+
+		/// <summary>
+		/// Writes to any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call when the write completes, or null.</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channels">The list of channels to attempt to write.</param>
+		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
+		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static async Task<IUntypedChannel> WriteToAnyAsync(Action<object> callback, object value, IEnumerable<IMultisetRequestUntyped> channels, TimeSpan timeout, MultiChannelPriority priority)
+		{
+			return (await ReadOrWriteAnyAsync(callback, channels, timeout, priority)).Channel;
 		}
 		#endregion
 
@@ -598,33 +1169,6 @@ namespace CoCoL
 		}
 
 		#endregion
-		/// <summary>
-		/// Reads from any of the specified channels
-		/// </summary>
-		/// <param name="callback">The method to call when the read completes, or null.</param>
-		/// <param name="channels">The list of channels to attempt to read from.</param>
-		/// <param name="timeout">The maximum time to wait for a value to read.</param>
-		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be read.</param>
-		/// <typeparam name="T">The channel data type.</typeparam>
-		public static async Task<MultisetResult<T>> ReadFromAnyAsync<T>(Action<object> callback, IEnumerable<IReadChannel<T>> channels, TimeSpan timeout, MultiChannelPriority priority)
-		{
-			var res = await ReadOrWriteAnyAsync<T>(callback, channels.Select(x => MultisetRequest<T>.Read(x)), timeout, priority);
-			return new MultisetResult<T>(res.Value, res.ReadChannel);
-		}
-			
-		/// <summary>
-		/// Writes to any of the specified channels
-		/// </summary>
-		/// <param name="callback">The method to call when the write completes, or null.</param>
-		/// <param name="value">The value to write to the channel.</param>
-		/// <param name="channels">The list of channels to attempt to write.</param>
-		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
-		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
-		/// <typeparam name="T">The channel data type.</typeparam>
-		public static async Task<IWriteChannel<T>> WriteToAnyAsync<T>(Action<object> callback, T value, IEnumerable<IWriteChannel<T>> channels, TimeSpan timeout, MultiChannelPriority priority)
-		{
-			return (await ReadOrWriteAnyAsync<T>(callback, channels.Select(x => MultisetRequest<T>.Write(value, x)), timeout, priority)).WriteChannel;
-		}
 
 		/// <summary>
 		/// Reads from any of the specified channels
@@ -637,6 +1181,10 @@ namespace CoCoL
 		/// <typeparam name="T">The channel data type.</typeparam>
 		private static Task<MultisetRequest<T>> ReadOrWriteAnyAsync<T>(Action<object> callback, IEnumerable<MultisetRequest<T>> requests, TimeSpan timeout, MultiChannelPriority priority)
 		{
+			// This method could also use the untyped version, 
+			// but using the type version is faster as there are no reflection
+			// or boxing/typecasting required 
+
 			var tcs = new TaskCompletionSource<MultisetRequest<T>>();
 
 			// We only accept the first offer

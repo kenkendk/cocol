@@ -451,7 +451,7 @@ namespace CoCoL
 		}
 		#endregion
 
-		#region Readable and Writeable casting
+		#region Readable, Writeable and Untyped casting
 		/// <summary>
 		/// Returns the channel as a read channel
 		/// </summary>
@@ -494,6 +494,17 @@ namespace CoCoL
 		public static IBlockingWriteableChannel<T> AsWrite<T>(this IBlockingChannel<T> channel)
 		{
 			return channel;
+		}
+
+		/// <summary>
+		/// Returns the channel as an untyped channel
+		/// </summary>
+		/// <returns>The untyped channel.</returns>
+		/// <param name="channel">The channel to untype.</param>
+		/// <typeparam name="T">The type of the channel.</typeparam>
+		public static IUntypedChannel AsUntyped<T>(this IChannel<T> channel)
+		{
+			return (IUntypedChannel)channel;
 		}
 		#endregion
 
@@ -691,6 +702,45 @@ namespace CoCoL
 			return WriteAsync(self, null, value, timeout);
 		}
 
+
+		/// <summary>
+		/// Gets the implemented generic interface from an instance.
+		/// </summary>
+		/// <returns>The implemented generic interface type.</returns>
+		/// <param name="item">The item to examine.</param>
+		/// <param name="interface">The interface type definition.</param>
+		private static Type GetImplementedGenericInterface(object item, Type @interface)
+		{
+			if (item == null)
+				throw new ArgumentNullException("item");
+
+			var implementedinterface = item.GetType().GetInterfaces().Where(x => x.IsGenericType && !x.IsGenericTypeDefinition).Where(x => x.GetGenericTypeDefinition() == @interface).FirstOrDefault();
+
+			if (implementedinterface == null)
+				throw new ArgumentException(string.Format("Given type {0} does not implement interface {1}", item.GetType(), @interface));
+
+			return implementedinterface;
+		}
+
+		/// <summary>
+		/// Gets the IReadChannel&lt;&gt; interface from an untyped channel instance
+		/// </summary>
+		/// <returns>The IReadChannel&lt;&gt; interface.</returns>
+		/// <param name="self">The channel to get the interface from</param>
+		public static Type ReadInterface(this IUntypedChannel self)
+		{
+			return GetImplementedGenericInterface(self, typeof(IReadChannel<>));
+		}
+
+		/// <summary>
+		/// Gets the IWriteChannel&lt;&gt; interface from an untyped channel instance
+		/// </summary>
+		/// <returns>The IWriteChannel&lt;&gt; interface.</returns>
+		/// <param name="self">The channel to get the interface from</param>
+		public static Type WriteInterface(this IUntypedChannel self)
+		{
+			return GetImplementedGenericInterface(self, typeof(IWriteChannel<>));
+		}
 			
 		/// <summary>
 		/// Reads the channel asynchronously.
@@ -701,15 +751,7 @@ namespace CoCoL
 		/// <param name="timeout">The read timeout.</param>
 		public static async Task<object> ReadAsync(this IUntypedChannel self, ITwoPhaseOffer offer, TimeSpan timeout)
 		{
-			if (self == null)
-				throw new ArgumentNullException();
-
-			var readinterface = self.GetType().GetInterfaces().Where(x => x.IsGenericType && !x.IsGenericTypeDefinition).Where(x => x.GetGenericTypeDefinition() == typeof(IReadChannel<>)).FirstOrDefault();
-
-			if (readinterface == null)
-				throw new ArgumentException(string.Format("Given type {0} does not implement interface {1}", self.GetType(), typeof(IReadChannel<>)));
-
-			var m = readinterface.GetMethod("ReadAsync", new Type[] { typeof(ITwoPhaseOffer), typeof(TimeSpan) });
+			var m = ReadInterface(self).GetMethod("ReadAsync", new Type[] { typeof(ITwoPhaseOffer), typeof(TimeSpan) });
 			var t = (Task)m.Invoke(self, new object[] { offer, timeout });
 			await t;
 			return t.GetType().GetProperty("Result").GetValue(t);
@@ -725,15 +767,7 @@ namespace CoCoL
 		/// <param name="timeout">The write timeout.</param>
 		public static Task WriteAsync(this IUntypedChannel self, ITwoPhaseOffer offer, object value, TimeSpan timeout)
 		{
-			if (self == null)
-				throw new ArgumentNullException();
-
-			var writeinterface = self.GetType().GetInterfaces().Where(x => x.IsGenericType && !x.IsGenericTypeDefinition).Where(x => x.GetGenericTypeDefinition() == typeof(IWriteChannel<>)).FirstOrDefault();
-
-			if (writeinterface == null)
-				throw new ArgumentException(string.Format("Given type {0} does not implement interface {1}", self.GetType(), typeof(IWriteChannel<>)));
-
-			var m = writeinterface.GetMethod("WriteAsync", new Type[] { typeof(ITwoPhaseOffer), self.GetType().GetGenericArguments()[0], typeof(TimeSpan) });
+			var m = WriteInterface(self).GetMethod("WriteAsync", new Type[] { typeof(ITwoPhaseOffer), self.GetType().GetGenericArguments()[0], typeof(TimeSpan) });
 			return (Task)m.Invoke(self, new object[] { offer, value, timeout });
 		}
 		#endregion
