@@ -1,0 +1,131 @@
+﻿using System;
+using System.Linq;
+using NUnit.Framework;
+using CoCoL;
+using System.Threading.Tasks;
+
+namespace UnitTest
+{
+	[TestFixture]
+	public class MixedOperationTest
+	{
+		[Test]
+		[ExpectedException(typeof(InvalidOperationException))]
+		public void TestInvalidMultiAccessOperation()
+		{
+			var c1 = ChannelManager.CreateChannel<int>();
+			MultiChannelAccess.ReadOrWriteAnyAsync(MultisetRequest<int>.Read(c1), MultisetRequest<int>.Write(1, c1)).WaitForTask();
+		}
+
+		[Test]
+		public void TestMultiAccessOperation()
+		{
+			var c1 = ChannelManager.CreateChannel<int>();
+			var c2 = ChannelManager.CreateChannel<int>();
+
+			// Copy c2 + 1 => c1
+			Func<Task> p1 = async() => {
+				var val = await c2.ReadAsync();
+				while(true) {
+					var res = await MultiChannelAccess.ReadOrWriteAnyAsync(MultisetRequest<int>.Read(c2), MultisetRequest<int>.Write(val, c1));
+					if (res.IsRead)
+						val = res.Value + 1;
+				}
+			};
+
+			// Copy c1 => c2
+			Func<Task> p2 = async() => {
+				var val = 1;
+				for(var i = 0; i < 10; i++) {
+					await c2.WriteAsync(val);
+					val = await c1.ReadAsync();
+				}
+
+				c1.Retire();
+				c2.Retire();
+
+				if (val != 10)
+					throw new InvalidProgramException("Bad counter!");
+			};
+				
+			// Wait for shutdown
+			try 
+			{
+				Task.WhenAll(p1(), p2()).Wait();
+			}
+			catch(Exception ex)
+			{
+				// Filter out all ChannelRetired exceptions
+				if (ex is AggregateException)
+				{
+					var rex = (from n in (ex as AggregateException).InnerExceptions
+					       where !(n is RetiredException)
+					       select n);
+
+					if (rex.Count() == 1)
+						throw rex.First();
+					else if (rex.Count() != 0)
+						throw new AggregateException(rex);						
+				}
+				else
+					throw;
+			}
+		}
+
+		[Test]
+		public void TestMultiTypeOperation()
+		{
+			var c1 = ChannelManager.CreateChannel<int>();
+			var c2 = ChannelManager.CreateChannel<string>();
+
+			// Copy c2 + 1 => c1
+			Func<Task> p1 = async() => {
+				var val = int.Parse(await c2.ReadAsync());
+				while(true) {
+					var res = await MultiChannelAccess.ReadOrWriteAnyAsync(MultisetRequest<string>.Read(c2), MultisetRequest<int>.Write(val, c1));
+					if (res.IsRead)
+						val = int.Parse((string)res.Value) + 1;
+				}
+			};
+
+			// Copy c1 => c2
+			Func<Task> p2 = async() => {
+				var val = 1;
+				for(var i = 0; i < 10; i++) {
+					await c2.WriteAsync(val.ToString());
+					val = await c1.ReadAsync();
+				}
+
+				c1.Retire();
+				c2.Retire();
+
+				if (val != 10)
+					throw new InvalidProgramException("Bad counter!");
+			};
+
+			// Wait for shutdown
+			try 
+			{
+				Task.WhenAll(p1(), p2()).Wait();
+			}
+			catch(Exception ex)
+			{
+				// Filter out all ChannelRetired exceptions
+				if (ex is AggregateException)
+				{
+					var rex = (from n in (ex as AggregateException).InnerExceptions
+						where !(n is RetiredException)
+						select n);
+
+					if (rex.Count() == 1)
+						throw rex.First();
+					else if (rex.Count() != 0)
+						throw new AggregateException(rex);						
+				}
+				else
+					throw;
+			}
+		}
+	}
+}
+
