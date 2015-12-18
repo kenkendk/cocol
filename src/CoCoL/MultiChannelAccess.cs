@@ -35,12 +35,12 @@ namespace CoCoL
 	/// <summary>
 	/// A request in a multi-channel operation
 	/// </summary>
-	public struct MultisetRequest<T>
+	public struct MultisetRequest<T> : IMultisetRequestUntyped
 	{
 		/// <summary>
 		/// The result value
 		/// </summary>
-		public readonly T Value;
+		public T Value;
 		/// <summary>
 		/// The channel being read from
 		/// </summary>
@@ -86,48 +86,63 @@ namespace CoCoL
 		{
 			return new MultisetRequest<T>(value, null, channel, false);
 		}
+
+		#region IMultisetRequestUntyped implementation
+
+		/// <summary>
+		/// Gets the boxed value.
+		/// </summary>
+		/// <value>The value.</value>
+		object IMultisetRequestUntyped.Value 
+		{
+			get { return this.Value; }
+			set 
+			{ 
+				if (typeof(T).IsValueType && value == null)
+					this.Value = default(T);
+				else
+					this.Value = (T)value; 
+			}
+		}
+
+		/// <summary>
+		/// Gets the channel.
+		/// </summary>
+		/// <value>The channel.</value>
+		IUntypedChannel IMultisetRequestUntyped.Channel
+		{
+			get { return this.ReadChannel == null ? (IUntypedChannel)this.WriteChannel : (IUntypedChannel)this.ReadChannel; }
+		}
+
+		/// <summary>
+		/// Gets a value indicating whether this instance is a read request.
+		/// </summary>
+		/// <value><c>true</c> if this instance is read request; otherwise, <c>false</c>.</value>
+		bool IMultisetRequestUntyped.IsRead
+		{
+			get { return this.IsRead; }
+		}
+
+		#endregion
 	}
 
 	/// <summary>
 	/// A request in an untyped (or multi-type) multi-channel operation
 	/// </summary>
-	public struct MultisetRequestUntyped
+	public interface IMultisetRequestUntyped
 	{
 		/// <summary>
 		/// The result value
 		/// </summary>
-		public readonly object Value;
+		object Value { get; set; }
 		/// <summary>
 		/// The channel being read from
 		/// </summary>
-		public readonly IUntypedChannel Channel;
+		IUntypedChannel Channel { get; }
 		/// <summary>
 		/// Gets a value indicating if this is a read operation
 		/// </summary>
-		public readonly bool IsRead;
-
-		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.MultisetRequest`1"/> struct.
-		/// </summary>
-		/// <param name="value">The value to write</param>
-		/// <param name="channel">The channel to read or write.</param>
-		/// <param name="read"><c>true</c> if this is a read operation, <c>false</c> otherwise</param>
-		internal MultisetRequestUntyped(object value, IUntypedChannel channel, bool read)
-		{
-			Value = value;
-			Channel = channel;
-			IsRead = read;
-		}
-
-		public static MultisetRequestUntyped Read(IUntypedChannel channel)
-		{
-			return new MultisetRequestUntyped(null, channel, true);
-		}
-
-		public static MultisetRequestUntyped Write(object value, IUntypedChannel channel)
-		{
-			return new MultisetRequestUntyped(value, channel, true);
-		}
+		bool IsRead { get; }
 	}
 
 	/// <summary>
@@ -466,7 +481,94 @@ namespace CoCoL
 		/// <typeparam name="T">The channel data type.</typeparam>
 		private static Task<MultisetRequest<T>> ReadOrWriteAnyAsync<T>(this IEnumerable<MultisetRequest<T>> requests, Action<object> callback, TimeSpan timeout, MultiChannelPriority priority)
 		{
-			return ReadOrWriteAnyAsync(callback, requests, timeout, priority, false);
+			return ReadOrWriteAnyAsync(callback, requests, timeout, priority);
+		}
+		#endregion
+
+		#region Overloads for setting default parameters in the untyped readorwrite method
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the read completes.</param>
+		/// <param name="channels">The list of channels to call.</param>
+		/// <param name="timeout">The maximum time to wait for a value to read.</param>
+		/// <param name="priority">The priority used to select channels, if multiple channels have a value that can be read.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IMultisetRequestUntyped> ReadOrWriteAnyAsync(TimeSpan timeout, MultiChannelPriority priority, params IMultisetRequestUntyped[] requests)
+		{
+			return ReadOrWriteAnyAsync(null, requests.AsEnumerable(), timeout, priority);
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the read completes.</param>
+		/// <param name="channels">The list of channels to call.</param>
+		/// <param name="timeout">The maximum time to wait for a value to read.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IMultisetRequestUntyped> ReadOrWriteAnyAsync(TimeSpan timeout, params IMultisetRequestUntyped[] requests)
+		{
+			return ReadOrWriteAnyAsync(null, requests.AsEnumerable(), timeout, MultiChannelPriority.Any);
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the read completes.</param>
+		/// <param name="channels">The list of channels to call.</param>
+		/// <param name="priority">The priority used to select channels, if multiple channels have a value that can be read.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IMultisetRequestUntyped> ReadOrWriteAnyAsync(MultiChannelPriority priority, params IMultisetRequestUntyped[] requests)
+		{
+			return ReadOrWriteAnyAsync(null, requests.AsEnumerable(), Timeout.Infinite, priority);
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the read completes.</param>
+		/// <param name="channels">The list of channels to call.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IMultisetRequestUntyped> ReadOrWriteAnyAsync(params IMultisetRequestUntyped[] requests)
+		{
+			return ReadOrWriteAnyAsync(null, requests.AsEnumerable(), Timeout.Infinite, MultiChannelPriority.Any);
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the read completes.</param>
+		/// <param name="channels">The list of channels to call.</param>
+		/// <param name="timeout">The maximum time to wait for a value to read.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IMultisetRequestUntyped> ReadOrWriteAnyAsync<T>(this IEnumerable<IMultisetRequestUntyped> requests, TimeSpan timeout)
+		{
+			return ReadOrWriteAnyAsync(null, requests, timeout, MultiChannelPriority.Any);
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the read completes.</param>
+		/// <param name="channels">The list of channels to call.</param>
+		/// <param name="priority">The priority used to select channels, if multiple channels have a value that can be read.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IMultisetRequestUntyped> ReadOrWriteAnyAsync<T>(this IEnumerable<IMultisetRequestUntyped> requests, MultiChannelPriority priority)
+		{
+			return ReadOrWriteAnyAsync(null, requests, Timeout.Infinite, priority);
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call after the read completes, or null.</param>
+		/// <param name="channels">The list of channels to attempt to read from.</param>
+		/// <param name="timeout">The maximum time to wait for a value to read.</param>
+		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be read.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static Task<IMultisetRequestUntyped> ReadOrWriteAnyAsync<T>(this IEnumerable<IMultisetRequestUntyped> requests, TimeSpan timeout, MultiChannelPriority priority)
+		{
+			return ReadOrWriteAnyAsync(null, requests, timeout, priority);
 		}
 
 		/// <summary>
@@ -477,9 +579,22 @@ namespace CoCoL
 		/// <param name="timeout">The maximum time to wait for a value to read.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be read.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		private static Task<MultisetRequest<T>> ReadOrWriteAnyAsync<T>(Action<object> callback, IEnumerable<MultisetRequest<T>> requests, TimeSpan timeout, MultiChannelPriority priority)
+		private static Task<IMultisetRequestUntyped> ReadOrWriteAnyAsync<T>(this IEnumerable<IMultisetRequestUntyped> requests, Action<object> callback, TimeSpan timeout, MultiChannelPriority priority)
 		{
-			return ReadOrWriteAnyAsync(callback, requests, timeout, priority, false);
+			return ReadOrWriteAnyAsync(callback, requests, timeout, priority);
+		}
+
+		/// <summary>
+		/// Reads from any of the specified channels
+		/// </summary>
+		/// <param name="callback">The method to call when the read completes, or null.</param>
+		/// <param name="channels">The list of channels to attempt to read from.</param>
+		/// <param name="timeout">The maximum time to wait for a value to read.</param>
+		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be read.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		private static Task<IMultisetRequestUntyped> ReadOrWriteAnyAsync<T>(Action<object> callback, IEnumerable<IMultisetRequestUntyped> requests, TimeSpan timeout, MultiChannelPriority priority)
+		{
+			return ReadOrWriteAnyAsync(callback, requests, timeout, priority);
 		}
 
 		#endregion
@@ -518,8 +633,9 @@ namespace CoCoL
 		/// <param name="channels">The list of channels to attempt to read from.</param>
 		/// <param name="timeout">The maximum time to wait for a value to read.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be read.</param>
+		/// <param name="singleOperationType">True if there is are only reads or writes in the queue</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static Task<MultisetRequest<T>> ReadOrWriteAnyAsync<T>(Action<object> callback, IEnumerable<MultisetRequest<T>> requests, TimeSpan timeout, MultiChannelPriority priority)
+		private static Task<MultisetRequest<T>> ReadOrWriteAnyAsync<T>(Action<object> callback, IEnumerable<MultisetRequest<T>> requests, TimeSpan timeout, MultiChannelPriority priority)
 		{
 			var tcs = new TaskCompletionSource<MultisetRequest<T>>();
 
@@ -540,9 +656,8 @@ namespace CoCoL
 			}
 
 			// Keep a map of awaitable items
+			// and register the intent to read from a channel in order
 			var tasks = new Dictionary<Task, MultisetRequest<T>>();
-
-			// Then we register the intent to read from a channel in order
 			foreach (var c in requests)
 			{
 				// Timeout is handled by offer instance
@@ -568,7 +683,13 @@ namespace CoCoL
 						if (n.IsCanceled)
 							tcs.SetCanceled();
 						else if (n.IsFaulted)
-							tcs.SetException(n.Exception);
+						{
+							// Unwrap aggregate exceptions
+							if (n.Exception is AggregateException && (n.Exception as AggregateException).Flatten().InnerExceptions.Count == 1)
+								tcs.SetException(n.Exception.InnerException);
+							else
+								tcs.SetException(n.Exception);
+						}
 						else
 						{
 							var orig = tasks[n];
@@ -591,12 +712,12 @@ namespace CoCoL
 		/// <param name="timeout">The maximum time to wait for a value to read.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be read.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static Task<MultisetRequestUntyped> ReadOrWriteFromAnyUntypedAsync(Action<object> callback, IEnumerable<MultisetRequestUntyped> requests, TimeSpan timeout, MultiChannelPriority priority)
+		public static Task<IMultisetRequestUntyped> ReadOrWriteAnyAsync(Action<object> callback, IEnumerable<IMultisetRequestUntyped> requests, TimeSpan timeout, MultiChannelPriority priority)
 		{
-			var tcs = new TaskCompletionSource<MultisetRequestUntyped>();
+			var tcs = new TaskCompletionSource<IMultisetRequestUntyped>();
 
 			// We only accept the first offer
-			var offer = new SingleOffer<MultisetRequestUntyped>(tcs, timeout == Timeout.Infinite ? Timeout.InfiniteDateTime : DateTime.Now + timeout);
+			var offer = new SingleOffer<IMultisetRequestUntyped>(tcs, timeout == Timeout.Infinite ? Timeout.InfiniteDateTime : DateTime.Now + timeout);
 			offer.SetCommitCallback(callback);
 
 			switch (priority)
@@ -612,7 +733,7 @@ namespace CoCoL
 			}
 
 			// Keep a map of awaitable items
-			var tasks = new Dictionary<Task, MultisetRequestUntyped>();
+			var tasks = new Dictionary<Task, IMultisetRequestUntyped>();
 
 			// Then we register the intent to read from a channel in order
 			foreach (var c in requests)
@@ -640,14 +761,26 @@ namespace CoCoL
 						if (n.IsCanceled)
 							tcs.SetCanceled();
 						else if (n.IsFaulted)
-							tcs.SetException(n.Exception);
+						{
+							// Unwrap aggregate exceptions
+							if (n.Exception is AggregateException && (n.Exception as AggregateException).Flatten().InnerExceptions.Count == 1)
+								tcs.SetException(n.Exception.InnerException);
+							else
+								tcs.SetException(n.Exception);
+						}
 						else
 						{
 							var orig = tasks[n];
 							if (orig.IsRead)
-								tcs.SetResult(new MultisetRequestUntyped(((Task<object>)n).Result, orig.Channel, true));
+							{
+								orig.Value = ((Task<object>)n).Result;
+								tcs.SetResult(orig);
+							}
 							else
-								tcs.SetResult(new MultisetRequestUntyped(null, orig.Channel, false));
+							{
+								orig.Value = null;
+								tcs.SetResult(orig);
+							}
 						}
 					}
 				}));
