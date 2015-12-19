@@ -48,6 +48,8 @@
     <Compile Include="Exceptions.cs" />
     <Compile Include="ChannelExtensions.cs" />
     <Compile Include="Channel.cs" />
+    <Compile Include="UntypedMultiChannelAccess.cs" />
+    <Compile Include="MultisetRequest.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
