@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>CoCoL</id>
-    <version>1.1</version>
+    <version>1.2</version>
     <title>CoCoL</title>
     <authors>Kenneth Skovhede</authors>
     <owners>Kenneth Skovhede</owners>
@@ -10,7 +10,7 @@
     <projectUrl>https://github.com/kenkendk/cocol</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Concurrent Communications Library</description>
-    <releaseNotes>Initial library release.</releaseNotes>
+    <releaseNotes>Updated release with support for mixed read/write, and mixed types.</releaseNotes>
     <copyright>Copyright 2015, Kenneth Skovhede</copyright>
     <tags>Multithreading Concurrency CSP</tags>
   </metadata>
