@@ -29,15 +29,16 @@ namespace CoCoL
 			// ensures that the wait call does not hang
 			if (IsRunningMono)
 			{
-				using (var lck = new System.Threading.ManualResetEventSlim(false))
-				{
-					task.ContinueWith(x => lck.Set());
-					// This ensures we never return with 
-					// an incomplete task, but may casue
-					// some spin waiting
-					while (!task.IsCompleted)
-						lck.Wait();
-				}
+				if (!task.IsCompleted)
+					using (var lck = new System.Threading.ManualResetEventSlim(false))
+					{
+						task.ContinueWith(x => lck.Set());
+						// This ensures we never return with 
+						// an incomplete task, but may casue
+						// some spin waiting
+						while (!task.IsCompleted)
+							lck.Wait();
+					}
 			}
 			else
 			{
@@ -63,15 +64,16 @@ namespace CoCoL
 			// ensures that the wait call does not hang
 			if (IsRunningMono)
 			{
-				using (var lck = new System.Threading.ManualResetEventSlim(false))
-				{
-					task.ContinueWith(x => lck.Set());
-					// This ensures we never return with 
-					// an incomplete task, but may casue
-					// some spin waiting
-					while (!task.IsCompleted)
-						lck.Wait();
-				}
+				if (!task.IsCompleted)
+					using (var lck = new System.Threading.ManualResetEventSlim(false))
+					{
+						task.ContinueWith(x => lck.Set());
+						// This ensures we never return with 
+						// an incomplete task, but may casue
+						// some spin waiting
+						while (!task.IsCompleted)
+							lck.Wait();
+					}
 			}
 			else
 			{
