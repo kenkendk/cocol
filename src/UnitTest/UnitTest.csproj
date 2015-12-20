@@ -41,6 +41,7 @@
     <Compile Include="UntypedTests.cs" />
     <Compile Include="BenchmarkTests.cs" />
     <Compile Include="MixedOperationTest.cs" />
+    <Compile Include="TimeoutTests.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
