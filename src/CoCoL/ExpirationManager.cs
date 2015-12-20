@@ -86,7 +86,7 @@ namespace CoCoL
 				{
 					m_nextInvoke = next;
 
-					var duration = DateTime.Now - m_nextInvoke;
+                    var duration = m_nextInvoke - DateTime.Now;
 					if (duration.Ticks <= 0)
 						RunTimer(null);
 					else
