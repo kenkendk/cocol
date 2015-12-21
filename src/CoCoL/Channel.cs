@@ -430,26 +430,30 @@ namespace CoCoL
 					}
 				}
 
-				var expires = timeout.Ticks <= 0 ? Timeout.InfiniteDateTime : entry + timeout;
-
-				// If this was a probe call, return a timeout now
-				if (timeout.Ticks >= 0 && expires < DateTime.Now)
+				// If we have a buffer slot to use
+				if (m_writerQueue.Count < m_bufferSize && m_retireCount < 0)
 				{
-					ThreadPool.QueueItem(() => result.SetException(TimeoutException));
+					if (offer == null || offer.Offer(this))
+					{
+						if (offer != null)
+							offer.Commit(this);
+
+						m_writerQueue.Add(new WriterEntry(null, new TaskCompletionSource<bool>(), Timeout.InfiniteDateTime, value));
+						result.SetResult(true);
+					}
+					else
+					{
+						result.SetCanceled();
+					}
 				}
 				else
 				{
-					if (m_writerQueue.Count < m_bufferSize && m_retireCount < 0)
+					var expires = timeout.Ticks <= 0 ? Timeout.InfiniteDateTime : entry + timeout;
+
+					// If this was a probe call, return a timeout now
+					if (timeout.Ticks >= 0 && expires < DateTime.Now)
 					{
-						// We have a buffer slot to use
-						if (offer == null || offer.Offer(this))
-						{
-							if (offer != null)
-								offer.Commit(this);
-							
-							m_writerQueue.Add(new WriterEntry(null, new TaskCompletionSource<bool>(), Timeout.InfiniteDateTime, value));
-							result.SetResult(true);
-						}
+						ThreadPool.QueueItem(() => result.SetException(TimeoutException));
 					}
 					else
 					{
