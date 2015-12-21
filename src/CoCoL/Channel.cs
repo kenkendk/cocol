@@ -503,6 +503,15 @@ namespace CoCoL
 		/// </summary>
 		public void Retire()
 		{
+			Retire(false);
+		}
+
+		/// <summary>
+		/// Stops this channel from processing messages
+		/// </summary>
+		/// <param name="immediate">Retires the channel without processing the queue, which may cause lost messages</param>
+		public void Retire(bool immediate)
+		{
 			lock (m_lock)
 			{
 				if (IsRetired)
@@ -513,6 +522,14 @@ namespace CoCoL
 					// If we have responded to buffered writes, 
 					// make sure we pair those before retiring
 					m_retireCount = Math.Min(m_writerQueue.Count, m_bufferSize) + 1;
+
+					// For immediate retire, remove buffered writes
+					if (immediate)
+						while (m_retireCount > 1)
+						{
+							m_writerQueue.RemoveAt(0);
+							m_retireCount--;
+						}
 				}
 				
 				EmptyQueueIfRetired();

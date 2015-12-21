@@ -64,6 +64,12 @@ namespace CoCoL
 		void Retire();
 
 		/// <summary>
+		/// Stops this channel from processing messages
+		/// </summary>
+		/// <param name="immediate">Retires the channel without processing the queue, which may cause lost messages</param>
+		void Retire(bool immediate);
+
+		/// <summary>
 		/// Gets a value indicating whether this <see cref="CoCoL.IContinuationChannel`1"/> is retired.
 		/// </summary>
 		/// <value><c>true</c> if is retired; otherwise, <c>false</c>.</value>

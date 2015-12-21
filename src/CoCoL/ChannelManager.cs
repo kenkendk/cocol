@@ -36,6 +36,17 @@ namespace CoCoL
 		{ 
 			return new Channel<T>(name, buffersize); 
 		}
+
+		/// <summary>
+		/// Creates an unnamed channel
+		/// </summary>
+		/// <returns>The channel.</returns>
+		/// <param name="buffersize">The number of buffers in the channel.</param>
+		/// <typeparam name="T">The channel type.</typeparam>
+		public static IChannel<T> CreateChannel<T>(int buffersize) 
+		{ 
+			return new Channel<T>(null, buffersize); 
+		}
 	}
 
 	/// <summary>

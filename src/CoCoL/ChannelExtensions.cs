@@ -515,22 +515,24 @@ namespace CoCoL
 		/// Retires all channels in the list
 		/// </summary>
 		/// <param name="list">The list of channels to retire</param>
+		/// <param name="immediate">Retires the channel without processing the queue, which may cause lost messages</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static void Retire<T>(this IEnumerable<IChannel<T>> list)
+		public static void Retire<T>(this IEnumerable<IChannel<T>> list, bool immediate = false)
 		{
 			foreach (var c in list)
-				c.Retire();
+				c.Retire(immediate);
 		}
 
 		/// <summary>
 		/// Retires all channels in the list
 		/// </summary>
 		/// <param name="list">The list of channels to retire</param>
+		/// <param name="immediate">Retires the channel without processing the queue, which may cause lost messages</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static void Retire<T>(this IEnumerable<IBlockingChannel<T>> list)
+		public static void Retire<T>(this IEnumerable<IBlockingChannel<T>> list, bool immediate = false)
 		{
 			foreach (var c in list)
-				c.Retire();
+				c.Retire(immediate);
 		}
 		#endregion
 

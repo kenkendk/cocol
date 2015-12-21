@@ -256,10 +256,11 @@ namespace CoCoL
 		/// <summary>
 		/// Retires all channels in the set
 		/// </summary>
-		public void Retire()
+		/// <param name="immediate">Retires the channel without processing the queue, which may cause lost messages</param>
+		public void Retire(bool immediate = false)
 		{
 			foreach (var c in m_channels)
-				c.Retire();
+				c.Retire(immediate);
 		}
 
 		/// <summary>
