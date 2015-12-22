@@ -1,6 +1,11 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+#if PCL_BUILD
+using CoCoL.PCL;
+#else
+using System.Threading;
+#endif
 
 namespace CoCoL
 {
@@ -44,7 +49,7 @@ namespace CoCoL
 			/// <summary>
 			/// The timer that performs the signalling
 			/// </summary>
-			private System.Threading.Timer m_timer;
+			private Timer m_timer;
 
 			/// <summary>
 			/// Registers a method for callback
@@ -69,8 +74,10 @@ namespace CoCoL
 					}
 					else
 					{
+						var empty = m_expiryTable.Count == 0;
 						m_expiryTable.Add(callback, expires);
-						if (expires < m_nextInvoke)
+
+						if (expires < m_nextInvoke || empty)
 							RescheduleTimer(expires);
 					}
 				}
@@ -92,7 +99,7 @@ namespace CoCoL
 					else
 					{
 						if (m_timer == null)
-							m_timer = new System.Threading.Timer(RunTimer, null, duration.Ticks / TimeSpan.TicksPerMillisecond, System.Threading.Timeout.Infinite);
+							m_timer = new Timer(RunTimer, null, duration.Ticks / TimeSpan.TicksPerMillisecond, System.Threading.Timeout.Infinite);
 						else
 							m_timer.Change(duration.Ticks / TimeSpan.TicksPerMillisecond, System.Threading.Timeout.Infinite);
 					}
@@ -120,7 +127,10 @@ namespace CoCoL
 
 					// TODO: Can we dispose the timer in a callback?
 					if (m_expiryTable.Count == 0)
+					{
 						m_timer.Dispose();
+						m_timer = null;
+					}
 					else
 						RescheduleTimer(m_expiryTable.OrderBy(x => x.Value).First().Value);
 				}
