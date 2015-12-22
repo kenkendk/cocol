@@ -2,6 +2,8 @@
 using NUnit.Framework;
 using System.Threading.Tasks;
 using CoCoL;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace UnitTest
 {
@@ -88,6 +90,78 @@ namespace UnitTest
 			if (!p().Wait(TimeSpan.FromSeconds(3)))
 				throw new Exception("Failed to get timeout");
 			
+		}
+
+		[Test]
+		public void TestTimeoutMultipleTimesSuccession()
+		{
+			var c1 = ChannelManager.CreateChannel<int>();
+			var c2 = ChannelManager.CreateChannel<int>();
+			var c3 = ChannelManager.CreateChannel<int>();
+			var c4 = ChannelManager.CreateChannel<int>();
+
+			Func<Task> p = async() =>
+				{
+					try
+					{
+						var tasks = new List<Task>(new [] {
+							c1.ReadAsync(TimeSpan.FromSeconds(7)),
+							c2.ReadAsync(TimeSpan.FromSeconds(3)),
+							c3.ReadAsync(TimeSpan.FromSeconds(2)),
+							c4.ReadAsync(TimeSpan.FromSeconds(7))
+						});
+
+						//Console.WriteLine("Waiting for c3");
+						var t = await Task.WhenAny(tasks);
+						//Console.WriteLine("Not waiting for c3");
+
+						if (!t.IsFaulted || !(t.Exception.InnerException is TimeoutException))
+							throw new Exception("Timeout did not happen on c3?");
+
+						if (!tasks[2].IsFaulted || !(tasks[2].Exception.InnerException is TimeoutException))
+						{
+							for (var i = 0; i < tasks.Count; i++)
+								if (tasks[i].IsFaulted && i != 1)
+									throw new Exception(string.Format("Timeout happened on c{0}, but should have happened on c3?", i + 1));
+							
+							throw new Exception("Timeout happened on another channel than c3?");
+						}
+
+						tasks.RemoveAt(2);
+
+						if (tasks.Any(x => x.IsFaulted))
+							throw new Exception("Unexpected task fault?");
+
+						//Console.WriteLine("Waiting for c2");
+						t = await Task.WhenAny(tasks);
+						//Console.WriteLine("Not waiting for c2");
+
+						if (!t.IsFaulted || !(t.Exception.InnerException is TimeoutException))
+							throw new Exception("Timeout did not happen for c2?");
+
+						if (!tasks[1].IsFaulted || !(tasks[1].Exception.InnerException is TimeoutException))
+						{
+							for (var i = 0; i < tasks.Count; i++)
+								if (tasks[i].IsFaulted && i != 1)
+									throw new Exception(string.Format("Timeout happened on c{0}, but should have happened on c2?", i + 1));
+							throw new Exception("Timeout happened on another channel than c2?");
+						}
+
+						tasks.RemoveAt(1);
+
+						if (tasks.Any(x => x.IsFaulted))
+							throw new Exception("Unexpected task fault?");
+						
+						//Console.WriteLine("Completed");
+					}
+					catch (TimeoutException)
+					{
+					}
+				};
+
+			for (var i = 0; i < 5; i++)
+				if (!p().Wait(TimeSpan.FromSeconds(10)))
+					throw new Exception("Failed to get timeout");
 		}
 	}
 }

@@ -590,8 +590,8 @@ namespace CoCoL
 			lock (m_lock)
 			{
 				var now = DateTime.Now;
-				expiredReaders = m_readerQueue.Where(x => x.Expires < now).Zip(Enumerable.Range(0, m_readerQueue.Count), (n, i) => new KeyValuePair<int, ReaderEntry>(i, n)).ToArray();
-				expiredWriters = m_writerQueue.Where(x => x.Expires < now).Zip(Enumerable.Range(0, m_readerQueue.Count), (n, i) => new KeyValuePair<int, WriterEntry>(i, n)).ToArray();
+				expiredReaders = m_readerQueue.Zip(Enumerable.Range(0, m_readerQueue.Count), (n, i) => new KeyValuePair<int, ReaderEntry>(i, n)).Where(x => (x.Value.Expires - now).Ticks <= ExpirationManager.ALLOWED_ADVANCE_EXPIRE_TICKS).ToArray();
+				expiredWriters = m_writerQueue.Zip(Enumerable.Range(0, m_writerQueue.Count), (n, i) => new KeyValuePair<int, WriterEntry>(i, n)).Where(x => (x.Value.Expires - now).Ticks <= ExpirationManager.ALLOWED_ADVANCE_EXPIRE_TICKS).ToArray();
 
 				foreach (var r in expiredReaders.OrderByDescending(x => x.Key))
 					m_readerQueue.RemoveAt(r.Key);

@@ -10,6 +10,8 @@
     <AssemblyName>CoCoL-PCL</AssemblyName>
     <TargetFrameworkProfile>Profile78</TargetFrameworkProfile>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -73,7 +75,6 @@
     <Compile Include="..\CoCoL\Timeout.cs">
       <Link>Timeout.cs</Link>
     </Compile>
-    <Compile Include="Timer.cs" />
     <Compile Include="..\CoCoL\GenericTypeHelper.cs">
       <Link>GenericTypeHelper.cs</Link>
     </Compile>
