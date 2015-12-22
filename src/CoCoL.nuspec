@@ -15,7 +15,7 @@
     <tags>Multithreading Concurrency CSP</tags>
   </metadata>
   <files>
-    <file src="bin/Release/CoCoL.dll" target="lib/net45" />
-    <file src="..CoCoL-PCL/bin/Release/CoCoL.dll" target="lib/portable-windows8+net45" />
+    <file src="CoCoL/bin/Release/CoCoL.dll" target="lib/net45" />
+    <file src="CoCoL-PCL/bin/Release/CoCoL.dll" target="lib/portable-net45+netcore45+wp8" />
   </files>
 </package>
