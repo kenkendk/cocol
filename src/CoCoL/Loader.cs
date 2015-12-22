@@ -149,7 +149,7 @@ namespace CoCoL
 		}
 			
 		/// <summary>
-		/// Creates a read handler from a method mared with OnRead.
+		/// Creates a read handler from a method marked with OnRead.
 		/// </summary>
 		/// <returns>The read handler.</returns>
 		/// <param name="attr">The attribute on the method.</param>
