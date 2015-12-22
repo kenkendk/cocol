@@ -52,6 +52,7 @@
     <Compile Include="Channel.cs" />
     <Compile Include="UntypedMultiChannelAccess.cs" />
     <Compile Include="MultisetRequest.cs" />
+    <Compile Include="GenericTypeHelper.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

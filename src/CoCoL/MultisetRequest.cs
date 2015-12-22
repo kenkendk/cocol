@@ -68,7 +68,11 @@ namespace CoCoL
 			get { return this.Value; }
 			set 
 			{ 
+#if PCL_BUILD
+				if ( System.Reflection.IntrospectionExtensions.GetTypeInfo(typeof(T)).IsValueType && value == null)
+#else
 				if (typeof(T).IsValueType && value == null)
+#endif
 					this.Value = default(T);
 				else
 					this.Value = (T)value; 

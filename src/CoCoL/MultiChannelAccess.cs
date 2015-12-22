@@ -68,9 +68,7 @@ namespace CoCoL
 		/// <returns>The created request</returns>
 		public static IMultisetRequestUntyped RequestRead(this IUntypedChannel self)
 		{
-			var readinterface = self.ReadInterface();
-			var mr = typeof(MultisetRequest<>).MakeGenericType(readinterface.GetGenericArguments());
-			return (IMultisetRequestUntyped)mr.GetMethod("Read", new Type[] { readinterface }).Invoke(null, new object[] { self });
+			return UntypedAccessMethods.CreateReadAccessor(self).RequestRead(self);
 		}
 
 		/// <summary>
@@ -81,9 +79,7 @@ namespace CoCoL
 		/// <returns>The created request</returns>
 		public static IMultisetRequestUntyped RequestWrite(this IUntypedChannel self, object value)
 		{
-			var writeinterface = self.WriteInterface();
-			var mr = typeof(MultisetRequest<>).MakeGenericType(writeinterface.GetGenericArguments());
-			return (IMultisetRequestUntyped)mr.GetMethod("Write", new Type[] { writeinterface.GetGenericArguments()[0], writeinterface }).Invoke(null, new object[] { value, self });
+			return UntypedAccessMethods.CreateWriteAccessor(self).RequestWrite(value, self);
 		}
 		#endregion
 

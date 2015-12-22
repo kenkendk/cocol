@@ -26,9 +26,7 @@ namespace UnitTest
 			};
 
 			var t = p();
-			System.Threading.Thread.Sleep(TimeSpan.FromSeconds(3));
-
-			if (!t.IsCompleted)
+			if (!t.Wait(TimeSpan.FromSeconds(3)))
 				throw new Exception("Failed to get timeout");
 		}
 

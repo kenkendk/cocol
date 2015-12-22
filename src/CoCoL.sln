@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MandelbrotDynamic", "exampl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTest", "UnitTest\UnitTest.csproj", "{722F5CDA-F42A-42A4-8A8E-0A8B5B763FB2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoCoL-PCL", "CoCoL-PCL\CoCoL-PCL.csproj", "{E30DAC36-3E96-41F4-9B86-8D535CF98DA6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -53,6 +55,10 @@ Global
 		{DF30D1D1-5683-444B-A60B-CA477B3AD6E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DF30D1D1-5683-444B-A60B-CA477B3AD6E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DF30D1D1-5683-444B-A60B-CA477B3AD6E0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E30DAC36-3E96-41F4-9B86-8D535CF98DA6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E30DAC36-3E96-41F4-9B86-8D535CF98DA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E30DAC36-3E96-41F4-9B86-8D535CF98DA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E30DAC36-3E96-41F4-9B86-8D535CF98DA6}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EE02049C-4D9E-4FF1-87D6-D07BA33AE2CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{EE02049C-4D9E-4FF1-87D6-D07BA33AE2CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EE02049C-4D9E-4FF1-87D6-D07BA33AE2CB}.Release|Any CPU.ActiveCfg = Release|Any CPU

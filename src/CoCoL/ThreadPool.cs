@@ -1,6 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 
+#if PCL_BUILD
+using WAITCALLBACK = System.Action<object>;
+#else
+using WAITCALLBACK = System.Threading.WaitCallback;
+#endif
+
 namespace CoCoL
 {
 	/// <summary>
@@ -27,7 +33,7 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="a">The work item.</param>
 		/// <param name="item">An optional callback parameter.</param>
-		public static void QueueItem(System.Threading.WaitCallback a, object item = null)
+		public static void QueueItem(WAITCALLBACK a, object item = null)
 		{
 			_tr.QueueItem(a, item);
 		}
@@ -44,7 +50,11 @@ namespace CoCoL
 		/// <param name="a">The work item.</param>
 		public void QueueItem(Action a) 
 		{
+#if PCL_BUILD
+			System.Threading.Tasks.Task.Run(a);
+#else
 			System.Threading.ThreadPool.QueueUserWorkItem((x) => a());
+#endif
 		}
 
 		/// <summary>
@@ -52,9 +62,13 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="a">The work item.</param>
 		/// <param name="item">An optional callback parameter.</param>
-		public void QueueItem(System.Threading.WaitCallback a, object item) 
+		public void QueueItem(WAITCALLBACK a, object item) 
 		{
+#if PCL_BUILD
+			System.Threading.Tasks.Task.Run(() => a(item));
+#else
 			System.Threading.ThreadPool.QueueUserWorkItem(a, item);
+#endif
 		}
 	}
 }
