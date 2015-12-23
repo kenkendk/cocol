@@ -306,7 +306,7 @@ namespace CoCoL
 						ThreadPool.QueueItem(() => kp.Source.SetResult(true));
 
 						// Release items if there is space in the buffer
-						ProcessWriteQueueBuffer();
+						ProcessWriteQueueBufferAfterRead();
 
 						// If this was the last item before the retirement, 
 						// flush all following and set the retired flag
@@ -472,7 +472,7 @@ namespace CoCoL
 		/// <summary>
 		/// Helper method for dequeueing write requests after space has been allocated in the writer queue
 		/// </summary>
-		private void ProcessWriteQueueBuffer()
+		private void ProcessWriteQueueBufferAfterRead()
 		{
 			lock (m_lock)
 			{
@@ -491,6 +491,9 @@ namespace CoCoL
 						// Now that the transaction has completed for the writer, record it as waiting forever
 						if (nextItem.Expires != Timeout.InfiniteDateTime)
 							m_writerQueue[m_bufferSize - 1] = new WriterEntry(nextItem.Offer, nextItem.Source, Timeout.InfiniteDateTime, nextItem.Value);
+
+						// We can have at most one, since we process at most one read
+						break;
 					}
 					else
 						m_writerQueue.RemoveAt(m_bufferSize - 1);
@@ -590,16 +593,13 @@ namespace CoCoL
 			lock (m_lock)
 			{
 				var now = DateTime.Now;
-				expiredReaders = m_readerQueue.Zip(Enumerable.Range(0, m_readerQueue.Count), (n, i) => new KeyValuePair<int, ReaderEntry>(i, n)).Where(x => (x.Value.Expires - now).Ticks <= ExpirationManager.ALLOWED_ADVANCE_EXPIRE_TICKS).ToArray();
-				expiredWriters = m_writerQueue.Zip(Enumerable.Range(0, m_writerQueue.Count), (n, i) => new KeyValuePair<int, WriterEntry>(i, n)).Where(x => (x.Value.Expires - now).Ticks <= ExpirationManager.ALLOWED_ADVANCE_EXPIRE_TICKS).ToArray();
+				expiredReaders = m_readerQueue.Zip(Enumerable.Range(0, m_readerQueue.Count), (n, i) => new KeyValuePair<int, ReaderEntry>(i, n)).Where(x => x.Value.Expires.Ticks != 0 && (x.Value.Expires - now).Ticks <= ExpirationManager.ALLOWED_ADVANCE_EXPIRE_TICKS).ToArray();
+				expiredWriters = m_writerQueue.Zip(Enumerable.Range(0, m_writerQueue.Count), (n, i) => new KeyValuePair<int, WriterEntry>(i, n)).Where(x => x.Value.Expires.Ticks != 0 && (x.Value.Expires - now).Ticks <= ExpirationManager.ALLOWED_ADVANCE_EXPIRE_TICKS).ToArray();
 
 				foreach (var r in expiredReaders.OrderByDescending(x => x.Key))
 					m_readerQueue.RemoveAt(r.Key);
 				foreach (var r in expiredWriters.OrderByDescending(x => x.Key))
 					m_writerQueue.RemoveAt(r.Key);
-
-				// After writer expiration, we could have waiting items
-				ProcessWriteQueueBuffer();
 			}
 
 			// Send the notifications
