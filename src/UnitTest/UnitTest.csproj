@@ -44,6 +44,10 @@
     <Compile Include="MixedOperationTest.cs" />
     <Compile Include="TimeoutTests.cs" />
     <Compile Include="QueuedChannelTest.cs" />
+    <Compile Include="..\CoCoL\SortedList.cs">
+      <Link>SortedList.cs</Link>
+    </Compile>
+    <Compile Include="SortedListTest.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

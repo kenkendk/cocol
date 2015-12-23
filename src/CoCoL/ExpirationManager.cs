@@ -57,7 +57,7 @@ namespace CoCoL
 			/// <summary>
 			/// The table of registered callbacks for timeouts
 			/// </summary>
-			private Dictionary<Action, DateTime> m_expiryTable = new Dictionary<Action, DateTime>();
+			private CoCoL.SortedList<DateTime, List<Action>> m_expiryTable = new CoCoL.SortedList<DateTime, List<Action>>();
 			/// <summary>
 			/// The token that controls the timer
 			/// </summary>
@@ -76,26 +76,15 @@ namespace CoCoL
 			{
 				lock (m_lock)
 				{
-					// If the callback is already registered,
-					// set the shortest interval, otherwise register the callback
-					DateTime prev;
-					if (m_expiryTable.TryGetValue(callback, out prev))
-					{
-						if (expires < prev)
-						{
-							m_expiryTable[callback] = expires;
-							if (expires < m_nextInvoke)
-								RescheduleTimer(expires);
-						}
-					}
-					else
-					{
-						var empty = m_expiryTable.Count == 0;
-						m_expiryTable.Add(callback, expires);
+					var empty = m_expiryTable.Count == 0;
 
-						if (expires < m_nextInvoke || empty)
-							RescheduleTimer(expires);
-					}
+					List<Action> prev;
+					if (!m_expiryTable.TryGetValue(expires, out prev))
+						m_expiryTable.Add(expires, prev = new List<Action>(1));
+					prev.Add(callback);
+
+					if (expires < m_nextInvoke || empty)
+						RescheduleTimer(expires);
 				}
 			}
 
@@ -146,37 +135,24 @@ namespace CoCoL
 					}
 
 					var now = DateTime.Now;
+					var next = new DateTime(0);
 
-					var sorted = 
-						from n in m_expiryTable
-						orderby n.Value
-						select n;
-
-					var fir = sorted.First().Value;
-
-					var next = new DateTime(0);;
-
-					foreach (var e in sorted)
+					while (m_expiryTable.Count > 0)
 					{
+						var e = m_expiryTable.First;
+
 						// If ALLOWED_ADVANCE_EXPIRE_TICKS == 0, there can be a few
 						// extra calls to RunTimer(), as it is repeatedly
 						// rescheduled
-						if ((e.Value - now).Ticks >= ALLOWED_ADVANCE_EXPIRE_TICKS)
+						if ((e.Key - now).Ticks >= ALLOWED_ADVANCE_EXPIRE_TICKS)
 						{
-							next = e.Value;
+							next = e.Key;
 							break;
 						}
 
-						m_expiryTable.Remove(e.Key);
-						expires.Add(e.Key);
+						m_expiryTable.RemoveAt(0);
+						expires.AddRange(e.Value);
 					}
-
-					#if !PCL_BUILD
-					if (expires.Count == 0)
-						Console.WriteLine("Jitter ticks: {0} - next: {1}, items: {2}", (fir - now).Ticks, (next - now).Ticks, expires.Count);
-					//else
-					//	Console.WriteLine("Trail ticks: {0}, next: {1}, items: {2}", (fir - now).Ticks, (next - now).Ticks, expires.Count);
-					#endif
 
 					if (m_expiryTable.Count != 0 && now.Ticks != 0)
 						RescheduleTimer(next);

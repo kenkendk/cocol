@@ -121,7 +121,7 @@ namespace UnitTest
 						if (!tasks[2].IsFaulted || !(tasks[2].Exception.InnerException is TimeoutException))
 						{
 							for (var i = 0; i < tasks.Count; i++)
-								if (tasks[i].IsFaulted && i != 1)
+								if (tasks[i].IsFaulted && i != 2)
 									throw new Exception(string.Format("Timeout happened on c{0}, but should have happened on c3?", i + 1));
 							
 							throw new Exception("Timeout happened on another channel than c3?");
@@ -160,8 +160,111 @@ namespace UnitTest
 				};
 
 			for (var i = 0; i < 5; i++)
-				if (!p().Wait(TimeSpan.FromSeconds(10)))
+				if (!p().Wait(TimeSpan.FromSeconds(4)))
 					throw new Exception("Failed to get timeout");
+		}
+
+		[Test]
+		public void TestMixedTimeout()
+		{
+			var c = ChannelManager.CreateChannel<int>();
+
+			Func<Task> p = async() =>
+				{
+					try
+					{
+						var tasks = new List<Task>(new [] {
+							c.ReadAsync(),
+							c.ReadAsync(TimeSpan.FromSeconds(1)),
+							c.ReadAsync(TimeSpan.FromSeconds(2))
+						});
+
+						var t = await Task.WhenAny(tasks);
+
+						if (!t.IsFaulted || !(t.Exception.InnerException is TimeoutException))
+							throw new Exception("Timeout did not happen on op2?");
+
+						if (!tasks[1].IsFaulted || !(tasks[1].Exception.InnerException is TimeoutException))
+						{
+							for (var i = 0; i < tasks.Count; i++)
+								if (tasks[i].IsFaulted && i != 1)
+									throw new Exception(string.Format("Timeout happened on op{0}, but should have happened on op2?", i + 1));
+
+							throw new Exception("Timeout happened on another channel than op2?");
+						}
+
+						tasks.RemoveAt(1);
+
+						t = await Task.WhenAny(tasks);
+
+						if (!t.IsFaulted || !(t.Exception.InnerException is TimeoutException))
+							throw new Exception("Timeout did not happen on op2?");
+
+						if (!tasks[1].IsFaulted || !(tasks[1].Exception.InnerException is TimeoutException))
+						{
+							for (var i = 0; i < tasks.Count; i++)
+								if (tasks[i].IsFaulted && i != 1)
+									throw new Exception(string.Format("Timeout happened on op{0}, but should have happened on op3?", i + 1));
+
+							throw new Exception("Timeout happened on another channel than op3?");
+						}
+
+					}
+					catch (TimeoutException)
+					{
+					}
+				};
+
+			for (var i = 0; i < 5; i++)
+				if (!p().Wait(TimeSpan.FromSeconds(3)))
+					throw new Exception("Failed to get timeout");
+		}
+
+		[Test]
+		public void TestTimeoutWithBuffers()
+		{
+			var c = ChannelManager.CreateChannel<int>(1);
+
+			Func<Task> p = async() =>
+				{
+					try
+					{
+						var tasks = new List<Task>(new [] {
+							c.WriteAsync(4),
+							c.WriteAsync(5, TimeSpan.FromSeconds(1)),
+							c.WriteAsync(6, TimeSpan.FromSeconds(2))
+						});
+
+						var t = await Task.WhenAny(tasks);
+
+						if (!t.IsCompleted)
+							throw new Exception("Buffered write failed?");
+
+						tasks.RemoveAt(0);
+
+						t = await Task.WhenAny(tasks);
+
+						if (!t.IsFaulted || !(t.Exception.InnerException is TimeoutException))
+							throw new Exception("Timeout did not happen on op1?");
+
+						if (!tasks[0].IsFaulted || !(tasks[0].Exception.InnerException is TimeoutException))
+						{
+							for (var i = 0; i < tasks.Count; i++)
+								if (tasks[i].IsFaulted && i != 0)
+									throw new Exception(string.Format("Timeout happened on op{0}, but should have happened on op1?", i + 1));
+
+							throw new Exception("Timeout happened on another channel than op1?");
+						}
+					}
+					catch (TimeoutException)
+					{
+					}
+				};
+
+			for (var i = 0; i < 5; i++)
+				if (!p().Wait(TimeSpan.FromSeconds(3)))
+					throw new Exception("Failed to get timeout");
+
 		}
 	}
 }

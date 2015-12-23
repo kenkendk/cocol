@@ -79,6 +79,9 @@
     <Compile Include="..\CoCoL\GenericTypeHelper.cs">
       <Link>GenericTypeHelper.cs</Link>
     </Compile>
+    <Compile Include="..\CoCoL\SortedList.cs">
+      <Link>SortedList.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
 </Project>
