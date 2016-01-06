@@ -30,7 +30,7 @@ namespace CoCoL
 			public DateTime Expires;
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="CoCoL.ContinuationChannel`1+ReaderEntry"/> struct.
+			/// Initializes a new instance of the <see cref="CoCoL.Channel`1+ReaderEntry"/> struct.
 			/// </summary>
 			/// <param name="offer">The offer handler</param>
 			/// <param name="callback">The callback method for reporting progress.</param>
@@ -66,7 +66,7 @@ namespace CoCoL
 			public T Value;
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="CoCoL.ContinuationChannel`1+WriterEntry"/> struct.
+			/// Initializes a new instance of the <see cref="CoCoL.Channel`1+WriterEntry"/> struct.
 			/// </summary>
 			/// <param name="offer">The offer handler</param>
 			/// <param name="callback">The callback method for reporting progress.</param>
@@ -129,7 +129,7 @@ namespace CoCoL
 		private int m_retireCount = -1;
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.ContinuationChannel`1"/> class.
+		/// Initializes a new instance of the <see cref="CoCoL.Channel`1"/> class.
 		/// </summary>
 		/// <param name="size">The size of the write buffer</param>
 		internal Channel(string name = null, int size = 0)
