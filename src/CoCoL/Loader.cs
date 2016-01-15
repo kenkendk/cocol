@@ -62,12 +62,18 @@ namespace CoCoL
 		/// <param name="types">The types to examine</param>
 		public static int StartFromTypes(IEnumerable<Type> types)
 		{
+			Func<Type, bool> isClass = 
+#if PCL_BUILD
+				t => t.IsClass();
+#else
+				t => t.IsClass;
+#endif
 			var count = 0;
 			foreach (var c in 
 				from n in types
 				let isRunable = typeof(IProcess).IsAssignableFrom(n)
 				let decorator = n.GetCustomAttributes(typeof(ProcessAttribute), true).FirstOrDefault() as ProcessAttribute
-				where n.IsClass && isRunable && n.GetConstructor(new Type[0]) != null
+				where isClass(n) && isRunable && n.GetConstructor(new Type[0]) != null
 				select new { Class = n, Decorator = decorator ?? new ProcessAttribute() })
 			{
 				if (typeof(IAsyncProcess).IsAssignableFrom(c.Class)) 

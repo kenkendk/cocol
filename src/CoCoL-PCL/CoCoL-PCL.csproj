@@ -82,6 +82,10 @@
     <Compile Include="..\CoCoL\SortedList.cs">
       <Link>SortedList.cs</Link>
     </Compile>
+    <Compile Include="ReflectionHelper.cs" />
+    <Compile Include="..\CoCoL\Loader.cs">
+      <Link>Loader.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
 </Project>
