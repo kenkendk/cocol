@@ -573,10 +573,11 @@ namespace CoCoL
 			{
 				if (readers != null)
 					foreach (var r in readers)
-						ThreadPool.QueueItem(() => r.Source.SetException(RetiredException));
+						ThreadPool.QueueItem(() => r.Source.TrySetException(RetiredException));
+
 				if (writers != null)
 					foreach (var w in writers)
-						ThreadPool.QueueItem(() => w.Source.SetException(RetiredException));
+						ThreadPool.QueueItem(() => w.Source.TrySetException(RetiredException));
 			}
 		}
 
@@ -604,11 +605,11 @@ namespace CoCoL
 
 			// Send the notifications
 			foreach (var r in expiredReaders.OrderBy(x => x.Value.Expires))
-				r.Value.Source.SetException(TimeoutException);
+				r.Value.Source.TrySetException(TimeoutException);
 
 			// Send the notifications
 			foreach (var w in expiredWriters.OrderBy(x => x.Value.Expires))
-				w.Value.Source.SetException(TimeoutException);
+				w.Value.Source.TrySetException(TimeoutException);
 		}
 	}
 }
