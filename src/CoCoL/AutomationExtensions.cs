@@ -16,6 +16,16 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="items">The processes to wire up.</param>
 		/// <param name="scope">The current scope.</param>
+		public static ChannelScope AutoWireChannels<T>(T[] items, ChannelScope scope = null)
+		{
+			return AutoWireChannels(items.AsEnumerable(), scope);
+		}
+
+		/// <summary>
+		/// Wires up all named channels using the supplied scope
+		/// </summary>
+		/// <param name="items">The processes to wire up.</param>
+		/// <param name="scope">The current scope.</param>
 		public static ChannelScope AutoWireChannels<T>(IEnumerable<T> items, ChannelScope scope = null)
 		{
 			scope = scope ?? ChannelScope.Current;
@@ -76,6 +86,8 @@ namespace CoCoL
 					if (readInterface == null && writeInterface == null)
 						throw new Exception(string.Format("Item {0} had a channelname attribute but is not of the channel type", c.Key.Name));
 
+					var isOnlyReadOrWrite = (readInterface == null) != (writeInterface == null);
+
 					// Extract the channel data type
 					Type dataType = (readInterface ?? writeInterface).GenericTypeArguments[0];
 
@@ -89,7 +101,20 @@ namespace CoCoL
 					// Instantiate or fetch the channel
 					var chan = curscope.GetOrCreate(attr.Name, dataType, attr.BufferSize);
 
+					if (isOnlyReadOrWrite)
+					{
+						if (readInterface != null && channelType.IsAssignableFrom(typeof(IReadChannelEnd<>).MakeGenericType(dataType)))
+						{
+							chan = (IRetireAbleChannel)typeof(ChannelExtensions).GetMethod("AsReadOnly").MakeGenericMethod(dataType).Invoke(null, new object[] { chan });
+						}
+						else if (writeInterface != null && channelType.IsAssignableFrom(typeof(IWriteChannelEnd<>).MakeGenericType(dataType)))
+						{
+							chan = (IRetireAbleChannel)typeof(ChannelExtensions).GetMethod("AsWriteOnly").MakeGenericMethod(dataType).Invoke(null, new object[] { chan });
+						}
+					}
+						
 					// Assign the channel to the field or property
+						
 					if (c.Key is FieldInfo)
 						((FieldInfo)c.Key).SetValue(item, chan);
 					else
@@ -100,7 +125,7 @@ namespace CoCoL
 					else if (chan is IJoinAbleChannel)
 					{
 						// If the type is both read and write, we cannot use join semantics
-						if ((readInterface == null) == (writeInterface == null))
+						if (isOnlyReadOrWrite)
 						{
 							if (readInterface != null)
 								((IJoinAbleChannel)chan).Join(true);
@@ -167,7 +192,7 @@ namespace CoCoL
 		/// and calls the Retire method on them
 		/// </summary>
 		/// <param name="item">The instance to examine.</param>
-		public static void RetireAllChannels(IProcess item)
+		public static void RetireAllChannels(object item)
 		{
 			foreach (var c in GetAllFieldAndPropertyValuesOfType<IRetireAbleChannel>(item))
 				try
