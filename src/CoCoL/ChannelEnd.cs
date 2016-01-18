@@ -89,6 +89,8 @@ namespace CoCoL
 		{ 
 			get 
 			{ 
+				if (m_target == null)
+					throw new ObjectDisposedException(this.GetType().FullName);
 				return m_target.IsRetired; 
 			} 
 		}
