@@ -32,6 +32,8 @@ namespace UnitTest
 		{
 			Reader x1, x2;
 			Writer y;
+
+			IRetireAbleChannel c;
 			using (new ChannelScope())
 			{
 				AutomationExtensions.AutoWireChannels(new object[] {
@@ -39,6 +41,8 @@ namespace UnitTest
 					x2 = new Reader(),
 					y = new Writer()
 				});
+
+				c = ChannelScope.Current.GetOrCreate<int>("input");
 			}
 
 			if (x1 == null || !x1.HasChannel || x2 == null || !x2.HasChannel)
@@ -49,12 +53,12 @@ namespace UnitTest
 
 			AutomationExtensions.RetireAllChannels(x1);
 
-			if (x1.IsChannelRetired || y.IsChannelRetired)
+			if (c.IsRetired)
 				throw new Exception("Unexpected early retire");
 
 			AutomationExtensions.RetireAllChannels(x2);
 
-			if (!x1.IsChannelRetired || !y.IsChannelRetired)
+			if (!c.IsRetired)
 				throw new Exception("Unexpected non-retire");
 
 			using (new ChannelScope())
