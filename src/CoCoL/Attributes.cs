@@ -24,6 +24,25 @@ namespace CoCoL
 	}
 
 	/// <summary>
+	/// Enumeration for choosing the name scope
+	/// </summary>
+	public enum ChannelNameScope
+	{
+		/// <summary>
+		/// Use the current local name scope
+		/// </summary>
+		Local,
+		/// <summary>
+		/// Use the current parent name scope
+		/// </summary>
+		Parent,
+		/// <summary>
+		/// Use the global name scope
+		/// </summary>
+		Global
+	}
+
+	/// <summary>
 	/// Attribute for naming a channel in automatic wireup
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
@@ -40,14 +59,20 @@ namespace CoCoL
 		public int BufferSize;
 
 		/// <summary>
+		/// The target scope.
+		/// </summary>
+		public ChannelNameScope TargetScope;
+
+		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.ChannelNameAttribute"/> class.
 		/// </summary>
 		/// <param name="name">The name of the channel.</param>
 		/// <param name="buffersize">The size of the buffer on the created channel</param>
-		public ChannelNameAttribute(string name, int buffersize = 0)
+		public ChannelNameAttribute(string name, int buffersize = 0, ChannelNameScope targetScope = ChannelNameScope.Local)
 		{
 			Name = name;
 			BufferSize = buffersize;
+			TargetScope = targetScope;
 		}
 	}
 

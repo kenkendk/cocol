@@ -4,125 +4,135 @@ using System.Linq;
 
 namespace CoCoL
 {
-	public class ChannelScope : IEnumerable<KeyValuePair<string, IRetireAbleChannel>>, IDisposable
+	/// <summary>
+	/// Implementation of a nested scope for assigning channel names
+	/// </summary>
+	public class ChannelScope : IDisposable
 	{
-		public static readonly ChannelScope Root = new ChannelScope(null);
+		/// <summary>
+		/// The root scope, where all other scopes descend from
+		/// </summary>
+		public static readonly ChannelScope Root;
 
+		/// <summary>
+		/// The lock object
+		/// </summary>
+		private static readonly object __lock;
+
+		/// <summary>
+		/// Static initializer to control the creation order
+		/// </summary>
+		static ChannelScope()
+		{
+			__lock = new object();
+			Root = new ChannelScope(null);
+		}
+			
+
+		/// <summary>
+		/// True if this instance is disposed, false otherwise
+		/// </summary>
+		private bool m_isDisposed = false;
+
+		/// <summary>
+		/// The parent scope, or null if this is the root scope
+		/// </summary>
+		/// <value>The parent scope.</value>
 		public ChannelScope ParentScope { get; private set; }
+
+		/// <summary>
+		/// The local storage for channels
+		/// </summary>
 		private Dictionary<string, IRetireAbleChannel> m_lookup = new Dictionary<string, IRetireAbleChannel>();
 
+		/// <summary>
+		/// The key used to assign the current scope into the current call-context
+		/// </summary>
 		private const string LOGICAL_CONTEXT_KEY = "CoCoL:AutoWireScope";
 
+		/// <summary>
+		/// Initializes a new instance of the <see cref="CoCoL.ChannelScope"/> class that derives from the current scope.
+		/// </summary>
 		public ChannelScope()
 			: this(ChannelScope.Current)
 		{
 		}
-
+			
+		/// <summary>
+		/// Initializes a new instance of the <see cref="CoCoL.ChannelScope"/> class that derives from a parent scope.
+		/// </summary>
+		/// <param name="parent">Parent.</param>
 		private ChannelScope(ChannelScope parent)
 		{
 			ParentScope = parent;
 			Current = this;
 		}
 
-		public bool ContainsKey(string key)
+		/// <summary>
+		/// Gets or creates a channel
+		/// </summary>
+		/// <returns>The or create.</returns>
+		/// <param name="name">The name of the channel to create.</param>
+		/// <param name="datatype">The type of data communicated through the channel.</param>
+		/// <param name="buffersize">The size of the channel buffer.</param>
+		public IRetireAbleChannel GetOrCreate(string name, Type datatype, int buffersize = 0)
 		{
-			if (m_lookup.ContainsKey(key))
-				return true;
-			return ParentScope == null ? false : ParentScope.ContainsKey(key);
+			return (IRetireAbleChannel)typeof(ChannelScope).GetMethod("GetOrCreate", new Type[] { typeof(string), typeof(int) })
+				.MakeGenericMethod(datatype)
+				.Invoke(this, new object[] {name, buffersize});
 		}
 
-		public void Add(string key, IRetireAbleChannel value)
+		/// <summary>
+		/// Gets or creates a channel
+		/// </summary>
+		/// <returns>The channel with the given name.</returns>
+		/// <param name="name">The name of the channel to create.</param>
+		/// <param name="buffersize">The size of the channel buffer.</param>
+		/// <typeparam name="T">The type of data in the channel.</typeparam>
+		public IChannel<T> GetOrCreate<T>(string name, int buffersize = 0)
 		{
-			m_lookup.Add(key, value);
-		}
+			IRetireAbleChannel res;
+			if (m_lookup.TryGetValue(name, out res))
+				return (IChannel<T>)res;
 
-		public bool Remove(string key)
-		{
-			throw new InvalidOperationException();
-		}
-
-		public bool TryGetValue(string key, out IRetireAbleChannel value)
-		{
-			if (m_lookup.TryGetValue(key, out value))
-				return true;
-
-			return ParentScope == null ? false : ParentScope.TryGetValue(key, out value);
-		}
-
-		public IRetireAbleChannel this[string index]
-		{
-			get
+			lock (__lock)
 			{
-				if (ParentScope == null)
-					return m_lookup[index];
-				else
-				{
-					IRetireAbleChannel value;
-					if (m_lookup.TryGetValue(index, out value))
-						return value;
-					
-					return ParentScope[index];
-				}
-			}
-			set
-			{
-				if (value == null)
-					throw new ArgumentNullException();
-				m_lookup[index] = value;
+				if (m_lookup.TryGetValue(name, out res))
+					return (IChannel<T>)res;
+
+				var chan = ChannelManager.CreateChannel<T>(name, buffersize);
+				m_lookup.Add(name, chan);
+				return chan;
 			}
 		}
-
-		public IEnumerable<string> Keys
-		{
-			get
-			{
-				if (ParentScope == null)
-					return m_lookup.Keys;
-				else
-					return m_lookup.Keys.Union(ParentScope.Keys);
-			}
-		}
-
-		public IEnumerable<IRetireAbleChannel> Values
-		{
-			get
-			{
-				if (ParentScope == null)
-					return m_lookup.Values;
-				else
-					return m_lookup.Values.Union(ParentScope.Values);
-			}
-		}
-
-
-		#region IEnumerable implementation
-
-		public IEnumerator<KeyValuePair<string, IRetireAbleChannel>> GetEnumerator()
-		{
-			if (ParentScope == null)
-				return m_lookup.GetEnumerator();
-			else
-				return m_lookup.Union(ParentScope).GetEnumerator();
-		}
-
-		#endregion
-
-		#region IEnumerable implementation
-
-		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-		{
-			return this.GetEnumerator();
-		}
-
-		#endregion
 
 		#region IDisposable implementation
 
+		/// <summary>
+		/// Releases all resource used by the <see cref="CoCoL.ChannelScope"/> object.
+		/// </summary>
+		/// <remarks>Call <see cref="Dispose"/> when you are finished using the <see cref="CoCoL.ChannelScope"/>. The
+		/// <see cref="Dispose"/> method leaves the <see cref="CoCoL.ChannelScope"/> in an unusable state. After calling
+		/// <see cref="Dispose"/>, you must release all references to the <see cref="CoCoL.ChannelScope"/> so the garbage
+		/// collector can reclaim the memory that the <see cref="CoCoL.ChannelScope"/> was occupying.</remarks>
 		public void Dispose()
 		{
-			if (Current == this)
-				Current = this.ParentScope;
-			m_lookup = null;
+			lock (__lock)
+			{
+				if (this == Root)
+					throw new InvalidOperationException("Cannot dispose the root scope");
+				
+				if (Current == this)
+				{
+					Current = this.ParentScope;
+
+					// Disposal can be non-deterministic, so we walk the chain
+					while (Current.m_isDisposed)
+						Current = Current.ParentScope;
+				}
+				m_isDisposed = true;
+				m_lookup = null;
+			}
 		}
 
 		#endregion
@@ -135,32 +145,38 @@ namespace CoCoL
 		public static ChannelScope Current
 		{
 			get 
-			{ 
-#if PCL_BUILD
-				// TODO: Use AsyncLocal if targeting 4.6
-				//var cur = new System.Threading.AsyncLocal<ChannelScope>();
-				if (__IsFirstUsage)
+			{
+				lock (__lock)
 				{
-					__IsFirstUsage = false;
-					System.Diagnostics.Debug.WriteLine("*Warning*: PCL does not provide a call context, so channel scoping does not work correctly for multithreaded use!");
-				}
+#if PCL_BUILD
+					// TODO: Use AsyncLocal if targeting 4.6
+					//var cur = new System.Threading.AsyncLocal<ChannelScope>();
+					if (__IsFirstUsage)
+					{
+						__IsFirstUsage = false;
+						System.Diagnostics.Debug.WriteLine("*Warning*: PCL does not provide a call context, so channel scoping does not work correctly for multithreaded use!");
+					}
 
-				var cur = __Current;
+					var cur = __Current;
 #else
-				var cur = System.Runtime.Remoting.Messaging.CallContext.LogicalGetData(LOGICAL_CONTEXT_KEY) as ChannelScope;
+					var cur = System.Runtime.Remoting.Messaging.CallContext.LogicalGetData(LOGICAL_CONTEXT_KEY) as ChannelScope;
 #endif
-				if (cur == null)
-					return Current = Root;
-				else
-					return cur;
+					if (cur == null)
+						return Current = Root;
+					else
+						return cur;
+				}
 			}
 			private set
 			{
+				lock (__lock)
+				{
 #if PCL_BUILD				
-				__Current = value;
+					__Current = value;
 #else
-				System.Runtime.Remoting.Messaging.CallContext.LogicalSetData(LOGICAL_CONTEXT_KEY, value);
+					System.Runtime.Remoting.Messaging.CallContext.LogicalSetData(LOGICAL_CONTEXT_KEY, value);
 #endif
+				}
 			}
 		}
 	}

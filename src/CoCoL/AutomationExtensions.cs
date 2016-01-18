@@ -76,13 +76,20 @@ namespace CoCoL
 					if (readInterface == null && writeInterface == null)
 						throw new Exception(string.Format("Item {0} had a channelname attribute but is not of the channel type", c.Key.Name));
 
+					// Extract the channel data type
 					Type dataType = (readInterface ?? writeInterface).GenericTypeArguments[0];
 
-					IRetireAbleChannel chan = null;
-					scope.TryGetValue(attr.Name, out chan);
-					if (chan == null)
-						scope[attr.Name] = chan = (IRetireAbleChannel)typeof(ChannelManager).GetMethod("CreateChannel", new Type[] { typeof(int) }).MakeGenericMethod(dataType).Invoke(null, new object[] { attr.BufferSize });
+					// Honor scope requirements
+					var curscope = scope;
+					if (attr.TargetScope == ChannelNameScope.Parent)
+						curscope = scope.ParentScope ?? curscope;
+					else if (attr.TargetScope == ChannelNameScope.Global)
+						curscope = ChannelScope.Root;
 
+					// Instantiate or fetch the channel
+					var chan = curscope.GetOrCreate(attr.Name, dataType, attr.BufferSize);
+
+					// Assign the channel to the field or property
 					if (c.Key is FieldInfo)
 						((FieldInfo)c.Key).SetValue(item, chan);
 					else
