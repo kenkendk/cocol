@@ -9,7 +9,7 @@ namespace CoCoL
 	/// <summary>
 	/// A channel that uses continuation callbacks
 	/// </summary>
-	public class Channel<T> : IBlockingChannel<T>, IChannel<T>, IUntypedChannel, INamedItem
+	public class Channel<T> : IBlockingChannel<T>, IChannel<T>, IUntypedChannel, IJoinAbleChannel, INamedItem
 	{
 		/// <summary>
 		/// Structure for keeping a read request
@@ -127,6 +127,16 @@ namespace CoCoL
 		/// The number of messages to process before marking the channel as retired
 		/// </summary>
 		private int m_retireCount = -1;
+
+		/// <summary>
+		/// The number of reader processes having joined the channel
+		/// </summary>
+		private int m_joinedReaderCount = 0;
+
+		/// <summary>
+		/// The number of writer processes having joined the channel
+		/// </summary>
+		private int m_joinedWriterCount = 0;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.Channel`1"/> class.
@@ -536,6 +546,49 @@ namespace CoCoL
 				}
 				
 				EmptyQueueIfRetired();
+			}
+		}
+
+		/// <summary>
+		/// Join the channel
+		/// </summary>
+		/// <param name="asReader"><c>true</c> if joining as a reader, <c>false</c> otherwise</param>
+		public void Join(bool asReader)
+		{
+			lock (m_lock)
+			{
+				// Do not allow anyone to join after we retire the channel
+				if (IsRetired)
+					throw new RetiredException();
+
+				if (asReader)
+					m_joinedReaderCount++;
+				else
+					m_joinedWriterCount++;
+			}
+		}
+
+		/// <summary>
+		/// Leave the channel.
+		/// </summary>
+		/// <param name="asReader"><c>true</c> if leaving as a reader, <c>false</c> otherwise</param>
+		public void Leave(bool asReader)
+		{
+			lock (m_lock)
+			{
+				// If we are already retired, skip this call
+				if (IsRetired)
+					return;
+
+				// Countdown
+				if (asReader)
+					m_joinedReaderCount--;
+				else
+					m_joinedWriterCount--;
+
+				// Retire if required
+				if (m_joinedReaderCount <= 0 || m_joinedWriterCount <= 0)
+					Retire();
 			}
 		}
 

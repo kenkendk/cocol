@@ -508,6 +508,31 @@ namespace CoCoL
 		{
 			return (IUntypedChannel)channel;
 		}
+
+		/// <summary>
+		/// Returns the channel as an IDisposable read-only channel.
+		/// The returned instance must be Disposed.
+		/// </summary>
+		/// <returns>The channel as a read-only channel</returns>
+		/// <param name="channel">The channel to wrap.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static IReadChannelEnd<T> AsReadOnly<T>(this IReadChannel<T> channel)
+		{
+			return new ChannelReadEnd<T>(channel);
+		}
+
+		/// <summary>
+		/// Returns the channel as an IDisposable write-only channel.
+		/// The returned instance must be Disposed.
+		/// </summary>
+		/// <returns>The channel as a write-only channel</returns>
+		/// <param name="channel">The channel to wrap.</param>
+		/// <typeparam name="T">The channel data type.</typeparam>
+		public static IWriteChannelEnd<T> AsWriteOnly<T>(this IWriteChannel<T> channel)
+		{
+			return new ChannelWriteEnd<T>(channel);
+		}
+
 		#endregion
 
 		#region Operations on lists of channels

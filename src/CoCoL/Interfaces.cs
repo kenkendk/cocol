@@ -77,6 +77,40 @@ namespace CoCoL
 	}
 
 	/// <summary>
+	/// Interface for a channel that can be joined
+	/// </summary>
+	public interface IJoinAbleChannel
+	{
+		/// <summary>
+		/// Join the channel
+		/// </summary>
+		/// <param name="asReader"><c>true</c> if joining as a reader, <c>false</c> otherwise</param>
+		void Join(bool asReader);
+
+		/// <summary>
+		/// Leave the channel.
+		/// </summary>
+		/// <param name="asReader"><c>true</c> if leaving as a reader, <c>false</c> otherwise</param>
+		void Leave(bool asWriter);
+	}
+
+	/// <summary>
+	/// Interface for a channel that can be joined
+	/// </summary>
+	public interface IJoinAbleChannelEnd : IDisposable
+	{
+		/// <summary>
+		/// Join the channel
+		/// </summary>
+		void Join();
+
+		/// <summary>
+		/// Leave the channel.
+		/// </summary>
+		void Leave();
+	}
+
+	/// <summary>
 	/// Read interface for a blocking synchronous communication channel
 	/// </summary>
 	public interface IBlockingReadableChannel<T> : IRetireAbleChannel
@@ -170,6 +204,21 @@ namespace CoCoL
 		/// <param name="value">The value to write to the channel.</param>
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
 		Task WriteAsync(ITwoPhaseOffer offer, T value, TimeSpan timeout);
+	}
+
+	/// <summary>
+	/// Interface for the write-end of a joinable channel that supports continuation
+	/// </summary>
+	public interface IWriteChannelEnd<T> : IWriteChannel<T>, IJoinAbleChannelEnd
+	{
+	}
+
+
+	/// <summary>
+	/// Interface for the read-end of a joinable channel that supports continuation
+	/// </summary>
+	public interface IReadChannelEnd<T> : IReadChannel<T>, IJoinAbleChannelEnd
+	{
 	}
 
 	/// <summary>

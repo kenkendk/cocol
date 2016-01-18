@@ -70,8 +70,8 @@ namespace CoCoL
 
 					// Figure out what type of channel we expect
 					var channelType = c.Key is FieldInfo ? ((FieldInfo)c.Key).FieldType : ((PropertyInfo)c.Key).PropertyType;
-					var readInterface = new Type[] { channelType }.Union(channelType.GetInterfaces().Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IReadChannel<>)))).FirstOrDefault();
-					var writeInterface = new Type[] { channelType }.Union(channelType.GetInterfaces().Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IWriteChannel<>)))).FirstOrDefault();
+					var readInterface = new Type[] { channelType }.Union(channelType.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IReadChannel<>))).FirstOrDefault();
+					var writeInterface = new Type[] { channelType }.Union(channelType.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IWriteChannel<>))).FirstOrDefault();
 
 					if (readInterface == null && writeInterface == null)
 						throw new Exception(string.Format("Item {0} had a channelname attribute but is not of the channel type", c.Key.Name));
@@ -94,6 +94,20 @@ namespace CoCoL
 						((FieldInfo)c.Key).SetValue(item, chan);
 					else
 						((PropertyInfo)c.Key).SetValue(item, chan);
+
+					if (chan is IJoinAbleChannelEnd)
+						((IJoinAbleChannelEnd)chan).Join();
+					else if (chan is IJoinAbleChannel)
+					{
+						// If the type is both read and write, we cannot use join semantics
+						if ((readInterface == null) == (writeInterface == null))
+						{
+							if (readInterface != null)
+								((IJoinAbleChannel)chan).Join(true);
+							if (writeInterface != null)
+								((IJoinAbleChannel)chan).Join(false);
+						}
+					}
 				}
 				catch(Exception ex)
 				{
@@ -158,7 +172,32 @@ namespace CoCoL
 			foreach (var c in GetAllFieldAndPropertyValuesOfType<IRetireAbleChannel>(item))
 				try
 			{
-				if (c.Value != null)
+				if (c.Value is IJoinAbleChannelEnd)
+					((IJoinAbleChannelEnd)c.Value).Dispose();
+				else if (c.Value is IJoinAbleChannel)
+				{
+					// Figure out what type of channel we expect
+					var channelType = c.Key is FieldInfo ? ((FieldInfo)c.Key).FieldType : ((PropertyInfo)c.Key).PropertyType;
+					var readInterface = new Type[] { channelType }.Union(channelType.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IReadChannel<>))).FirstOrDefault();
+					var writeInterface = new Type[] { channelType }.Union(channelType.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IWriteChannel<>))).FirstOrDefault();
+
+					// If the channel is read-write, we do not use join semantics, but just retire the channel
+					if ((readInterface == null) == (writeInterface == null))
+					{
+						if (c.Value != null)
+							c.Value.Retire();
+					}
+
+					// Otherwise use the correct interface
+					else
+					{
+						if (readInterface != null)
+							((IJoinAbleChannel)c.Value).Leave(true);
+						if (writeInterface != null)
+							((IJoinAbleChannel)c.Value).Leave(false);
+					}
+				}
+				else if (c.Value != null)
 					c.Value.Retire();
 			}
 			catch
