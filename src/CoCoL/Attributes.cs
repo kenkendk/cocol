@@ -24,18 +24,33 @@ namespace CoCoL
 	}
 
 	/// <summary>
+	/// Attribute for naming a channel in automatic wireup
 	/// </summary>
+	[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+	public class ChannelNameAttribute : Attribute
 	{
 		/// <summary>
+		/// The name of the channel
 		/// </summary>
+		public string Name;
 
 		/// <summary>
+		/// The buffer size of the channel
 		/// </summary>
+		public int BufferSize;
 
 		/// <summary>
+		/// Initializes a new instance of the <see cref="CoCoL.ChannelNameAttribute"/> class.
 		/// </summary>
+		/// <param name="name">The name of the channel.</param>
+		/// <param name="buffersize">The size of the buffer on the created channel</param>
+		public ChannelNameAttribute(string name, int buffersize = 0)
 		{
+			Name = name;
+			BufferSize = buffersize;
 		}
 	}
+
+
 }
 
