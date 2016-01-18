@@ -48,6 +48,7 @@
       <Link>SortedList.cs</Link>
     </Compile>
     <Compile Include="SortedListTest.cs" />
+    <Compile Include="JoinableTests.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
