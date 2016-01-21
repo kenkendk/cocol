@@ -146,15 +146,24 @@ namespace UnitTest
 			c2.WriteNoWait("2");
 
 			var r = UntypedMultiChannelAccess.ReadFromAnyAsync(c1.AsUntyped(), c2.AsUntyped()).WaitForTask().Result;
-			if (!(r is int))
+			if (r == null)
+				throw new Exception("Unexpected null result");
+			if (r.Channel != c1)
+				throw new Exception("Unexpected read channel");
+			
+			if (!(r.Value is int))
 				throw new Exception("Priority changed?");
-			if ((int)r != 1)
+			if ((int)r.Value != 1)
 				throw new Exception("Bad value?");
 
 			r = UntypedMultiChannelAccess.ReadFromAnyAsync(c1.RequestRead(), c2.RequestRead()).WaitForTask().Result;
-			if (!(r is string))
+			if (r == null)
+				throw new Exception("Unexpected null result");
+			if (r.Channel != c2)
+				throw new Exception("Unexpected read channel");
+			if (!(r.Value is string))
 				throw new Exception("Priority changed?");
-			if ((string)r != "2")
+			if ((string)r.Value != "2")
 				throw new Exception("Bad value?");
 
 			var t = UntypedMultiChannelAccess.WriteToAnyAsync(c1.AsUntyped().RequestWrite(4));
