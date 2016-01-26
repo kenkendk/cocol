@@ -1,3 +1,5 @@
+language: csharp
+solution: CoCoL.sln
 install:
   - nuget restore CoCoL.sln
   - nuget install NUnit.Runners -Version 2.6.4 -OutputDirectory testrunner
