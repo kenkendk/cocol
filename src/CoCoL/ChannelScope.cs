@@ -25,7 +25,7 @@ namespace CoCoL
 		static ChannelScope()
 		{
 			__lock = new object();
-			Root = new ChannelScope(null);
+			Root = new ChannelScope(null, true);
 		}
 			
 
@@ -41,6 +41,12 @@ namespace CoCoL
 		public ChannelScope ParentScope { get; private set; }
 
 		/// <summary>
+		/// Gets a value indicating whether this scope is isolated, meaning that it does not inherit from the parent scope.
+		/// </summary>
+		/// <value><c>true</c> if this instance isolated; otherwise, <c>false</c>.</value>
+		public bool Isolated { get; private set; }
+
+		/// <summary>
 		/// The local storage for channels
 		/// </summary>
 		private Dictionary<string, IRetireAbleChannel> m_lookup = new Dictionary<string, IRetireAbleChannel>();
@@ -54,17 +60,28 @@ namespace CoCoL
 		/// Initializes a new instance of the <see cref="CoCoL.ChannelScope"/> class that derives from the current scope.
 		/// </summary>
 		public ChannelScope()
-			: this(ChannelScope.Current)
+			: this(ChannelScope.Current, false)
 		{
 		}
-			
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="CoCoL.ChannelScope"/> class that derives from the current scope.
+		/// </summary>
+		/// <param name="isolated"><c>True</c> if this is an isolated scope, <c>false</c> otherwise</param>
+		public ChannelScope(bool isolated)
+			: this(ChannelScope.Current, isolated)
+		{
+		}
+
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.ChannelScope"/> class that derives from a parent scope.
 		/// </summary>
-		/// <param name="parent">Parent.</param>
-		private ChannelScope(ChannelScope parent)
+		/// <param name="parent">The parent scope.</param>
+		/// <param name="isolated"><c>True</c> if this is an isolated scope, <c>false</c> otherwise</param>
+		private ChannelScope(ChannelScope parent, bool isolated)
 		{
 			ParentScope = parent;
+			Isolated = isolated;
 			Current = this;
 		}
 
@@ -97,13 +114,38 @@ namespace CoCoL
 
 			lock (__lock)
 			{
-				if (m_lookup.TryGetValue(name, out res))
-					return (IChannel<T>)res;
+				var cur = this;
+				while (cur != null)
+				{
+					if (cur.m_lookup.TryGetValue(name, out res))
+						return (IChannel<T>)res;
+
+					if (Isolated)
+						cur = null;
+					else
+						cur = cur.ParentScope;
+				}
 
 				var chan = ChannelManager.CreateChannel<T>(name, buffersize);
 				m_lookup.Add(name, chan);
 				return chan;
 			}
+		}
+
+		/// <summary>
+		/// Injects a channel into the current scope.
+		/// </summary>
+		/// <param name="name">The name of the channel to create.</param>
+		/// <param name="channel">The channel to inject.</param>
+		public void InjectChannel(string name, IRetireAbleChannel channel)
+		{
+			if (string.IsNullOrWhiteSpace(name))
+				throw new ArgumentNullException("name");
+			if (channel == null)
+				throw new ArgumentNullException("channel");
+			
+			lock (__lock)
+				m_lookup[name] = channel;
 		}
 
 		#region IDisposable implementation
