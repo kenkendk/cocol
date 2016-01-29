@@ -16,21 +16,11 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="items">The processes to wire up.</param>
 		/// <param name="scope">The current scope.</param>
-		public static ChannelScope AutoWireChannels<T>(T[] items, ChannelScope scope = null)
-		{
-			return AutoWireChannels(items.AsEnumerable(), scope);
-		}
-
-		/// <summary>
-		/// Wires up all named channels using the supplied scope
-		/// </summary>
-		/// <param name="items">The processes to wire up.</param>
-		/// <param name="scope">The current scope.</param>
 		public static ChannelScope AutoWireChannels<T>(IEnumerable<T> items, ChannelScope scope = null)
 		{
 			scope = scope ?? ChannelScope.Current;
 			foreach (var p in items)
-				AutoWireChannels(p, scope);
+				AutoWireChannelsDirect(p, scope);
 
 			return scope;
 		}
@@ -52,27 +42,65 @@ namespace CoCoL
 		/// <param name="scope">The current scope.</param>
 		public static IProcess AutoWireChannels(this IProcess item, ChannelScope scope = null)
 		{
-			return AutoWireChannels<IProcess>(item, scope);
+			return AutoWireChannelsDirect<IProcess>(item, scope);
 		}
 
 		/// <summary>
-		/// Wires up all named channels using the supplied scope
+		/// Wires up all named channels using the supplied scope.
+		/// Checks if the supplied item is an IEnumerable and iterates it
+		/// if possible
 		/// </summary>
 		/// <param name="item">The item to wire up.</param>
 		/// <param name="scope">The current scope.</param>
 		public static T AutoWireChannels<T>(T item, ChannelScope scope = null)
 		{
-			scope = scope ?? ChannelScope.Current;
+			// Due to the type matching, we can end up here when
+			// the user supplies an array or similar
+
+			// The encapsulation ensures that we only expand the single 
+			// outer most instance
+			if (typeof(System.Collections.IEnumerable).IsAssignableFrom(typeof(T)))
+			{
+				var en = item as System.Collections.IEnumerable;
+				foreach (var x in en)
+					AutoWireChannelsDirect(x, scope);
+			}
+
+			return AutoWireChannelsDirect(item);
+		}
+
+		/// <summary>
+		/// Wires up all named channels using the supplied scope for the given element.
+		/// Does not check if the given item is an IEnumerable
+		/// </summary>
+		/// <param name="item">The item to wire up.</param>
+		/// <param name="scope">The current scope.</param>
+		public static T AutoWireChannelsDirect<T>(T item, ChannelScope scope = null)
+		{
+					scope = scope ?? ChannelScope.Current;
 
 			foreach (var c in GetAllFieldAndPropertyValuesOfType<IRetireAbleChannel>(item))
 			{
 				try
 				{
+					var marker = c.Value as ChannelNameMarker;
+
+					// Make sure we do not continue with a marker class instance
+					if (marker != null)
+						if (c.Key is FieldInfo)
+							((FieldInfo)c.Key).SetValue(item, null);
+						else
+							((PropertyInfo)c.Key).SetValue(item, null);
+
 					// Skip if already assigned
-					if (c.Value != null)
+					if (c.Value != null && !(c.Value is ChannelNameMarker))
 						continue;
 
 					var attr = c.Key.GetCustomAttribute(typeof(ChannelNameAttribute), true) as ChannelNameAttribute;
+
+					// Override if we get a marker
+					if (attr == null && marker != null)
+						attr = marker.Attribute;
 
 					// Skip if the channel does not have a name
 					if (attr == null || string.IsNullOrWhiteSpace(attr.Name))
@@ -270,6 +298,55 @@ namespace CoCoL
 			{
 				if (!catchRetiredExceptions)
 					throw;
+			}
+		}
+
+		/// <summary>
+		/// Helper method for providing channels in an external object, 
+		/// such that simple processes do not need to define a class instance
+		/// </summary>
+		/// <returns>The awaitable task for the process</returns>
+		/// <param name="channels">The channel object to use. Accepts anonymous types.</param>
+		/// <param name="method">The process method.</param>
+		/// <typeparam name="T">The type of the channel object parameter.</typeparam>
+		/// <param name="catchRetiredExceptions">If set to <c>true</c> any RetiredExceptions are caught and ignored.</param>
+		public static async Task RunTask<T>(T channels, Func<T, Task> method, bool catchRetiredExceptions = true)
+		{
+			AutoWireChannelsDirect(channels);
+			try
+			{
+				await method(channels);
+			}
+			catch(AggregateException ex)
+			{
+				if (catchRetiredExceptions)
+				{
+					var lst = 
+						from n in ex.Flatten().InnerExceptions
+							where !(n is RetiredException)
+						select n;
+
+					if (lst.Count() == 0)
+						return;
+					else if (lst.Count() == 1)
+						throw lst.First();
+					else
+						throw new AggregateException(lst);
+				}
+
+				if (ex.Flatten().InnerExceptions.Count == 1)
+					throw ex.Flatten().InnerExceptions.First();
+
+				throw;
+			}
+			catch(RetiredException)
+			{
+				if (!catchRetiredExceptions)
+					throw;
+			}
+			finally
+			{
+				RetireAllChannels(channels);
 			}
 		}
 	}

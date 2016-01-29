@@ -91,7 +91,7 @@ namespace CoCoL
 		/// Leave the channel.
 		/// </summary>
 		/// <param name="asReader"><c>true</c> if leaving as a reader, <c>false</c> otherwise</param>
-		void Leave(bool asWriter);
+		void Leave(bool asReader);
 	}
 
 	/// <summary>

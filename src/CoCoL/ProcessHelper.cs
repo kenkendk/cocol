@@ -29,7 +29,7 @@ namespace CoCoL
 		/// </summary>
 		protected ProcessHelper()
 		{
-			AutomationExtensions.AutoWireChannels(this);
+			AutomationExtensions.AutoWireChannelsDirect(this);
 		}
 
 		/// <summary>

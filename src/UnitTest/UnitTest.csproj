@@ -51,6 +51,7 @@
     <Compile Include="AutoWireTests.cs" />
     <Compile Include="JoinableTests.cs" />
     <Compile Include="ProcessTests.cs" />
+    <Compile Include="TestLambdaProcess.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
