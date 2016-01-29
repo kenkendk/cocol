@@ -77,7 +77,7 @@ namespace CoCoL
 		/// <param name="scope">The current scope.</param>
 		public static T AutoWireChannelsDirect<T>(T item, ChannelScope scope = null)
 		{
-					scope = scope ?? ChannelScope.Current;
+			scope = scope ?? ChannelScope.Current;
 
 			foreach (var c in GetAllFieldAndPropertyValuesOfType<IRetireAbleChannel>(item))
 			{
