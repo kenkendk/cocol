@@ -6,6 +6,9 @@ using System.Linq;
 
 namespace MonteCarloPi
 {
+	/// <summary>
+	/// Example template for fork-join style processing
+	/// </summary>
 	public static class ForkJoinProcessing
 	{
 		/// <summary>
@@ -18,130 +21,73 @@ namespace MonteCarloPi
 		private const string WORKEROUTPUT = "WorkerOutput";
 
 		/// <summary>
-		/// Generates points based on the count input
+		/// Emits all values from the enumerable into the network
 		/// </summary>
-		private class Generator<TInput> : ProcessHelper
+		/// <param name="values">Values.</param>
+		/// <typeparam name="TInput">The 1st type parameter.</typeparam>
+		private static Task Generator<TInput>(IEnumerable<TInput> values)
 		{
-			/// <summary>
-			/// The number of points to create
-			/// </summary>
-			private IEnumerable<TInput> m_values;
-
-			/// <summary>
-			/// Initializes a new instance of the <see cref="MonteCarloPi.Generator"/> class.
-			/// </summary>
-			/// <param name="values">The values to create.</param>
-			public Generator(IEnumerable<TInput> values)
-				: base()
-			{
-				m_values = values;
-			}
-
-			/// <summary>
-			/// The channel where the points are written to
-			/// </summary>
-			[ChannelName(WORKERINPUT)]
-			private IWriteChannel<TInput> m_target;
-
-			/// <summary>
-			/// The method that implements this process
-			/// </summary>
-			protected override async Task Start()
-			{
-				foreach (var value in m_values)
-					await m_target.WriteAsync(value).ConfigureAwait(false);
-			}
-		}		
-
-		/// <summary>
-		/// Work class that computes if a point is within the unit circle
-		/// </summary>
-		private class Worker<TInput, TOutput> : ProcessHelper
-		{
-			/// <summary>
-			/// The method that performs the forked work
-			/// </summary>
-			private Func<TInput, TOutput> m_workermethod;
-
-			/// <summary>
-			/// The channel where points are read from
-			/// </summary>
-			[ChannelName(WORKERINPUT)]
-			private IReadChannel<TInput> m_source;
-			/// <summary>
-			/// The channel where results are written to
-			/// </summary>
-			[ChannelName(WORKEROUTPUT)]
-			private IWriteChannel<TOutput> m_target;
-
-			/// <summary>
-			/// Initializes a new instance of the <see cref="MonteCarloPi.ForkJoinProcessing`3+Worker"/> class.
-			/// </summary>
-			/// <param name="workermethod">The worker method.</param>
-			public Worker(Func<TInput, TOutput> workermethod)
-			{
-				m_workermethod = workermethod;
-			}
-
-			/// <summary>
-			/// The method that implements this process
-			/// </summary>
-			protected override async Task Start()
-			{
-				try
-				{
-					while (true)
-						await m_target.WriteAsync(m_workermethod(await m_source.ReadAsync().ConfigureAwait(false))).ConfigureAwait(false);
+			return AutomationExtensions.RunTask(
+				new { channel = ChannelMarker.ForWrite<TInput>(WORKERINPUT) },
+				async self => {
+					foreach (var value in values)
+						await self.channel.WriteAsync(value).ConfigureAwait(false);
 				}
-				catch(Exception ex)
-				{
-					if (!(ex is RetiredException))
-						Console.WriteLine("ex: {0}", ex);
-					throw;
-				}
-			}
+			);
 		}
 
 		/// <summary>
-		/// The collector reads and counts all results
+		/// Reads input and applies the method to each input, and emits the output
 		/// </summary>
-		private class Collector<TOutput, TResult> : ProcessHelper
+		/// <param name="method">The worker method to apply to each element.</param>
+		/// <typeparam name="TInput">The input type parameter.</typeparam>
+		/// <typeparam name="TOutput">The output type parameter.</typeparam>
+		private static Task Worker<TInput, TOutput>(Func<TInput, TOutput> method)
 		{
-			/// <summary>
-			/// The method for joining the results
-			/// </summary>
-			private Func<TResult, TOutput, TResult> m_joinmethod;
+			return AutomationExtensions.RunTask(
+				new { 
+					input = ChannelMarker.ForRead<TInput>(WORKERINPUT),
+					output = ChannelMarker.ForWrite<TOutput>(WORKEROUTPUT) 
+				},
+				
+				async self => {
+					try
+					{
+						while (true)
+						{
+							await self.output.WriteAsync(method(await self.input.ReadAsync().ConfigureAwait(false))).ConfigureAwait(false);
+						}
+					}
+					catch(Exception ex)
+					{
+						if (!(ex is RetiredException))
+							Console.WriteLine("ex: {0}", ex);
+						throw;
+					}
+				}
+			);
+		}
 
-			/// <summary>
-			/// The current results
-			/// </summary>
-			public TResult Current { get; private set; }
+		/// <summary>
+		/// Collects input and combines it with the join method
+		/// </summary>
+		/// <param name="joinmethod">The method used to join results.</param>
+		/// <param name="initial">The initial input to the join method, aka. the neutral element.</param>
+		/// <typeparam name="TOutput">The type parameter for the data to join.</typeparam>
+		/// <typeparam name="TResult">The type parameter for the aggregated data.</typeparam>
+		private static async Task<TResult> Collector<TOutput, TResult>(Func<TResult, TOutput, TResult> joinmethod, TResult initial)
+		{
+			var current = initial;
 
-			/// <summary>
-			/// The channel where computed results are input
-			/// </summary>
-			[ChannelName(WORKEROUTPUT)]
-			private IReadChannel<TOutput> m_source;
+			await AutomationExtensions.RunTask(
+				new { channel = ChannelMarker.ForRead<TOutput>(WORKEROUTPUT) },
+				async self => {
+					while (true)
+						current = joinmethod(current, await self.channel.ReadAsync().ConfigureAwait(false));
+				}
+			).ConfigureAwait(false);
 
-			/// <summary>
-			/// Initializes a new instance of the <see cref="MonteCarloPi.ForkJoinProcessing`3+Collector"/> class.
-			/// </summary>
-			/// <param name="joinmethod">The method for joining the values.</param>
-			/// <param name="initial">The initial value.</param>
-			public Collector(Func<TResult, TOutput, TResult> joinmethod, TResult initial)
-			{
-				m_joinmethod = joinmethod;
-				Current = initial;
-			}
-
-			/// <summary>
-			/// The method that implements this process
-			/// </summary>
-			protected override async Task Start()
-			{
-				while (true)
-					Current = m_joinmethod(Current, await m_source.ReadAsync().ConfigureAwait(false));
-			}
+			return current;
 		}
 
 		/// <summary>
@@ -155,28 +101,26 @@ namespace MonteCarloPi
 		/// <param name="initialvalue">The initial value of the join process.</param>
 		public static async Task<TResult> ForkJoinProcessAsync<TInput, TOutput, TResult>(IEnumerable<TInput> input, Func<TInput, TOutput> workermethod, Func<TResult, TOutput, TResult> joinmethod, int workers = -1, TResult initialvalue = default(TResult))
 		{
-			// Set up a new name scope so we do not pollute the global scope
-			using (new ChannelScope())
+			// Set up a new isolated name scope so we do not pollute the global scope
+			using (new ChannelScope(true))
 			{
-				// Keep a reference to the collector so we can grab the result
-				var collector = new Collector<TOutput, TResult>(joinmethod, initialvalue);
+				// Start the collector so we have the task
+				var result = Collector(joinmethod, initialvalue);
 
-				// Await all tasks such that we can capture any exceptions
+				// Await all tasks such that we capture any exceptions
 				await Task.WhenAll(
 
 					// Spawn the workers
 					Task.WhenAll(from n in Enumerable.Range(0, workers)
-						           select new Worker<TInput, TOutput>(workermethod).RunAsync()), 
+						           select Worker(workermethod)), 
 
 					// Inject all work items into the network
-					new Generator<TInput>(input).RunAsync(),
-
-					collector.RunAsync()
+					Generator(input)
 
 				).ConfigureAwait(false);
 					
 				// Give back the result
-				return collector.Current;
+				return await result;
 			}
 		}
 	}
