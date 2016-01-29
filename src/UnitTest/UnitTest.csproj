@@ -79,6 +79,10 @@
       <Project>{77453E91-BE0A-4994-A95C-30D2059A01F1}</Project>
       <Name>StressedAlt</Name>
     </ProjectReference>
+    <ProjectReference Include="..\examples\MonteCarloPi\MonteCarloPi.csproj">
+      <Project>{A34DD3BF-9A1F-4167-B487-8D7E75530ED4}</Project>
+      <Name>MonteCarloPi</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
