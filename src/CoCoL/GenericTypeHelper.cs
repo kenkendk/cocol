@@ -27,7 +27,7 @@ namespace CoCoL
 		/// <param name="channel">The channel to read from.</param>
 		/// <param name="offer">The two-phase offer.</param>
 		/// <param name="timeout">The timeout value.</param>
-		Task<object> ReadAsync(IUntypedChannel channel, ITwoPhaseOffer offer, TimeSpan timeout);
+		Task<object> ReadAsync(IUntypedChannel channel, TimeSpan timeout, ITwoPhaseOffer offer = null);
 
 		/// <summary>
 		/// Writes the channel and returns the task
@@ -37,7 +37,7 @@ namespace CoCoL
 		/// <param name="value">The value to write.</param>
 		/// <param name="offer">The two-phase offer.</param>
 		/// <param name="timeout">The timeout value.</param>
-		Task WriteAsync(IUntypedChannel channel, object value, ITwoPhaseOffer offer, TimeSpan timeout);
+		Task WriteAsync(IUntypedChannel channel, object value, TimeSpan timeout, ITwoPhaseOffer offer = null);
 
 		/// <summary>
 		/// Requests a read on the channel.
@@ -80,9 +80,9 @@ namespace CoCoL
 		/// <param name="channel">The channel to read from.</param>
 		/// <param name="offer">The two-phase offer.</param>
 		/// <param name="timeout">The timeout value.</param>
-		public async Task<object> ReadAsync(IUntypedChannel channel, ITwoPhaseOffer offer, TimeSpan timeout)
+		public async Task<object> ReadAsync(IUntypedChannel channel, TimeSpan timeout, ITwoPhaseOffer offer = null)
 		{
-			return (await (channel as IReadChannel<T>).ReadAsync(offer, timeout));
+			return (await (channel as IReadChannel<T>).ReadAsync(timeout, offer));
 		}
 
 		/// <summary>
@@ -93,9 +93,9 @@ namespace CoCoL
 		/// <param name="value">The value to write.</param>
 		/// <param name="offer">The two-phase offer.</param>
 		/// <param name="timeout">The timeout value.</param>
-		public Task WriteAsync(IUntypedChannel channel, object value, ITwoPhaseOffer offer, TimeSpan timeout)
+		public Task WriteAsync(IUntypedChannel channel, object value, TimeSpan timeout, ITwoPhaseOffer offer = null)
 		{
-			return (channel as IWriteChannel<T>).WriteAsync(offer, (T)value, timeout);
+			return (channel as IWriteChannel<T>).WriteAsync((T)value, timeout, offer);
 		}
 
 		/// <summary>

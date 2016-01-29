@@ -157,7 +157,7 @@ namespace CoCoL
 		/// </summary>
 		public T Read()
 		{
-			var t = ReadAsync();
+			var t = ReadAsync(Timeout.Infinite);
 			return t .WaitForTask().Result;
 		}
 
@@ -167,7 +167,7 @@ namespace CoCoL
 		/// <param name="value">The value to write into the channel</param>
 		public void Write(T value)
 		{
-			var v = WriteAsync(value);
+			var v = WriteAsync(value, Timeout.Infinite);
 			v.WaitForTask();
 			if (v.Exception != null)
 				throw v.Exception;
@@ -179,64 +179,9 @@ namespace CoCoL
 		/// <summary>
 		/// Registers a desire to read from the channel
 		/// </summary>
-		public Task<T> ReadAsync()
-		{
-			return ReadAsync(null, Timeout.Infinite);
-		}
-
-		/// <summary>
-		/// Registers a desire to read from the channel
-		/// </summary>
-		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-		public Task<T> ReadAsync(TimeSpan timeout)
-		{
-			return ReadAsync(null, timeout);
-		}
-
-		/// <summary>
-		/// Registers a desire to read from the channel
-		/// </summary>
-		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-		public Task<T> ReadAsync(ITwoPhaseOffer offer)
-		{
-			return ReadAsync(offer, Timeout.Infinite);
-		}
-
-		/// <summary>
-		/// Registers a desire to write to the channel
-		/// </summary>
-		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-		/// <param name="value">The value to write to the channel.</param>
-		public Task WriteAsync(ITwoPhaseOffer offer, T value)
-		{
-			return WriteAsync(offer, value, Timeout.Infinite);
-		}
-
-		/// <summary>
-		/// Registers a desire to write to the channel
-		/// </summary>
-		/// <param name="value">The value to write to the channel.</param>
-		public Task WriteAsync(T value)
-		{
-			return WriteAsync(null, value, Timeout.Infinite);
-		}
-
-		/// <summary>
-		/// Registers a desire to write to the channel
-		/// </summary>
-		/// <param name="value">The value to write to the channel.</param>
-		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-		public Task WriteAsync(T value, TimeSpan timeout)
-		{
-			return WriteAsync(null, value, timeout);
-		}
-
-		/// <summary>
-		/// Registers a desire to read from the channel
-		/// </summary>
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-		public Task<T> ReadAsync(ITwoPhaseOffer offer, TimeSpan timeout)
+		public Task<T> ReadAsync(TimeSpan timeout, ITwoPhaseOffer offer = null)
 		{				
 			// Store entry time in case we need it and the offer dance takes some time
 			var entry = DateTime.Now;
@@ -352,7 +297,7 @@ namespace CoCoL
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
 		/// <param name="value">The value to write to the channel.</param>
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-		public Task WriteAsync(ITwoPhaseOffer offer, T value, TimeSpan timeout)
+		public Task WriteAsync(T value, TimeSpan timeout, ITwoPhaseOffer offer = null)
 		{
 			// Store entry time in case we need it and the offer dance takes some time
 			var entry = DateTime.Now;

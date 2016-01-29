@@ -160,54 +160,16 @@ namespace CoCoL
 		/// <summary>
 		/// Registers a desire to read from the channel
 		/// </summary>
-		/// <param name="callback">A callback method that is called with the result of the operation</param>
-		/// <returns>The async.</returns>
-		public Task<T> ReadAsync()
-		{
-			if (m_target == null)
-				throw new ObjectDisposedException(this.GetType().FullName);
-			return ((IReadChannel<T>)m_target).ReadAsync();
-		}
-		/// <summary>
-		/// Registers a desire to read from the channel
-		/// </summary>
-		/// <param name="callback">A callback method that is called with the result of the operation</param>
-		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a
-		/// negative span to wait forever.</param>
-		/// <returns>The async.</returns>
-		public Task<T> ReadAsync(TimeSpan timeout)
-		{
-			if (m_target == null)
-				throw new ObjectDisposedException(this.GetType().FullName);
-			return ((IReadChannel<T>)m_target).ReadAsync(timeout);
-		}
-		/// <summary>
-		/// Registers a desire to read from the channel
-		/// </summary>
-		/// <param name="callback">A callback method that is called with the result of the operation</param>
-		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a
-		/// negative span to wait forever.</param>
-		/// <returns>The async.</returns>
-		/// <param name="offer">Offer.</param>
-		public Task<T> ReadAsync(ITwoPhaseOffer offer)
-		{
-			if (m_target == null)
-				throw new ObjectDisposedException(this.GetType().FullName);
-			return ((IReadChannel<T>)m_target).ReadAsync(offer);
-		}
-		/// <summary>
-		/// Registers a desire to read from the channel
-		/// </summary>
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
 		/// <param name="callback">A callback method that is called with the result of the operation</param>
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a
 		/// negative span to wait forever.</param>
 		/// <returns>The async.</returns>
-		public Task<T> ReadAsync(ITwoPhaseOffer offer, TimeSpan timeout)
+		public Task<T> ReadAsync(TimeSpan timeout, ITwoPhaseOffer offer = null)
 		{
 			if (m_target == null)
 				throw new ObjectDisposedException(this.GetType().FullName);
-			return ((IReadChannel<T>)m_target).ReadAsync(offer, timeout);
+			return ((IReadChannel<T>)m_target).ReadAsync(timeout, offer);
 		}
 		#endregion
 	}
@@ -227,36 +189,6 @@ namespace CoCoL
 		}
 
 		#region IWriteChannel implementation
-		/// <summary>
-		/// Registers a desire to write to the channel
-		/// </summary>
-		/// <param name="value">The value to write to the channel.</param>
-		/// <returns>The async.</returns>
-		public Task WriteAsync(T value)
-		{
-			return ((IWriteChannel<T>)m_target).WriteAsync(value);
-		}
-		/// <summary>
-		/// Registers a desire to write to the channel
-		/// </summary>
-		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-		/// <param name="value">The value to write to the channel.</param>
-		/// <returns>The async.</returns>
-		public Task WriteAsync(ITwoPhaseOffer offer, T value)
-		{
-			return ((IWriteChannel<T>)m_target).WriteAsync(offer, value);
-		}
-		/// <summary>
-		/// Registers a desire to write to the channel
-		/// </summary>
-		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-		/// <param name="value">The value to write to the channel.</param>
-		/// <returns>The async.</returns>
-		/// <param name="timeout">Timeout.</param>
-		public Task WriteAsync(T value, TimeSpan timeout)
-		{
-			return ((IWriteChannel<T>)m_target).WriteAsync(value, timeout);
-		}
 
 		/// <summary>
 		/// Registers a desire to write to the channel
@@ -266,9 +198,9 @@ namespace CoCoL
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a
 		/// negative span to wait forever.</param>
 		/// <returns>The async.</returns>
-		public Task WriteAsync(ITwoPhaseOffer offer, T value, TimeSpan timeout)
+		public Task WriteAsync(T value, TimeSpan timeout, ITwoPhaseOffer offer = null)
 		{
-			return ((IWriteChannel<T>)m_target).WriteAsync(offer, value, timeout);
+			return ((IWriteChannel<T>)m_target).WriteAsync(value, timeout, offer);
 		}
 
 		#endregion

@@ -43,19 +43,7 @@ namespace CoCoL
 
 
 		#region IReadChannel implementation
-		public Task<T> ReadAsync()
-		{
-			throw new NotImplementedException();
-		}
-		public Task<T> ReadAsync(TimeSpan timeout)
-		{
-			throw new NotImplementedException();
-		}
-		public Task<T> ReadAsync(ITwoPhaseOffer offer)
-		{
-			throw new NotImplementedException();
-		}
-		public Task<T> ReadAsync(ITwoPhaseOffer offer, TimeSpan timeout)
+		public Task<T> ReadAsync(TimeSpan timeout, ITwoPhaseOffer offer = null)
 		{
 			throw new NotImplementedException();
 		}
@@ -89,19 +77,7 @@ namespace CoCoL
 		// Since this is just a marker, we do not implement any methods
 
 		#region IWriteChannel implementation
-		public Task WriteAsync(T value)
-		{
-			throw new NotImplementedException();
-		}
-		public Task WriteAsync(ITwoPhaseOffer offer, T value)
-		{
-			throw new NotImplementedException();
-		}
-		public Task WriteAsync(T value, TimeSpan timeout)
-		{
-			throw new NotImplementedException();
-		}
-		public Task WriteAsync(ITwoPhaseOffer offer, T value, TimeSpan timeout)
+		public Task WriteAsync(T value, TimeSpan timeout, ITwoPhaseOffer offer = null)
 		{
 			throw new NotImplementedException();
 		}

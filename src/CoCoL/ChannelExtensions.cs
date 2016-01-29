@@ -118,6 +118,30 @@ namespace CoCoL
 		}
 		#endregion
 
+		#region Simple channel overload methods
+		/// <summary>
+		/// Registers a desire to read from the channel
+		/// </summary>
+		/// <param name="self">The channel to read from</param>
+		/// <typeparam name="T">The channel data type parameter.</typeparam>
+		/// <returns>The value read from the channel</returns>
+		public static Task<T> ReadAsync<T>(this IReadChannel<T> self) 
+		{
+			return self.ReadAsync(Timeout.Infinite, null);
+		}
+		/// <summary>
+		/// Registers a desire to write to the channel
+		/// </summary>
+		/// <param name="self">The channel to write to</param>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <typeparam name="T">The channel data type parameter.</typeparam>
+		/// <returns>An awaitable task</returns>
+		public static Task WriteAsync<T>(this IWriteChannel<T> self, T value)
+		{
+			return self.WriteAsync(value, Timeout.Infinite, null);
+		}
+		#endregion
+
 		#region Blocking channel usage
 		/// <summary>
 		/// Read from the channel in a blocking manner
@@ -569,29 +593,7 @@ namespace CoCoL
 		/// <param name="self">The channel to read.</param>
 		public static object Read(this IUntypedChannel self)
 		{
-			return Read(self, null, Timeout.Infinite);
-		}
-
-		/// <summary>
-		/// Reads the channel synchronously.
-		/// </summary>
-		/// <returns>The value read.</returns>
-		/// <param name="self">The channel to read.</param>
-		/// <param name="offer">The two-phase offer.</param>
-		public static object Read(this IUntypedChannel self, ITwoPhaseOffer offer)
-		{
-			return Read(self, offer, Timeout.Infinite);
-		}
-
-		/// <summary>
-		/// Reads the channel synchronously.
-		/// </summary>
-		/// <returns>The value read.</returns>
-		/// <param name="self">The channel to read.</param>
-		/// <param name="timeout">The read timeout.</param>
-		public static object Read(this IUntypedChannel self, TimeSpan timeout)
-		{
-			return Read(self, null, timeout);
+			return Read(self, Timeout.Infinite, null);
 		}
 
 		/// <summary>
@@ -601,9 +603,9 @@ namespace CoCoL
 		/// <param name="self">The channel to read.</param>
 		/// <param name="offer">The two-phase offer.</param>
 		/// <param name="timeout">The read timeout.</param>
-		public static object Read(this IUntypedChannel self, ITwoPhaseOffer offer, TimeSpan timeout)
+		public static object Read(this IUntypedChannel self, TimeSpan timeout, ITwoPhaseOffer offer = null)
 		{
-			return WaitForTask<object>(ReadAsync(self, offer, timeout)).Result;
+			return WaitForTask<object>(ReadAsync(self, timeout, offer)).Result;
 		}
 
 		/// <summary>
@@ -613,33 +615,9 @@ namespace CoCoL
 		/// <param name="self">The channel to read.</param>
 		public static Task<object> ReadAsync(this IUntypedChannel self)
 		{
-			return ReadAsync(self, null, Timeout.Infinite);
+			return ReadAsync(self, Timeout.Infinite, null);
 		}
-
-		/// <summary>
-		/// Reads the channel asynchronously.
-		/// </summary>
-		/// <returns>The task for awaiting completion.</returns>
-		/// <param name="self">The channel to read.</param>
-		/// <param name="offer">The two-phase offer.</param>
-		/// <param name="timeout">The read timeout.</param>
-		public static Task<object> ReadAsync(this IUntypedChannel self, ITwoPhaseOffer offer)
-		{
-			return ReadAsync(self, offer, Timeout.Infinite);
-		}
-
-		/// <summary>
-		/// Reads the channel asynchronously.
-		/// </summary>
-		/// <returns>The task for awaiting completion.</returns>
-		/// <param name="self">The channel to read.</param>
-		/// <param name="offer">The two-phase offer.</param>
-		/// <param name="timeout">The read timeout.</param>
-		public static Task<object> ReadAsync(this IUntypedChannel self, TimeSpan timeout)
-		{
-			return ReadAsync(self, null, timeout);
-		}
-
+			
 		/// <summary>
 		/// Writes the channel synchronously
 		/// </summary>
@@ -647,41 +625,18 @@ namespace CoCoL
 		/// <param name="value">The value to write.</param>
 		public static void Write(this IUntypedChannel self, object value)
 		{
-			Write(self, null, value, Timeout.Infinite);
+			Write(self, value, Timeout.Infinite, null);
 		}
-
-		/// <summary>
-		/// Writes the channel synchronously
-		/// </summary>
-		/// <param name="self">The channel to write.</param>
-		/// <param name="offer">The two-phase offer.</param>
-		/// <param name="value">The value to write.</param>
-		public static void Write(this IUntypedChannel self, ITwoPhaseOffer offer, object value)
-		{
-			Write(self, offer, value, Timeout.Infinite);
-		}
-
+			
 		/// <summary>
 		/// Writes the channel synchronously
 		/// </summary>
 		/// <param name="self">The channel to write.</param>
 		/// <param name="value">The value to write.</param>
 		/// <param name="timeout">The write timeout.</param>
-		public static void Write(this IUntypedChannel self, object value, TimeSpan timeout)
+		public static void Write(this IUntypedChannel self, object value, TimeSpan timeout, ITwoPhaseOffer offer = null)
 		{
-			Write(self, null, value, timeout);
-		}
-
-		/// <summary>
-		/// Writes the channel synchronously
-		/// </summary>
-		/// <param name="self">The channel to write.</param>
-		/// <param name="offer">The two-phase offer.</param>
-		/// <param name="value">The value to write.</param>
-		/// <param name="timeout">The write timeout.</param>
-		public static void Write(this IUntypedChannel self, ITwoPhaseOffer offer, object value, TimeSpan timeout)
-		{
-			var res = WriteAsync(self, offer, value, timeout).WaitForTask();
+			var res = WriteAsync(self, value, timeout, offer).WaitForTask();
 
 			if (res.Exception != null)
 			{
@@ -704,31 +659,7 @@ namespace CoCoL
 		/// <param name="value">The value to write.</param>
 		public static Task WriteAsync(this IUntypedChannel self, object value)
 		{
-			return WriteAsync(self, null, value, Timeout.Infinite);
-		}
-
-		/// <summary>
-		/// Writes the channel asynchronously
-		/// </summary>
-		/// <returns>The task for awaiting completion.</returns>
-		/// <param name="self">The channel to write.</param>
-		/// <param name="offer">The two-phase offer.</param>
-		/// <param name="value">The value to write.</param>
-		public static Task WriteAsync(this IUntypedChannel self, ITwoPhaseOffer offer, object value)
-		{
-			return WriteAsync(self, offer, value, Timeout.Infinite);
-		}
-
-		/// <summary>
-		/// Writes the channel asynchronously
-		/// </summary>
-		/// <returns>The task for awaiting completion.</returns>
-		/// <param name="self">The channel to write.</param>
-		/// <param name="value">The value to write.</param>
-		/// <param name="timeout">The write timeout.</param>
-		public static Task WriteAsync(this IUntypedChannel self, object value, TimeSpan timeout)
-		{
-			return WriteAsync(self, null, value, timeout);
+			return WriteAsync(self, value, Timeout.Infinite, null);
 		}
 
 		/// <summary>
@@ -738,9 +669,9 @@ namespace CoCoL
 		/// <param name="self">The channel to read.</param>
 		/// <param name="offer">The two-phase offer.</param>
 		/// <param name="timeout">The read timeout.</param>
-		public static Task<object> ReadAsync(this IUntypedChannel self, ITwoPhaseOffer offer, TimeSpan timeout)
+		public static Task<object> ReadAsync(this IUntypedChannel self, TimeSpan timeout,  ITwoPhaseOffer offer = null)
 		{
-			return UntypedAccessMethods.CreateReadAccessor(self).ReadAsync(self, offer, timeout);
+			return UntypedAccessMethods.CreateReadAccessor(self).ReadAsync(self, timeout, offer);
 		}
 
 		/// <summary>
@@ -751,9 +682,9 @@ namespace CoCoL
 		/// <param name="offer">The two-phase offer.</param>
 		/// <param name="value">The value to write.</param>
 		/// <param name="timeout">The write timeout.</param>
-		public static Task WriteAsync(this IUntypedChannel self, ITwoPhaseOffer offer, object value, TimeSpan timeout)
+		public static Task WriteAsync(this IUntypedChannel self, object value, TimeSpan timeout, ITwoPhaseOffer offer = null)
 		{
-			return UntypedAccessMethods.CreateWriteAccessor(self).WriteAsync(self, value, offer, timeout);
+			return UntypedAccessMethods.CreateWriteAccessor(self).WriteAsync(self, value, timeout, offer);
 		}
 
 		#endregion
