@@ -265,39 +265,23 @@ namespace CoCoL
 		/// <param name="instance">The instance to dispose after running</param>
 		/// <param name="method">The callback method that does the actual work.</param>
 		/// <param name="catchRetiredExceptions">If set to <c>true</c> any RetiredExceptions are caught and ignored.</param>
-		public static async Task RunProtected(IDisposable instance, Func<Task> method, bool catchRetiredExceptions = true)
+		public static async Task RunProtected(this IDisposable instance, Func<Task> method, bool catchRetiredExceptions = true)
 		{
 			try
 			{
 				using(instance)
 					await method();
 			}
-			catch(AggregateException ex)
+			catch(Exception ex)
 			{
-				if (catchRetiredExceptions)
-				{
-					var lst = 
-						from n in ex.Flatten().InnerExceptions
-							where !(n is RetiredException)
-						select n;
+				if (catchRetiredExceptions && IsRetiredException(ex))
+					return;
 
-					if (lst.Count() == 0)
-						return;
-					else if (lst.Count() == 1)
-						throw lst.First();
-					else
-						throw new AggregateException(lst);
-				}
-
-				if (ex.Flatten().InnerExceptions.Count == 1)
-					throw ex.Flatten().InnerExceptions.First();
+				// Unwrap
+				if (ex is AggregateException && ((AggregateException)ex).Flatten().InnerExceptions.Count == 1)
+					throw ((AggregateException)ex).Flatten().InnerExceptions.First();
 
 				throw;
-			}
-			catch(RetiredException)
-			{
-				if (!catchRetiredExceptions)
-					throw;
 			}
 		}
 
@@ -310,44 +294,43 @@ namespace CoCoL
 		/// <param name="method">The process method.</param>
 		/// <typeparam name="T">The type of the channel object parameter.</typeparam>
 		/// <param name="catchRetiredExceptions">If set to <c>true</c> any RetiredExceptions are caught and ignored.</param>
-		public static async Task RunTask<T>(T channels, Func<T, Task> method, bool catchRetiredExceptions = true)
+		public static async Task RunTask<T>(this T channels, Func<T, Task> method, bool catchRetiredExceptions = true)
 		{
 			AutoWireChannelsDirect(channels);
 			try
 			{
 				await method(channels);
 			}
-			catch(AggregateException ex)
+			catch(Exception ex)
 			{
-				if (catchRetiredExceptions)
-				{
-					var lst = 
-						from n in ex.Flatten().InnerExceptions
-							where !(n is RetiredException)
-						select n;
+				if (catchRetiredExceptions && IsRetiredException(ex))
+					return;
 
-					if (lst.Count() == 0)
-						return;
-					else if (lst.Count() == 1)
-						throw lst.First();
-					else
-						throw new AggregateException(lst);
-				}
-
-				if (ex.Flatten().InnerExceptions.Count == 1)
-					throw ex.Flatten().InnerExceptions.First();
+				// Unwrap
+				if (ex is AggregateException && ((AggregateException)ex).Flatten().InnerExceptions.Count == 1)
+					throw ((AggregateException)ex).Flatten().InnerExceptions.First();
 
 				throw;
-			}
-			catch(RetiredException)
-			{
-				if (!catchRetiredExceptions)
-					throw;
 			}
 			finally
 			{
 				RetireAllChannels(channels);
 			}
+		}
+
+		/// <summary>
+		/// Determines if is the exception is a RetiredException.
+		/// </summary>
+		/// <returns><c>true</c> the exception is a RetiredException; otherwise, <c>false</c>.</returns>
+		/// <param name="self">The exception to investigate.</param>
+		public static bool IsRetiredException(this Exception self)
+		{
+			if (self is RetiredException)
+				return true;
+			else if (self is AggregateException && ((AggregateException)self).Flatten().InnerExceptions.First() is RetiredException)
+				return true;
+
+			return false;
 		}
 	}
 }
