@@ -12,9 +12,19 @@ namespace CoCoL
 	public class Channel<T> : IBlockingChannel<T>, IChannel<T>, IUntypedChannel, IJoinAbleChannel, INamedItem
 	{
 		/// <summary>
+		/// The minium value for the cleanup threshold
+		/// </summary>
+		private const int MIN_QUEUE_CLEANUP_THRESHOLD = 100;
+
+		private interface IOfferItem
+		{
+			ITwoPhaseOffer Offer { get; }
+		}
+
+		/// <summary>
 		/// Structure for keeping a read request
 		/// </summary>
-		private struct ReaderEntry
+		private struct ReaderEntry : IOfferItem
 		{
 			/// <summary>
 			/// The offer handler for the request
@@ -41,12 +51,17 @@ namespace CoCoL
 				Source = callback;
 				Expires = expires;
 			}
+
+			/// <summary>
+			/// The offer handler for the request
+			/// </summary>
+			ITwoPhaseOffer IOfferItem.Offer { get { return Offer; } }
 		}
 
 		/// <summary>
 		/// Structure for keeping a write request
 		/// </summary>
-		private struct WriterEntry
+		private struct WriterEntry : IOfferItem
 		{
 			/// <summary>
 			/// The offer handler for the request
@@ -79,6 +94,11 @@ namespace CoCoL
 				Expires = expires;
 				Value = value;
 			}
+
+			/// <summary>
+			/// The offer handler for the request
+			/// </summary>
+			ITwoPhaseOffer IOfferItem.Offer { get { return Offer; } }
 		}
 
 		/// <summary>
@@ -139,6 +159,16 @@ namespace CoCoL
 		private int m_joinedWriterCount = 0;
 
 		/// <summary>
+		/// The threshold for performing writer queue cleanup
+		/// </summary>
+		private int m_writerQueueCleanup = MIN_QUEUE_CLEANUP_THRESHOLD;
+
+		/// <summary>
+		/// The threshold for performing reader queue cleanup
+		/// </summary>
+		private int m_readerQueueCleanup = MIN_QUEUE_CLEANUP_THRESHOLD;
+
+		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.Channel`1"/> class.
 		/// </summary>
 		/// <param name="size">The size of the write buffer</param>
@@ -174,7 +204,6 @@ namespace CoCoL
 			else if (v.IsCanceled)
 				throw new OperationCanceledException();
 		}
-
 
 		/// <summary>
 		/// Registers a desire to read from the channel
@@ -263,6 +292,10 @@ namespace CoCoL
 						// Release items if there is space in the buffer
 						ProcessWriteQueueBufferAfterRead();
 
+						// Adjust the cleanup threshold
+						if (m_writerQueue.Count <= m_writerQueueCleanup - MIN_QUEUE_CLEANUP_THRESHOLD)
+							m_writerQueueCleanup = Math.Max(MIN_QUEUE_CLEANUP_THRESHOLD, m_writerQueue.Count + MIN_QUEUE_CLEANUP_THRESHOLD);
+
 						// If this was the last item before the retirement, 
 						// flush all following and set the retired flag
 						EmptyQueueIfRetired();
@@ -282,6 +315,9 @@ namespace CoCoL
 				{
 					// Register the pending reader
 					m_readerQueue.Add(new ReaderEntry(offer, result, expires));
+
+					// If we have expanded the queue with a new batch, see if we can purge old entries
+					PerformQueueCleanup(m_readerQueue, ref m_readerQueueCleanup);
 
 					if (expires != Timeout.InfiniteDateTime)
 						ExpirationManager.AddExpirationCallback(expires, ExpireItems);
@@ -377,6 +413,10 @@ namespace CoCoL
 						ThreadPool.QueueItem(() => result.SetResult(true));
 						ThreadPool.QueueItem(() => kp.Source.SetResult(value));
 
+						// Adjust the cleanup threshold
+						if (m_readerQueue.Count <= m_readerQueueCleanup - MIN_QUEUE_CLEANUP_THRESHOLD)
+							m_readerQueueCleanup = Math.Max(MIN_QUEUE_CLEANUP_THRESHOLD, m_readerQueue.Count + MIN_QUEUE_CLEANUP_THRESHOLD);
+
 						// If this was the last item before the retirement, 
 						// flush all following and set the retired flag
 						EmptyQueueIfRetired();
@@ -414,6 +454,10 @@ namespace CoCoL
 					{
 						// Register the pending writer
 						m_writerQueue.Add(new WriterEntry(offer, result, expires, value));
+
+						// If we have expanded the queue with a new batch, see if we can purge old entries
+						PerformQueueCleanup(m_writerQueue, ref m_writerQueueCleanup);
+
 						if (expires != Timeout.InfiniteDateTime)
 							ExpirationManager.AddExpirationCallback(expires, ExpireItems);
 					}
@@ -424,6 +468,34 @@ namespace CoCoL
 
 		}
 
+		/// <summary>
+		/// Purges items in the queue that are no longer active
+		/// </summary>
+		/// <param name="queue">The queue to remove from.</param>
+		/// <param name="queueCleanup">The threshold parameter.</param>
+		/// <typeparam name="T">The type of list data.</typeparam>
+		private void PerformQueueCleanup<Tx>(List<Tx> queue, ref int queueCleanup)
+			where Tx : IOfferItem
+		{
+			lock (m_lock)
+			{
+				if (queue.Count > queueCleanup)
+				{
+					for (var i = queue.Count - 1; i >= 0; i--)
+					{
+						if (queue[i].Offer != null)
+						if (queue[i].Offer.Offer(this))
+							queue[i].Offer.Withdraw(this);
+						else
+							queue.RemoveAt(i);
+					}
+
+					// Prevent repeated cleanup requests
+					queueCleanup = Math.Max(MIN_QUEUE_CLEANUP_THRESHOLD, queue.Count + MIN_QUEUE_CLEANUP_THRESHOLD);
+				}
+			}
+		}
+			
 		/// <summary>
 		/// Helper method for dequeueing write requests after space has been allocated in the writer queue
 		/// </summary>
