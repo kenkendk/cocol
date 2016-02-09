@@ -113,7 +113,7 @@ namespace CoCoL
 						if (lst.Count == 0)
 							tcs.TrySetCanceled();
 						else
-							WhenAnyNonCancelled(items, tcs);
+							WhenAnyNonCancelled(lst, tcs);
 					}
 				}
 			});
