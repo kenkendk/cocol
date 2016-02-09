@@ -332,7 +332,8 @@ namespace CoCoL
 		/// <returns>True if the write succeeded, false otherwise</returns>
 		public static bool TryWrite<T>(this IWriteChannel<T> self, T value)
 		{
-			return self.WriteAsync(value, Timeout.Immediate).WaitForTask().IsCompleted;
+			var task = self.WriteAsync(value, Timeout.Immediate).WaitForTask();
+			return !(task.IsFaulted || task.IsCanceled) && task.IsCompleted;
 		}
 
 		#endregion
