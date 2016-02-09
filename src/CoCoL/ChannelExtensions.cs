@@ -86,6 +86,45 @@ namespace CoCoL
 			return task;
 		}
 
+		/// <summary>
+		/// Helper method that implements WhenAny with the NotOnCancelled flag
+		/// </summary>
+		/// <returns>A task that completes when a NonCancelled task returns, or no more tasks are available</returns>
+		/// <param name="items">Items.</param>
+		public static Task<Task> WhenAnyNonCancelled(this IEnumerable<Task> items)
+		{
+			var tcs = new TaskCompletionSource<Task>();
+			var lst = items.ToList();
+
+			Action<Task<Task>> doContinue = null;
+
+			doContinue = x =>
+				{
+					if (x.IsCanceled)
+						tcs.TrySetCanceled();
+					else if (x.IsFaulted)
+						tcs.TrySetException(x.Exception);
+					else
+					{
+						var res = x.Result;
+						if (!res.IsCanceled)
+							tcs.TrySetResult(res);
+						else
+						{
+							lst.Remove(res);
+							if (lst.Count == 0)
+								tcs.TrySetCanceled();
+							else
+								Task.WhenAny(lst).ContinueWith(doContinue);
+						}
+					}
+				};
+
+			Task.WhenAny(items).ContinueWith(doContinue);
+
+			return tcs.Task;
+		}
+
 		#region Avoid compile warnings when using the write method in fire-n-forget mode
 		/// <summary>
 		/// Write to the channel in a blocking manner
@@ -139,6 +178,33 @@ namespace CoCoL
 		public static Task WriteAsync<T>(this IWriteChannel<T> self, T value)
 		{
 			return self.WriteAsync(value, Timeout.Infinite, null);
+		}
+		/// <summary>
+		/// Write to the channel in a probing manner
+		/// </summary>
+		/// <param name="value">The value to write into the channel</param>
+		/// <param name="self">The channel to read from</param>
+		/// <typeparam name="T">The channel data type parameter.</typeparam>
+		/// <returns>True if the write succeeded, false otherwise</returns>
+		public static Task<bool> TryWriteAsync<T>(this IWriteChannel<T> self, T value)
+		{
+			return self.WriteAsync(value, Timeout.Immediate, null).ContinueWith(x => x.IsCompleted);
+		}
+		/// <summary>
+		/// Write to the channel in a probing manner
+		/// </summary>
+		/// <param name="value">The value to write into the channel</param>
+		/// <param name="self">The channel to read from</param>
+		/// <typeparam name="T">The channel data type parameter.</typeparam>
+		/// <returns>True if the write succeeded, false otherwise</returns>
+		public static Task<KeyValuePair<bool, T>> TryReadAsync<T>(this IReadChannel<T> self)
+		{
+			return self.ReadAsync(Timeout.Immediate, null).ContinueWith(x => {
+				if (x.IsFaulted || x.IsCanceled)
+					return new KeyValuePair<bool, T>(false, default(T));
+
+				return new KeyValuePair<bool, T>(true, x.Result);
+			});
 		}
 		#endregion
 
@@ -195,7 +261,7 @@ namespace CoCoL
 		/// <returns>True if the read succeeded, false otherwise</returns>
 		public static bool TryRead<T>(this IReadChannel<T> self, out T result)
 		{
-			var res = self.ReadAsync(Timeout.Immediate);
+			var res = self.ReadAsync(Timeout.Immediate).WaitForTask();
 
 			if (res.IsFaulted || res.IsCanceled)
 			{
@@ -266,8 +332,9 @@ namespace CoCoL
 		/// <returns>True if the write succeeded, false otherwise</returns>
 		public static bool TryWrite<T>(this IWriteChannel<T> self, T value)
 		{
-			return self.WriteAsync(value, Timeout.Immediate).IsCompleted;
+			return self.WriteAsync(value, Timeout.Immediate).WaitForTask().IsCompleted;
 		}
+
 		#endregion
 
 		#region Blocking multi-channel usage

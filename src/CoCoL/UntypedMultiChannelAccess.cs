@@ -479,7 +479,7 @@ namespace CoCoL
 
 			offer.ProbePhaseComplete();
 
-			Task.WhenAny(tasks.Keys).ContinueWith((Task<Task> item) => Task.Run(() =>
+			tasks.Keys.WhenAnyNonCancelled().ContinueWith(item => Task.Run(() =>
 				{
 					if (offer.AtomicIsFirst())
 					{

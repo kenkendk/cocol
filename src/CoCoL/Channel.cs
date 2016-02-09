@@ -19,6 +19,7 @@ namespace CoCoL
 		private interface IOfferItem
 		{
 			ITwoPhaseOffer Offer { get; }
+			void TrySetCancelled();
 		}
 
 		/// <summary>
@@ -56,6 +57,10 @@ namespace CoCoL
 			/// The offer handler for the request
 			/// </summary>
 			ITwoPhaseOffer IOfferItem.Offer { get { return Offer; } }
+			/// <summary>
+			/// Tries to set the source to Cancelled
+			/// </summary>
+			void IOfferItem.TrySetCancelled() { Source.TrySetCanceled(); }
 		}
 
 		/// <summary>
@@ -99,6 +104,10 @@ namespace CoCoL
 			/// The offer handler for the request
 			/// </summary>
 			ITwoPhaseOffer IOfferItem.Offer { get { return Offer; } }
+			/// <summary>
+			/// Tries to set the source to Cancelled
+			/// </summary>
+			void IOfferItem.TrySetCancelled() { Source.TrySetCanceled(); }
 		}
 
 		/// <summary>
@@ -234,25 +243,25 @@ namespace CoCoL
 					if (!offerWriter)
 						try
 						{
-							offerWriter = kp.Offer.Offer(this);
+							offerWriter = kp.Source.Task.Status == TaskStatus.WaitingForActivation && kp.Offer.Offer(this);
 						}
 						catch(Exception ex)
 						{
-							result.SetException(ex);
+							result.TrySetException(ex);
 							return result.Task;
 						}
 
 					if (!offerReader)
 						try 
 						{						
-							offerReader = offer.Offer(this); 
+							offerReader = result.Task.Status == TaskStatus.WaitingForActivation && offer.Offer(this); 
 						}
 						catch(Exception ex) 
 						{ 
 							if (offerWriter)
 								kp.Offer.Withdraw(this);
 							
-							result.SetException(ex);
+							result.TrySetException(ex);
 							return result.Task;
 						}
 
@@ -267,12 +276,15 @@ namespace CoCoL
 
 						// if the writer bailed, remove it from the queue
 						if (!offerWriter)
+						{
+							kp.Source.TrySetCanceled();
 							m_writerQueue.RemoveAt(0);
+						}
 
 						// if the reader bailed, the queue is intact but we offer no more
 						if (!offerReader)
 						{
-							result.SetCanceled();
+							result.TrySetCanceled();
 							return result.Task;
 						}
 					}
@@ -285,7 +297,7 @@ namespace CoCoL
 							kp.Offer.Commit(this);
 						if (offer != null)
 							offer.Commit(this);
-						
+
 						ThreadPool.QueueItem(() => result.SetResult(kp.Value));
 						ThreadPool.QueueItem(() => kp.Source.SetResult(true));
 
@@ -309,7 +321,7 @@ namespace CoCoL
 				// If this was a probe call, return a timeout now
 				if (timeout.Ticks >= 0 && expires < DateTime.Now)
 				{
-					ThreadPool.QueueItem(() => result.SetException(TimeoutException));
+					ThreadPool.QueueItem(() => result.TrySetException(TimeoutException));
 				}
 				else
 				{
@@ -357,24 +369,24 @@ namespace CoCoL
 					if (!offerReader)
 						try 
 						{
-							offerReader = kp.Offer.Offer(this);
+							offerReader = kp.Source.Task.Status == TaskStatus.WaitingForActivation && kp.Offer.Offer(this);
 						}
 						catch(Exception ex)
 						{
-							result.SetException(ex);
+							result.TrySetException(ex);
 							return result.Task;
 						}
 
 					if (!offerWriter)
 						try 
 						{ 
-							offerWriter = offer.Offer(this); 
+							offerWriter = result.Task.Status == TaskStatus.WaitingForActivation && offer.Offer(this); 
 						}
 						catch(Exception ex)
 						{
 							if (offerReader)
 								kp.Offer.Withdraw(this);
-							result.SetException(ex);
+							result.TrySetException(ex);
 
 							return result.Task;
 						}
@@ -391,12 +403,15 @@ namespace CoCoL
 
 						// If the reader bailed, remove it from the queue
 						if (!offerReader)
+						{
+							kp.Source.TrySetCanceled();
 							m_readerQueue.RemoveAt(0);
+						}
 
 						// if the writer bailed, the queue is intact, but we stop offering
 						if (!offerWriter)
 						{
-							result.SetCanceled();
+							result.TrySetCanceled();
 							return result.Task;
 						}
 					}
@@ -434,11 +449,11 @@ namespace CoCoL
 							offer.Commit(this);
 
 						m_writerQueue.Add(new WriterEntry(null, new TaskCompletionSource<bool>(), Timeout.InfiniteDateTime, value));
-						result.SetResult(true);
+						result.TrySetResult(true);
 					}
 					else
 					{
-						result.SetCanceled();
+						result.TrySetCanceled();
 					}
 				}
 				else
@@ -487,7 +502,10 @@ namespace CoCoL
 						if (queue[i].Offer.Offer(this))
 							queue[i].Offer.Withdraw(this);
 						else
+						{
+							queue[i].TrySetCancelled();
 							queue.RemoveAt(i);
+						}
 					}
 
 					// Prevent repeated cleanup requests
@@ -557,6 +575,7 @@ namespace CoCoL
 					if (immediate)
 						while (m_retireCount > 1)
 						{
+							m_writerQueue[0].Source.TrySetException(RetiredException);
 							m_writerQueue.RemoveAt(0);
 							m_retireCount--;
 						}

@@ -447,7 +447,6 @@ namespace CoCoL
 		}
 		#endregion
 
-
 		/// <summary>
 		/// Reads from any of the specified channels
 		/// </summary>
@@ -499,12 +498,12 @@ namespace CoCoL
 
 			offer.ProbePhaseComplete();
 
-			Task.WhenAny(tasks.Keys).ContinueWith((Task<Task> item) => Task.Run(() =>
+			tasks.Keys.WhenAnyNonCancelled().ContinueWith(item => Task.Run(() =>
 				{
+					var n = item.Result;
+
 					if (offer.AtomicIsFirst())
 					{
-						var n = item.Result;
-
 						// Figure out which item was found
 						if (n.IsCanceled)
 							tcs.SetCanceled();

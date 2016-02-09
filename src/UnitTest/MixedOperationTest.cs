@@ -60,7 +60,7 @@ namespace UnitTest
 			// Wait for shutdown
 			try 
 			{
-				Task.WhenAll(p1(), p2()).Wait();
+				Task.WhenAll(p1(), p2()).WaitForTask().Wait();
 			}
 			catch(Exception ex)
 			{
