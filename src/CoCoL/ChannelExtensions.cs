@@ -91,36 +91,32 @@ namespace CoCoL
 		/// </summary>
 		/// <returns>A task that completes when a NonCancelled task returns, or no more tasks are available</returns>
 		/// <param name="items">Items.</param>
-		public static Task<Task> WhenAnyNonCancelled(this IEnumerable<Task> items)
+		/// <param name="source">The task completion source to signal</param>
+		public static Task<Task> WhenAnyNonCancelled(this IEnumerable<Task> items, TaskCompletionSource<Task> source = null)
 		{
-			var tcs = new TaskCompletionSource<Task>();
-			var lst = items.ToList();
+			var tcs = source ?? new TaskCompletionSource<Task>();
+			var lst = items is List<Task> ? (List<Task>)items : items.ToList();
 
-			Action<Task<Task>> doContinue = null;
-
-			doContinue = x =>
+			Task.WhenAny(items).ContinueWith(x => {
+				if (x.IsCanceled)
+					tcs.TrySetCanceled();
+				else if (x.IsFaulted)
+					tcs.TrySetException(x.Exception);
+				else
 				{
-					if (x.IsCanceled)
-						tcs.TrySetCanceled();
-					else if (x.IsFaulted)
-						tcs.TrySetException(x.Exception);
+					var res = x.Result;
+					if (!res.IsCanceled)
+						tcs.TrySetResult(res);
 					else
 					{
-						var res = x.Result;
-						if (!res.IsCanceled)
-							tcs.TrySetResult(res);
+						lst.Remove(res);
+						if (lst.Count == 0)
+							tcs.TrySetCanceled();
 						else
-						{
-							lst.Remove(res);
-							if (lst.Count == 0)
-								tcs.TrySetCanceled();
-							else
-								Task.WhenAny(lst).ContinueWith(doContinue);
-						}
+							WhenAnyNonCancelled(items, tcs);
 					}
-				};
-
-			Task.WhenAny(items).ContinueWith(doContinue);
+				}
+			});
 
 			return tcs.Task;
 		}
