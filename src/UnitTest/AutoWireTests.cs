@@ -62,7 +62,7 @@ namespace UnitTest
 					y = new Writer()
 				});
 
-				c = ChannelScope.Current.GetOrCreate<int>("input");
+				c = ChannelManager.GetChannel<int>("input");
 			}
 
 			if (x1 == null || !x1.HasChannel || x2 == null || !x2.HasChannel)
@@ -104,7 +104,7 @@ namespace UnitTest
 					y = new WriterEnd()
 				});
 
-				c = ChannelScope.Current.GetOrCreate<int>("input");
+				c = ChannelManager.GetChannel<int>("input");
 			}
 
 			if (x1 == null || !x1.HasChannel || x2 == null || !x2.HasChannel)
