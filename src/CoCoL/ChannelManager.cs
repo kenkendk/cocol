@@ -33,10 +33,22 @@ namespace CoCoL
 		/// <typeparam name="T">The channel type.</typeparam>
 		public static IChannel<T> CreateChannel<T>(string name = null, int buffersize = 0, ChannelScope scope = null) 
 		{
-			if (name == null)
+			if (string.IsNullOrWhiteSpace(name))
 				return CreateChannel<T>(buffersize);
 			else
 				return GetChannel<T>(name, buffersize, scope);
+		}
+
+		/// <summary>
+		/// Creates a channel for use in a scope
+		/// </summary>
+		/// <returns>The channel.</returns>
+		/// <param name="name">The name of the channel, or null.</param>
+		/// <param name="buffersize">The number of buffers in the channel.</param>
+		/// <typeparam name="T">The channel type.</typeparam>
+		internal static IChannel<T> CreateChannelForScope<T>(string name, int buffersize)
+		{
+			return new Channel<T>(name, buffersize); 
 		}
 
 		/// <summary>
@@ -47,7 +59,7 @@ namespace CoCoL
 		/// <typeparam name="T">The channel type.</typeparam>
 		public static IChannel<T> CreateChannel<T>(int buffersize) 
 		{ 
-			return new Channel<T>(null, buffersize); 
+			return CreateChannelForScope<T>(null, buffersize); 
 		}
 	}
 }

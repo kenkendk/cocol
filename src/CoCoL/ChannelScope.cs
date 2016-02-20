@@ -126,7 +126,7 @@ namespace CoCoL
 						cur = cur.ParentScope;
 				}
 
-				var chan = ChannelManager.CreateChannel<T>(name, buffersize);
+				var chan = ChannelManager.CreateChannelForScope<T>(name, buffersize);
 				m_lookup.Add(name, chan);
 				return chan;
 			}
