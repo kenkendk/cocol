@@ -87,6 +87,32 @@ namespace CoCoL
 		}
 
 		/// <summary>
+		/// Blocking wait for a task, equivalent to calling Task.Wait(),
+		/// but works around a race in Mono that causes Wait() to hang.
+		/// If an error occurs, an exception is thrown
+		/// </summary>
+		/// <param name="t">The task to wait for</param>
+		/// <returns>The task</returns>
+		public static Task WaitForTaskOrThrow(this Task task)
+		{
+			if (task == null)
+				throw new ArgumentNullException("task");
+			
+			task.WaitForTask();
+			if (task.IsCanceled)
+				throw new TaskCanceledException();
+			else if (task.IsFaulted)
+			{
+				if (task.Exception.Flatten().InnerExceptions.Count == 1)
+					throw task.Exception.Flatten().InnerExceptions.First();
+				else
+					throw task.Exception;
+			}
+
+			return task;
+		}
+
+		/// <summary>
 		/// Helper method that implements WhenAny with the NotOnCancelled flag
 		/// </summary>
 		/// <returns>A task that completes when a NonCancelled task returns, or no more tasks are available</returns>

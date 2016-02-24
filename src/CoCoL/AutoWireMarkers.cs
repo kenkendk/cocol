@@ -36,6 +36,51 @@ namespace CoCoL
 	}
 
 	/// <summary>
+	/// Helper class for creating typed-and-named markers
+	/// </summary>
+	public class ChannelMarkerWrapper<T>
+	{
+		/// <summary>
+		/// Gets the channel as a write request
+		/// </summary>
+		public readonly IWriteChannel<T> ForWrite;
+		/// <summary>
+		/// Gets the channel as a read request
+		/// </summary>
+		public readonly IReadChannel<T> ForRead;
+
+		/// <summary>
+		/// Gets the name of the channel
+		/// </summary>
+		public readonly string Name;
+
+		/// <summary>
+		/// The buffer size for the channel
+		/// </summary>
+		public readonly int BufferSize;
+
+		/// <summary>
+		/// The target channel scope
+		/// </summary>
+		public readonly ChannelNameScope TargetScope;
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="CoCoL.ChannelMarkerWrapper`1"/> class.
+		/// </summary>
+		/// <param name="name">The name of the channel.</param>
+		/// <param name="buffersize">The desired buffersize to use if the channel is created.</param>
+		/// <param name="targetScope">The scope to create or locate the name in.</param>
+		public ChannelMarkerWrapper(string name, int buffersize = 0, ChannelNameScope targetScope = ChannelNameScope.Local)
+		{
+			Name = name;
+			BufferSize = buffersize;
+			TargetScope = targetScope;
+			ForWrite = ChannelMarker.ForWrite<T>(name, buffersize, targetScope);
+			ForRead = ChannelMarker.ForRead<T>(name, buffersize, targetScope);
+		}
+	}
+
+	/// <summary>
 	/// Marker class for specifying channel attributes in anonymous types
 	/// </summary>
 	public abstract class ChannelNameMarker
