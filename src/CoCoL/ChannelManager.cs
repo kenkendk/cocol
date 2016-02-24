@@ -44,11 +44,11 @@ namespace CoCoL
 		/// <returns>The requested channel.</returns>
 		/// <param name="channel">The marker interface, or a real channel instance.</param>
 		/// <typeparam name="T">The channel type.</typeparam>
-		public static IWriteChannel<T> GetChannel<T>(IWriteChannel<T> channel)
+		public static IWriteChannelEnd<T> GetChannel<T>(IWriteChannel<T> channel)
 		{
 			var rt = channel as WriteMarker<T>;
 			if (rt == null)
-				return channel;
+				return channel.AsWriteOnly();
 
 			var scope = ChannelScope.Current;
 			if (rt.Attribute.TargetScope == ChannelNameScope.Parent)
@@ -65,11 +65,11 @@ namespace CoCoL
 		/// <returns>The requested channel.</returns>
 		/// <param name="channel">The marker interface, or a real channel instance.</param>
 		/// <typeparam name="T">The channel type.</typeparam>
-		public static IReadChannel<T> GetChannel<T>(IReadChannel<T> channel)
+		public static IReadChannelEnd<T> GetChannel<T>(IReadChannel<T> channel)
 		{
 			var rt = channel as ReadMarker<T>;
 			if (rt == null)
-				return channel;
+				return channel.AsReadOnly();
 
 			var scope = ChannelScope.Current;
 			if (rt.Attribute.TargetScope == ChannelNameScope.Parent)
