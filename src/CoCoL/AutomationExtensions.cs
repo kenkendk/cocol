@@ -148,9 +148,9 @@ namespace CoCoL
 					else
 						((PropertyInfo)c.Key).SetValue(item, chan);
 
-					if (chan is IJoinAbleChannelEnd)
+					if (chan is IJoinAbleChannelEnd && !chan.IsRetired)
 						((IJoinAbleChannelEnd)chan).Join();
-					else if (chan is IJoinAbleChannel)
+					else if (chan is IJoinAbleChannel && !chan.IsRetired)
 					{
 						// If the type is both read and write, we cannot use join semantics
 						if (isOnlyReadOrWrite)

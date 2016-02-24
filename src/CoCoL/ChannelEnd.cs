@@ -105,7 +105,7 @@ namespace CoCoL
 			if (m_target == null)
 				throw new ObjectDisposedException(this.GetType().FullName);
 
-			if (m_target is IJoinAbleChannel)
+			if (m_target is IJoinAbleChannel && !m_target.IsRetired)
 			{
 				if (System.Threading.Interlocked.Exchange(ref m_hasLeft, 0) == 1)
 					((IJoinAbleChannel)m_target).Join(m_isReader);
@@ -120,7 +120,7 @@ namespace CoCoL
 			if (m_target == null)
 				throw new ObjectDisposedException(this.GetType().FullName);
 
-			if (m_target is IJoinAbleChannel)
+			if (m_target is IJoinAbleChannel && !m_target.IsRetired)
 			{
 				if (System.Threading.Interlocked.Exchange(ref m_hasLeft, 1) == 0)
 					((IJoinAbleChannel)m_target).Leave(m_isReader);
