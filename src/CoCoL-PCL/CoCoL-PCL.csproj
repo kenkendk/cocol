@@ -101,6 +101,9 @@
     <Compile Include="..\CoCoL\AutoWireMarkers.cs">
       <Link>AutoWireMarkers.cs</Link>
     </Compile>
+    <Compile Include="..\CoCoL\IsolatedChannelScope.cs">
+      <Link>IsolatedChannelScope.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
 </Project>

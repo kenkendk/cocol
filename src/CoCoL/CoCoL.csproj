@@ -60,6 +60,7 @@
     <Compile Include="AutomationExtensions.cs" />
     <Compile Include="ChannelEnd.cs" />
     <Compile Include="AutoWireMarkers.cs" />
+    <Compile Include="IsolatedChannelScope.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

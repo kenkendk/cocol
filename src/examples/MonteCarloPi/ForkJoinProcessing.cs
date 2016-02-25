@@ -102,7 +102,7 @@ namespace MonteCarloPi
 		public static async Task<TResult> ForkJoinProcessAsync<TInput, TOutput, TResult>(IEnumerable<TInput> input, Func<TInput, TOutput> workermethod, Func<TResult, TOutput, TResult> joinmethod, int workers = -1, TResult initialvalue = default(TResult))
 		{
 			// Set up a new isolated name scope so we do not pollute the global scope
-			using (new ChannelScope(true))
+			using (new IsolatedChannelScope())
 			{
 				// Start the collector so we have the task
 				var result = Collector(joinmethod, initialvalue);

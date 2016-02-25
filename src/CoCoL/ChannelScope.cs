@@ -17,7 +17,7 @@ namespace CoCoL
 		/// <summary>
 		/// The lock object
 		/// </summary>
-		private static readonly object __lock;
+		protected static readonly object __lock;
 
 		/// <summary>
 		/// Static initializer to control the creation order
@@ -32,7 +32,7 @@ namespace CoCoL
 		/// <summary>
 		/// True if this instance is disposed, false otherwise
 		/// </summary>
-		private bool m_isDisposed = false;
+		protected bool m_isDisposed = false;
 
 		/// <summary>
 		/// The parent scope, or null if this is the root scope
@@ -49,12 +49,12 @@ namespace CoCoL
 		/// <summary>
 		/// The local storage for channels
 		/// </summary>
-		private Dictionary<string, IRetireAbleChannel> m_lookup = new Dictionary<string, IRetireAbleChannel>();
+		protected Dictionary<string, IRetireAbleChannel> m_lookup = new Dictionary<string, IRetireAbleChannel>();
 
 		/// <summary>
 		/// The key used to assign the current scope into the current call-context
 		/// </summary>
-		private const string LOGICAL_CONTEXT_KEY = "CoCoL:AutoWireScope";
+		protected const string LOGICAL_CONTEXT_KEY = "CoCoL:AutoWireScope";
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.ChannelScope"/> class that derives from the current scope.
@@ -68,7 +68,7 @@ namespace CoCoL
 		/// Initializes a new instance of the <see cref="CoCoL.ChannelScope"/> class that derives from the current scope.
 		/// </summary>
 		/// <param name="isolated"><c>True</c> if this is an isolated scope, <c>false</c> otherwise</param>
-		public ChannelScope(bool isolated)
+		protected ChannelScope(bool isolated)
 			: this(ChannelScope.Current, isolated)
 		{
 		}
@@ -134,70 +134,6 @@ namespace CoCoL
 				var chan = ChannelManager.CreateChannelForScope<T>(name, buffersize);
 				m_lookup.Add(name, chan);
 				return chan;
-			}
-		}
-
-		/// <summary>
-		/// Injects a channel into the current scope.
-		/// </summary>
-		/// <param name="name">The name of the channel to create.</param>
-		/// <param name="channel">The channel to inject.</param>
-		public void InjectChannel(string name, IRetireAbleChannel channel)
-		{
-			if (string.IsNullOrWhiteSpace(name))
-				throw new ArgumentNullException("name");
-			if (channel == null)
-				throw new ArgumentNullException("channel");
-			
-			lock (__lock)
-				m_lookup[name] = channel;
-		}
-
-		/// <summary>
-		/// Injects a channel into the current scope, by looking in the parent scope.
-		/// This is particularly useful in isolated scopes, to selectively forward channels
-		/// </summary>
-		/// <param name="name">The name of the channel to create.</param>
-		/// <param name="parent">The scope to look in, <code>null</code> means the current parent</param>
-		/// <param name="channel">The channel to inject.</param>
-		public void InjectChannelsFromParent(IEnumerable<string> names, ChannelScope parent = null)
-		{
-			foreach (var n in names)
-				InjectChannelFromParent(n, parent);
-		}
-
-		/// <summary>
-		/// Injects a channel into the current scope, by looking in the parent scope.
-		/// This is particularly useful in isolated scopes, to selectively forward channels
-		/// </summary>
-		/// <param name="name">The name of the channel to create.</param>
-		/// <param name="channel">The channel to inject.</param>
-		public void InjectChannelsFromParent(params string[] names)
-		{
-			foreach (var n in names)
-				InjectChannelFromParent(n);
-		}
-
-		/// <summary>
-		/// Injects a channel into the current scope, by looking in the parent scope.
-		/// This is particularly useful in isolated scopes, to selectively forward channels
-		/// </summary>
-		/// <param name="name">The name of the channel to create.</param>
-		/// <param name="parent">The scope to look in, <code>null</code> means the current parent</param>
-		/// <param name="channel">The channel to inject.</param>
-		public void InjectChannelFromParent(string name, ChannelScope parent = null)
-		{
-			if (string.IsNullOrWhiteSpace(name))
-				throw new ArgumentNullException("name");
-			parent = parent ?? this.ParentScope;
-
-			lock (__lock)
-			{
-				var c = parent.GetOrCreate(name, typeof(IRetireAbleChannel), 0, true);
-				if (c == null)
-					throw new Exception(string.Format("No channel with the name {0} was found in the parent scope"));
-
-				m_lookup[name] = c;
 			}
 		}
 
