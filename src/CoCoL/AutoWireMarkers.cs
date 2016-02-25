@@ -38,7 +38,7 @@ namespace CoCoL
 	/// <summary>
 	/// Helper class for creating typed-and-named markers
 	/// </summary>
-	public class ChannelMarkerWrapper<T>
+	public class ChannelMarkerWrapper<T> : INamedItem
 	{
 		/// <summary>
 		/// Gets the channel as a write request
@@ -52,7 +52,7 @@ namespace CoCoL
 		/// <summary>
 		/// Gets the name of the channel
 		/// </summary>
-		public readonly string Name;
+		public string Name { get; private set; }
 
 		/// <summary>
 		/// The buffer size for the channel
@@ -83,7 +83,7 @@ namespace CoCoL
 	/// <summary>
 	/// Marker class for specifying channel attributes in anonymous types
 	/// </summary>
-	public abstract class ChannelNameMarker
+	public abstract class ChannelNameMarker : INamedItem
 	{
 		/// <summary>
 		/// Gets the attribute representation of the data.
@@ -100,6 +100,12 @@ namespace CoCoL
 		{
 			Attribute = new ChannelNameAttribute(name, buffersize, targetScope);
 		}
+
+		/// <summary>
+		/// Gets the name.
+		/// </summary>
+		/// <value>The name.</value>
+		public string Name { get { return Attribute.Name; } }
 	}
 
 	/// <summary>

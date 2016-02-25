@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CoCoL
 {
@@ -31,6 +32,28 @@ namespace CoCoL
 			: base(true)
 		{
 			SetupInheritedChannels(inheritedChannelNames);
+		}
+
+		/// <summary>
+		/// Constructs a new isolated channel scope
+		/// </summary>
+		/// <param name="inheritedChannelNames">List of channels to inherit from the parent scope.</param>
+		public IsolatedChannelScope(IEnumerable<INamedItem> inheritedChannelNames)
+			: base(true)
+		{
+			if (inheritedChannelNames != null)
+				SetupInheritedChannels(from n in inheritedChannelNames where n != null select n.Name);
+		}
+
+		/// <summary>
+		/// Constructs a new isolated channel scope
+		/// </summary>
+		/// <param name="inheritedChannelNames">List of channels to inherit from the parent scope.</param>
+		public IsolatedChannelScope(params INamedItem[] inheritedChannelNames)
+			: base(true)
+		{
+			if (inheritedChannelNames != null)
+				SetupInheritedChannels(from n in inheritedChannelNames where n != null select n.Name);
 		}
 
 		/// <summary>
@@ -109,7 +132,7 @@ namespace CoCoL
 
 			lock (__lock)
 			{
-				var c = parent.GetOrCreate(name, typeof(IRetireAbleChannel), 0, true);
+				var c = parent.RecursiveLookup(name);
 				if (c == null)
 					throw new Exception(string.Format("No channel with the name {0} was found in the parent scope"));
 

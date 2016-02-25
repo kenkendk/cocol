@@ -93,11 +93,33 @@ namespace CoCoL
 		/// <param name="datatype">The type of data communicated through the channel.</param>
 		/// <param name="disableCreate"><c>True</c> if the function should return null instead of creating the channel if it was not found</param>
 		/// <param name="buffersize">The size of the channel buffer.</param>
-		public IRetireAbleChannel GetOrCreate(string name, Type datatype, int buffersize = 0, bool disableCreate = false)
+		public IRetireAbleChannel GetOrCreate(string name, Type datatype, int buffersize = 0)
 		{
-			return (IRetireAbleChannel)typeof(ChannelScope).GetMethod("GetOrCreate", new Type[] { typeof(string), typeof(int), typeof(bool) })
+			return (IRetireAbleChannel)typeof(ChannelScope).GetMethod("GetOrCreate", new Type[] { typeof(string), typeof(int) })
 				.MakeGenericMethod(datatype)
-				.Invoke(this, new object[] {name, buffersize, disableCreate});
+				.Invoke(this, new object[] {name, buffersize});
+		}
+
+		/// <summary>
+		/// Gets or creates a channel
+		/// </summary>
+		/// <returns>The channel with the given name.</returns>
+		/// <param name="marker">The <see cref="ChannelMarkerWrapper"/> of the channel to create.</param>
+		/// <typeparam name="T">The type of data in the channel.</typeparam>
+		public IChannel<T> GetOrCreate<T>(ChannelNameMarker marker)
+		{
+			return this.GetOrCreate<T>(marker.Name, marker.Attribute.BufferSize);
+		}
+
+		/// <summary>
+		/// Gets or creates a channel
+		/// </summary>
+		/// <returns>The channel with the given name.</returns>
+		/// <param name="marker">The <see cref="ChannelMarkerWrapper"/> of the channel to create.</param>
+		/// <typeparam name="T">The type of data in the channel.</typeparam>
+		public IChannel<T> GetOrCreate<T>(ChannelMarkerWrapper<T> marker)
+		{
+			return this.GetOrCreate<T>(marker.Name, marker.BufferSize);
 		}
 
 		/// <summary>
@@ -106,21 +128,54 @@ namespace CoCoL
 		/// <returns>The channel with the given name.</returns>
 		/// <param name="name">The name of the channel to create.</param>
 		/// <param name="buffersize">The size of the channel buffer.</param>
-		/// <param name="disableCreate"><c>True</c> if the function should return null instead of creating the channel if it was not found</param>
 		/// <typeparam name="T">The type of data in the channel.</typeparam>
-		public IChannel<T> GetOrCreate<T>(string name, int buffersize = 0, bool disableCreate = false)
+		public IChannel<T> GetOrCreate<T>(INamedItem name, int buffersize = 0)
+		{
+			return ParentScope.GetOrCreate<T>(name.Name, buffersize);
+		}
+
+		/// <summary>
+		/// Gets or creates a channel
+		/// </summary>
+		/// <returns>The channel with the given name.</returns>
+		/// <param name="name">The name of the channel to create.</param>
+		/// <param name="buffersize">The size of the channel buffer.</param>
+		/// <typeparam name="T">The type of data in the channel.</typeparam>
+		public IChannel<T> GetOrCreate<T>(string name, int buffersize = 0)
+		{
+			lock (__lock)
+			{
+				var res = RecursiveLookup(name);
+				if (res != null)
+					return (IChannel<T>)res;
+				else
+				{
+					var chan = ChannelManager.CreateChannelForScope<T>(name, buffersize);
+					m_lookup.Add(name, chan);
+					return chan;
+				}
+			}
+		}
+
+		/// <summary>
+		/// Performs a recursive lookup to find the specified channel.
+		/// Returns null if no such channel was found
+		/// </summary>
+		/// <returns>The channel.</returns>
+		/// <param name="name">The name to look for.</param>
+		internal IRetireAbleChannel RecursiveLookup(string name)
 		{
 			IRetireAbleChannel res;
 			if (m_lookup.TryGetValue(name, out res))
-				return (IChannel<T>)res;
-
+				return res;
+			
 			lock (__lock)
 			{
 				var cur = this;
 				while (cur != null)
 				{
 					if (cur.m_lookup.TryGetValue(name, out res))
-						return (IChannel<T>)res;
+						return res;
 
 					if (Isolated)
 						cur = null;
@@ -128,13 +183,9 @@ namespace CoCoL
 						cur = cur.ParentScope;
 				}
 
-				if (disableCreate)
-					return null;
-				
-				var chan = ChannelManager.CreateChannelForScope<T>(name, buffersize);
-				m_lookup.Add(name, chan);
-				return chan;
-			}
+				return null;
+
+			}		
 		}
 
 		#region IDisposable implementation
