@@ -91,12 +91,13 @@ namespace CoCoL
 		/// <returns>The or create.</returns>
 		/// <param name="name">The name of the channel to create.</param>
 		/// <param name="datatype">The type of data communicated through the channel.</param>
+		/// <param name="disableCreate"><c>True</c> if the function should return null instead of creating the channel if it was not found</param>
 		/// <param name="buffersize">The size of the channel buffer.</param>
-		public IRetireAbleChannel GetOrCreate(string name, Type datatype, int buffersize = 0)
+		public IRetireAbleChannel GetOrCreate(string name, Type datatype, int buffersize = 0, bool disableCreate = false)
 		{
-			return (IRetireAbleChannel)typeof(ChannelScope).GetMethod("GetOrCreate", new Type[] { typeof(string), typeof(int) })
+			return (IRetireAbleChannel)typeof(ChannelScope).GetMethod("GetOrCreate", new Type[] { typeof(string), typeof(int), typeof(bool) })
 				.MakeGenericMethod(datatype)
-				.Invoke(this, new object[] {name, buffersize});
+				.Invoke(this, new object[] {name, buffersize, disableCreate});
 		}
 
 		/// <summary>
@@ -105,8 +106,9 @@ namespace CoCoL
 		/// <returns>The channel with the given name.</returns>
 		/// <param name="name">The name of the channel to create.</param>
 		/// <param name="buffersize">The size of the channel buffer.</param>
+		/// <param name="disableCreate"><c>True</c> if the function should return null instead of creating the channel if it was not found</param>
 		/// <typeparam name="T">The type of data in the channel.</typeparam>
-		public IChannel<T> GetOrCreate<T>(string name, int buffersize = 0)
+		public IChannel<T> GetOrCreate<T>(string name, int buffersize = 0, bool disableCreate = false)
 		{
 			IRetireAbleChannel res;
 			if (m_lookup.TryGetValue(name, out res))
@@ -126,6 +128,9 @@ namespace CoCoL
 						cur = cur.ParentScope;
 				}
 
+				if (disableCreate)
+					return null;
+				
 				var chan = ChannelManager.CreateChannelForScope<T>(name, buffersize);
 				m_lookup.Add(name, chan);
 				return chan;
@@ -146,6 +151,54 @@ namespace CoCoL
 			
 			lock (__lock)
 				m_lookup[name] = channel;
+		}
+
+		/// <summary>
+		/// Injects a channel into the current scope, by looking in the parent scope.
+		/// This is particularly useful in isolated scopes, to selectively forward channels
+		/// </summary>
+		/// <param name="name">The name of the channel to create.</param>
+		/// <param name="parent">The scope to look in, <code>null</code> means the current parent</param>
+		/// <param name="channel">The channel to inject.</param>
+		public void InjectChannelsFromParent(IEnumerable<string> names, ChannelScope parent = null)
+		{
+			foreach (var n in names)
+				InjectChannelFromParent(n, parent);
+		}
+
+		/// <summary>
+		/// Injects a channel into the current scope, by looking in the parent scope.
+		/// This is particularly useful in isolated scopes, to selectively forward channels
+		/// </summary>
+		/// <param name="name">The name of the channel to create.</param>
+		/// <param name="channel">The channel to inject.</param>
+		public void InjectChannelsFromParent(params string[] names)
+		{
+			foreach (var n in names)
+				InjectChannelFromParent(n);
+		}
+
+		/// <summary>
+		/// Injects a channel into the current scope, by looking in the parent scope.
+		/// This is particularly useful in isolated scopes, to selectively forward channels
+		/// </summary>
+		/// <param name="name">The name of the channel to create.</param>
+		/// <param name="parent">The scope to look in, <code>null</code> means the current parent</param>
+		/// <param name="channel">The channel to inject.</param>
+		public void InjectChannelFromParent(string name, ChannelScope parent = null)
+		{
+			if (string.IsNullOrWhiteSpace(name))
+				throw new ArgumentNullException("name");
+			parent = parent ?? this.ParentScope;
+
+			lock (__lock)
+			{
+				var c = parent.GetOrCreate(name, typeof(IRetireAbleChannel), 0, true);
+				if (c == null)
+					throw new Exception(string.Format("No channel with the name {0} was found in the parent scope"));
+
+				m_lookup[name] = c;
+			}
 		}
 
 		#region IDisposable implementation
