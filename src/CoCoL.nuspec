@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>CoCoL</id>
-    <version>1.4</version>
+    <version>1.4.1</version>
     <title>CoCoL</title>
     <authors>Kenneth Skovhede</authors>
     <owners>Kenneth Skovhede</owners>
@@ -10,9 +10,9 @@
     <projectUrl>https://github.com/kenkendk/cocol</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Concurrent Communications Library</description>
-    <releaseNotes>Automatic wiring of channels, join/leave pattern and channel scope.</releaseNotes>
+    <releaseNotes>Improvements to the API for common patterns. Better channelscope usage.</releaseNotes>
     <copyright>Copyright 2016, Kenneth Skovhede</copyright>
-    <tags>Multithreading Concurrency CSP</tags>
+    <tags>Multithreading Multiprocessing Concurrency CSP Go Actor</tags>
   </metadata>
   <files>
     <file src="CoCoL/bin/Release/CoCoL.dll" target="lib/net45" />
