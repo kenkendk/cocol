@@ -10,37 +10,6 @@ using WAITCALLBACK = System.Threading.WaitCallback;
 namespace CoCoL
 {
 	/// <summary>
-	/// Interface for a thread pool implementation
-	/// </summary>
-	public interface IThreadPool : IDisposable
-	{
-		/// <summary>
-		/// Puts an item into the work queue
-		/// </summary>
-		/// <param name="a">The work item.</param>
-		void QueueItem(Action a);
-
-		/// <summary>
-		/// Puts an item into the work queue
-		/// </summary>
-		/// <param name="a">The work item.</param>
-		/// <param name="item">An optional callback parameter.</param>
-		void QueueItem(WAITCALLBACK a, object item);
-	}
-
-	/// <summary>
-	/// Interface for a threadpool that supports finishing
-	/// </summary>
-	public interface IFinishAbleThreadPool : IThreadPool
-	{
-		/// <summary>
-		/// Ensures that the threadpool is finished or throws an exception
-		/// </summary>
-		/// <param name="waittime">The maximum time to wait for completion.</param>
-		void EnsureFinished(TimeSpan waittime = default(TimeSpan));
-	}
-
-	/// <summary>
 	/// Thread Pool, responsible for queueing work items
 	/// </summary>
 	public static class ThreadPool
