@@ -10,6 +10,37 @@ using WAITCALLBACK = System.Threading.WaitCallback;
 namespace CoCoL
 {
 	/// <summary>
+	/// Interface for a thread pool implementation
+	/// </summary>
+	public interface IThreadPool : IDisposable
+	{
+		/// <summary>
+		/// Puts an item into the work queue
+		/// </summary>
+		/// <param name="a">The work item.</param>
+		void QueueItem(Action a);
+
+		/// <summary>
+		/// Puts an item into the work queue
+		/// </summary>
+		/// <param name="a">The work item.</param>
+		/// <param name="item">An optional callback parameter.</param>
+		void QueueItem(WAITCALLBACK a, object item);
+	}
+
+	/// <summary>
+	/// Interface for a threadpool that supports finishing
+	/// </summary>
+	public interface IFinishAbleThreadPool : IThreadPool
+	{
+		/// <summary>
+		/// Ensures that the threadpool is finished or throws an exception
+		/// </summary>
+		/// <param name="waittime">The maximum time to wait for completion.</param>
+		void EnsureFinished(TimeSpan waittime = default(TimeSpan));
+	}
+
+	/// <summary>
 	/// Thread Pool, responsible for queueing work items
 	/// </summary>
 	public static class ThreadPool
@@ -17,7 +48,7 @@ namespace CoCoL
 		/// <summary>
 		/// The implementation of a thread pool, for easy replacement
 		/// </summary>
-		private static readonly ThreadPoolImpl _tr = new ThreadPoolImpl();
+		public static readonly IThreadPool DEFAULT_THREADPOOL = new SystemThreadPoolWrapper();
 
 		/// <summary>
 		/// Puts an item into the work queue
@@ -25,7 +56,7 @@ namespace CoCoL
 		/// <param name="a">The work item.</param>
 		public static void QueueItem(Action a)
 		{
-			_tr.QueueItem(a);
+			ExecutionScope.Current.QueueItem(a);
 		}
 
 		/// <summary>
@@ -35,14 +66,15 @@ namespace CoCoL
 		/// <param name="item">An optional callback parameter.</param>
 		public static void QueueItem(WAITCALLBACK a, object item = null)
 		{
-			_tr.QueueItem(a, item);
+			ExecutionScope.Current.QueueItem(a, item);
 		}
+
 	}
 
 	/// <summary>
-	/// The thread pool implementation, which just wraps the .Net Thread Pool
+	/// The default thread pool implementation, which just wraps the .Net Thread Pool
 	/// </summary>
-	internal class ThreadPoolImpl
+	public class SystemThreadPoolWrapper : IThreadPool
 	{
 		/// <summary>
 		/// Puts an item into the work queue
@@ -69,6 +101,163 @@ namespace CoCoL
 #else
 			System.Threading.ThreadPool.QueueUserWorkItem(a, item);
 #endif
+		}
+
+		/// <summary>
+		/// Releases all resource used by the <see cref="CoCoL.SystemThreadPoolWrapper"/> object.
+		/// </summary>
+		/// <remarks>Call <see cref="Dispose"/> when you are finished using the <see cref="CoCoL.SystemThreadPoolWrapper"/>. The
+		/// <see cref="Dispose"/> method leaves the <see cref="CoCoL.SystemThreadPoolWrapper"/> in an unusable state. After
+		/// calling <see cref="Dispose"/>, you must release all references to the <see cref="CoCoL.SystemThreadPoolWrapper"/>
+		/// so the garbage collector can reclaim the memory that the <see cref="CoCoL.SystemThreadPoolWrapper"/> was occupying.</remarks>
+		public void Dispose()
+		{
+		}
+	}
+
+	/// <summary>
+	/// A thread pool that puts a cap on the number of concurrent requests
+	/// </summary>
+	public class CappedThreadedThreadPool : IFinishAbleThreadPool
+	{
+		/// <summary>
+		/// The list of pending work
+		/// </summary>
+		private Queue<Action> m_work = new Queue<Action>();
+
+		/// <summary>
+		/// The locking object
+		/// </summary>
+		private object m_lock = new object();
+
+		/// <summary>
+		/// The number of running instances
+		/// </summary>
+		private int m_instances = 0;
+
+		/// <summary>
+		/// The maximum number of concurrent threads
+		/// </summary>
+		private readonly int m_maxThreads;
+
+		/// <summary>
+		/// True if a shutdown is in progress
+		/// </summary>
+		private bool m_shutdown = false;
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="CoCoL.CappedThreadedThreadPool"/> class.
+		/// </summary>
+		/// <param name="max_threads">The maximum number of concurrent threads.</param>
+		public CappedThreadedThreadPool(int max_threads)
+		{
+			if (max_threads < 1)
+				throw new ArgumentOutOfRangeException("max_threads");
+			m_maxThreads = max_threads;
+		}
+
+		/// <summary>
+		/// Performs the execution
+		/// </summary>
+		/// <param name="method">The the method to execute.</param>
+		private void Execute(object method)
+		{
+			try
+			{
+				((Action)method)();
+			}
+			finally
+			{
+				lock (m_lock)
+				{
+					if (m_work.Count > 0 && m_instances <= m_maxThreads)
+						ThreadPool.DEFAULT_THREADPOOL.QueueItem(Execute, m_work.Dequeue());
+					else
+						m_instances--;
+				}
+			}
+		}
+
+		/// <summary>
+		/// Puts an item into the work queue
+		/// </summary>
+		/// <param name="a">The work item.</param>
+		public void QueueItem(Action a) 
+		{
+			lock (m_lock)
+			{
+				if (m_shutdown)
+					throw new ObjectDisposedException("ThreadPool is in shutdown phase, and does not support new requests");
+				
+				if (m_instances < m_maxThreads)
+				{
+					m_instances++;
+					ThreadPool.DEFAULT_THREADPOOL.QueueItem(Execute, a);
+				}
+				else
+				{
+					m_work.Enqueue(a);
+				}
+			}
+		}
+
+		/// <summary>
+		/// Puts an item into the work queue
+		/// </summary>
+		/// <param name="a">The work item.</param>
+		/// <param name="item">An optional callback parameter.</param>
+		public void QueueItem(WAITCALLBACK a, object item) 
+		{
+			QueueItem(() => { a(item); });
+		}
+
+		/// <summary>
+		/// Ensures that all threads are finished
+		/// </summary>
+		/// <param name="waittime">The time to wait for completion</param>
+		public void EnsureFinished(TimeSpan waittime = default(TimeSpan))
+		{
+			lock (m_lock)
+			{
+				m_shutdown = true;
+				if (m_instances == 0)
+					return;
+			}
+
+			var endttime = DateTime.Now + waittime;
+			while (DateTime.Now < endttime)
+			{
+#if PCL_BUILD
+				System.Threading.Tasks.Task.Delay(100).Wait();
+#else
+				System.Threading.Thread.Sleep(100);
+#endif
+				lock (m_lock)
+					if (m_instances == 0)
+						return;
+			}
+
+			throw new TimeoutException("Failed to shut down execution context");
+
+		}
+
+		/// <summary>
+		/// Releases all resource used by the <see cref="CoCoL.CappedThreadedThreadPool"/> object.
+		/// </summary>
+		/// <remarks>Call <see cref="Dispose"/> when you are finished using the <see cref="CoCoL.CappedThreadedThreadPool"/>. The
+		/// <see cref="Dispose"/> method leaves the <see cref="CoCoL.CappedThreadedThreadPool"/> in an unusable state. After
+		/// calling <see cref="Dispose"/>, you must release all references to the <see cref="CoCoL.CappedThreadedThreadPool"/>
+		/// so the garbage collector can reclaim the memory that the <see cref="CoCoL.CappedThreadedThreadPool"/> was occupying.</remarks>
+		public void Dispose()
+		{
+			lock (m_lock)
+			{
+				m_shutdown = true;
+
+				//TODO: Should throw, but throwing in Dispose leads to unwanted complexity for the user
+				if (m_instances > 0)
+					System.Diagnostics.Debug.WriteLine("*Warning*: CappedThreadPool was disposed before all threads had completed!");
+			}
 		}
 	}
 }

@@ -53,6 +53,7 @@
     <Compile Include="ProcessTests.cs" />
     <Compile Include="TestLambdaProcess.cs" />
     <Compile Include="QueueCleanupTest.cs" />
+    <Compile Include="ExecutionContextTests.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

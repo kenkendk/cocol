@@ -104,6 +104,9 @@
     <Compile Include="..\CoCoL\IsolatedChannelScope.cs">
       <Link>IsolatedChannelScope.cs</Link>
     </Compile>
+    <Compile Include="..\CoCoL\ExecutionScope.cs">
+      <Link>ExecutionScope.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
 </Project>

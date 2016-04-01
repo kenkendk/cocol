@@ -61,6 +61,7 @@
     <Compile Include="ChannelEnd.cs" />
     <Compile Include="AutoWireMarkers.cs" />
     <Compile Include="IsolatedChannelScope.cs" />
+    <Compile Include="ExecutionScope.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
