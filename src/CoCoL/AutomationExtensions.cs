@@ -127,7 +127,7 @@ namespace CoCoL
 						curscope = ChannelScope.Root;
 
 					// Instantiate or fetch the channel
-					var chan = curscope.GetOrCreate(attr.Name, dataType, attr.BufferSize);
+					var chan = curscope.GetOrCreate(attr.Name, dataType, attr.BufferSize, attr.MaxPendingReaders, attr.MaxPendingWriters, attr.PendingReadersOverflowStrategy, attr.PendingWritersOverflowStrategy);
 
 					if (isOnlyReadOrWrite)
 					{

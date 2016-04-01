@@ -54,6 +54,7 @@
     <Compile Include="TestLambdaProcess.cs" />
     <Compile Include="QueueCleanupTest.cs" />
     <Compile Include="ExecutionContextTests.cs" />
+    <Compile Include="ChannelOverflowTests.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

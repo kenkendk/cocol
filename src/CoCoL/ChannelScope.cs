@@ -93,11 +93,15 @@ namespace CoCoL
 		/// <param name="datatype">The type of data communicated through the channel.</param>
 		/// <param name="disableCreate"><c>True</c> if the function should return null instead of creating the channel if it was not found</param>
 		/// <param name="buffersize">The size of the channel buffer.</param>
-		public IRetireAbleChannel GetOrCreate(string name, Type datatype, int buffersize = 0)
+		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
+		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
+		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
+		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
+		public IRetireAbleChannel GetOrCreate(string name, Type datatype, int buffersize = 0, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject)
 		{
-			return (IRetireAbleChannel)typeof(ChannelScope).GetMethod("GetOrCreate", new Type[] { typeof(string), typeof(int) })
+			return (IRetireAbleChannel)typeof(ChannelScope).GetMethod("GetOrCreate", new Type[] { typeof(string), typeof(int), typeof(int), typeof(int), typeof(QueueOverflowStrategy), typeof(QueueOverflowStrategy) })
 				.MakeGenericMethod(datatype)
-				.Invoke(this, new object[] {name, buffersize});
+				.Invoke(this, new object[] {name, buffersize, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy});
 		}
 
 		/// <summary>
@@ -128,10 +132,14 @@ namespace CoCoL
 		/// <returns>The channel with the given name.</returns>
 		/// <param name="name">The name of the channel to create.</param>
 		/// <param name="buffersize">The size of the channel buffer.</param>
+		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
+		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
+		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
+		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
 		/// <typeparam name="T">The type of data in the channel.</typeparam>
-		public IChannel<T> GetOrCreate<T>(INamedItem name, int buffersize = 0)
+		public IChannel<T> GetOrCreate<T>(INamedItem name, int buffersize = 0, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject)
 		{
-			return ParentScope.GetOrCreate<T>(name.Name, buffersize);
+			return ParentScope.GetOrCreate<T>(name.Name, buffersize, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
 		}
 
 		/// <summary>
@@ -140,8 +148,12 @@ namespace CoCoL
 		/// <returns>The channel with the given name.</returns>
 		/// <param name="name">The name of the channel to create.</param>
 		/// <param name="buffersize">The size of the channel buffer.</param>
+		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
+		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
+		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
+		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
 		/// <typeparam name="T">The type of data in the channel.</typeparam>
-		public IChannel<T> GetOrCreate<T>(string name, int buffersize = 0)
+		public IChannel<T> GetOrCreate<T>(string name, int buffersize = 0, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject)
 		{
 			lock (__lock)
 			{
@@ -150,7 +162,7 @@ namespace CoCoL
 					return (IChannel<T>)res;
 				else
 				{
-					var chan = ChannelManager.CreateChannelForScope<T>(name, buffersize);
+					var chan = ChannelManager.CreateChannelForScope<T>(name, buffersize, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
 					m_lookup.Add(name, chan);
 					return chan;
 				}

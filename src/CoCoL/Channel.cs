@@ -16,9 +16,19 @@ namespace CoCoL
 		/// </summary>
 		private const int MIN_QUEUE_CLEANUP_THRESHOLD = 100;
 
+		/// <summary>
+		/// Interface for an offer
+		/// </summary>
 		private interface IOfferItem
 		{
+			/// <summary>
+			/// The two-phase offer instance
+			/// </summary>
+			/// <value>The offer.</value>
 			ITwoPhaseOffer Offer { get; }
+			/// <summary>
+			/// Convenience method for setting the offer cancelled
+			/// </summary>
 			void TrySetCancelled();
 		}
 
@@ -141,6 +151,11 @@ namespace CoCoL
 		private static readonly Exception RetiredException = new RetiredException();
 
 		/// <summary>
+		/// A cached instance of the channel overflow exception
+		/// </summary>
+		private static readonly Exception ChannelOverflowException = new ChannelOverflowException();
+
+		/// <summary>
 		/// Gets or sets the name of the channel
 		/// </summary>
 		/// <value>The name.</value>
@@ -178,17 +193,46 @@ namespace CoCoL
 		private int m_readerQueueCleanup = MIN_QUEUE_CLEANUP_THRESHOLD;
 
 		/// <summary>
+		/// The maximum number of pending readers to allow
+		/// </summary>
+		private readonly int m_maxPendingReaders;
+
+		/// <summary>
+		/// The strategy for selecting pending readers to discard on overflow
+		/// </summary>
+		private readonly QueueOverflowStrategy m_pendingReadersOverflowStrategy;
+
+		/// <summary>
+		/// The maximum number of pending writers to allow
+		/// </summary>
+		private readonly int m_maxPendingWriters;
+
+		/// <summary>
+		/// The strategy for selecting pending writers to discard on overflow
+		/// </summary>
+		private readonly QueueOverflowStrategy m_pendingWritersOverflowStrategy;
+
+		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.Channel`1"/> class.
 		/// </summary>
-		/// <param name="size">The size of the write buffer</param>
-		internal Channel(string name = null, int size = 0)
+		/// <param name="buffersize">The size of the write buffer</param>
+		/// <param name="name">The name of the channel</param>
+		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
+		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
+		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
+		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
+		internal Channel(string name = null, int buffersize = 0, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject)
 		{
-			if (size < 0)
-				throw new ArgumentOutOfRangeException("size", "The size parameter must be greater than or equal to zero");
+			if (buffersize < 0)
+				throw new ArgumentOutOfRangeException("buffersize", "The size parameter must be greater than or equal to zero");
 
 			this.Name = name;
 
-			m_bufferSize = size;
+			m_bufferSize = buffersize;
+			m_maxPendingReaders = maxPendingReaders;
+			m_maxPendingWriters = maxPendingWriters;
+			m_pendingReadersOverflowStrategy = pendingReadersOverflowStrategy;
+			m_pendingWritersOverflowStrategy = pendingWritersOverflowStrategy;
 		}
 
 		/// <summary>
@@ -325,6 +369,32 @@ namespace CoCoL
 				}
 				else
 				{
+					// Make room if we have too many
+					if (m_maxPendingReaders > 0 && m_readerQueue.Count >= m_maxPendingReaders)
+					{
+						switch (m_pendingReadersOverflowStrategy)
+						{
+							case QueueOverflowStrategy.FIFO:
+								{
+									var exp = m_readerQueue[0].Source;
+									m_readerQueue.RemoveAt(0);
+									ThreadPool.QueueItem(() => exp.TrySetException(ChannelOverflowException));
+								}
+								break;
+							case QueueOverflowStrategy.LIFO:
+								{
+									var exp = m_readerQueue[m_readerQueue.Count - 1].Source;
+									m_readerQueue.RemoveAt(m_readerQueue.Count - 1);
+									ThreadPool.QueueItem(() => exp.TrySetException(ChannelOverflowException));
+								}
+								break;
+							case QueueOverflowStrategy.Reject:
+							default:
+								ThreadPool.QueueItem(() => result.TrySetException(ChannelOverflowException));
+								return result.Task;
+						}							
+					}
+
 					// Register the pending reader
 					m_readerQueue.Add(new ReaderEntry(offer, result, expires));
 
@@ -467,6 +537,32 @@ namespace CoCoL
 					}
 					else
 					{
+						// Make room if we have too many
+						if (m_maxPendingWriters > 0 && (m_writerQueue.Count - m_bufferSize) >= m_maxPendingWriters)
+						{
+							switch (m_pendingWritersOverflowStrategy)
+							{
+								case QueueOverflowStrategy.FIFO:
+									{
+										var exp = m_writerQueue[m_bufferSize].Source;
+										m_writerQueue.RemoveAt(m_bufferSize);
+										ThreadPool.QueueItem(() => exp.TrySetException(ChannelOverflowException));
+									}
+									break;
+								case QueueOverflowStrategy.LIFO:
+									{
+										var exp = m_writerQueue[m_writerQueue.Count - 1].Source;
+										m_writerQueue.RemoveAt(m_writerQueue.Count - 1);
+										ThreadPool.QueueItem(() => exp.TrySetException(ChannelOverflowException));
+									}
+									break;
+								case QueueOverflowStrategy.Reject:
+								default:
+									ThreadPool.QueueItem(() => result.TrySetException(ChannelOverflowException));
+									return result.Task;
+							}							
+						}
+
 						// Register the pending writer
 						m_writerQueue.Add(new WriterEntry(offer, result, expires, value));
 

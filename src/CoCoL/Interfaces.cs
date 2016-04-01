@@ -48,6 +48,27 @@ namespace CoCoL
 	}
 
 	/// <summary>
+	/// The strategies for expiring pending operations on overflow
+	/// </summary>
+	public enum QueueOverflowStrategy
+	{
+		/// <summary>
+		/// First in, first out.
+		/// Expires the oldest entry and inserts a new request as the newest
+		/// </summary>
+		FIFO,
+		/// <summary>
+		/// Last in, first out.
+		/// Expires most recent entry and inserts a request there instead
+		/// </summary>
+		LIFO,
+		/// <summary>
+		/// Keeps the current set of requests and discards the new request
+		/// </summary>
+		Reject
+	}
+
+	/// <summary>
 	/// Interface for naming an item
 	/// </summary>
 	public interface INamedItem

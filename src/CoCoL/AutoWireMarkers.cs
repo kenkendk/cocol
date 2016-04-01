@@ -16,9 +16,13 @@ namespace CoCoL
 		/// <param name="buffersize">The desired buffersize to use if the channel is created.</param>
 		/// <param name="targetScope">The scope to create or locate the name in.</param>
 		/// <typeparam name="T">The type of data passed on the channel.</typeparam>
-		public static IReadChannel<T> ForRead<T>(string name, int buffersize = 0, ChannelNameScope targetScope = ChannelNameScope.Local)
+		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
+		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
+		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
+		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
+		public static IReadChannel<T> ForRead<T>(string name, int buffersize = 0, ChannelNameScope targetScope = ChannelNameScope.Local, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject)
 		{
-			return new ReadMarker<T>(name, buffersize, targetScope);
+			return new ReadMarker<T>(name, buffersize, targetScope, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
 		}
 
 		/// <summary>
@@ -29,9 +33,13 @@ namespace CoCoL
 		/// <param name="buffersize">The desired buffersize to use if the channel is created.</param>
 		/// <param name="targetScope">The scope to create or locate the name in.</param>
 		/// <typeparam name="T">The type of data passed on the channel.</typeparam>
-		public static IWriteChannel<T> ForWrite<T>(string name, int buffersize = 0, ChannelNameScope targetScope = ChannelNameScope.Local)
+		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
+		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
+		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
+		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
+		public static IWriteChannel<T> ForWrite<T>(string name, int buffersize = 0, ChannelNameScope targetScope = ChannelNameScope.Local, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject)
 		{
-			return new WriteMarker<T>(name, buffersize, targetScope);
+			return new WriteMarker<T>(name, buffersize, targetScope, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
 		}
 	}
 
@@ -65,18 +73,47 @@ namespace CoCoL
 		public readonly ChannelNameScope TargetScope;
 
 		/// <summary>
+		/// The maximum number of pending readers
+		/// </summary>
+		public int MaxPendingReaders;
+
+		/// <summary>
+		/// The maximum number of pendinger writers
+		/// </summary>
+		public int MaxPendingWriters;
+
+		/// <summary>
+		/// The strategy for selecting pending readers to discard on overflow
+		/// </summary>
+		public QueueOverflowStrategy PendingReadersOverflowStrategy;
+
+		/// <summary>
+		/// The strategy for selecting pending readers to discard on overflow
+		/// </summary>
+		public QueueOverflowStrategy PendingWritersOverflowStrategy;
+
+		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.ChannelMarkerWrapper`1"/> class.
 		/// </summary>
 		/// <param name="name">The name of the channel.</param>
 		/// <param name="buffersize">The desired buffersize to use if the channel is created.</param>
 		/// <param name="targetScope">The scope to create or locate the name in.</param>
-		public ChannelMarkerWrapper(string name, int buffersize = 0, ChannelNameScope targetScope = ChannelNameScope.Local)
+		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
+		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
+		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
+		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
+		public ChannelMarkerWrapper(string name, int buffersize = 0, ChannelNameScope targetScope = ChannelNameScope.Local, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject)
 		{
 			Name = name;
 			BufferSize = buffersize;
 			TargetScope = targetScope;
-			ForWrite = ChannelMarker.ForWrite<T>(name, buffersize, targetScope);
-			ForRead = ChannelMarker.ForRead<T>(name, buffersize, targetScope);
+			MaxPendingReaders = maxPendingReaders;
+			MaxPendingWriters = maxPendingWriters;
+			PendingReadersOverflowStrategy = pendingReadersOverflowStrategy;
+			PendingWritersOverflowStrategy = pendingWritersOverflowStrategy;
+
+			ForWrite = ChannelMarker.ForWrite<T>(name, buffersize, targetScope, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
+			ForRead = ChannelMarker.ForRead<T>(name, buffersize, targetScope, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
 		}
 	}
 
@@ -96,9 +133,13 @@ namespace CoCoL
 		/// <param name="name">The name of the channel.</param>
 		/// <param name="buffersize">The desired buffersize to use if the channel is created.</param>
 		/// <param name="targetScope">The scope to create or locate the name in.</param>
-		public ChannelNameMarker(string name, int buffersize, ChannelNameScope targetScope)
+		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
+		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
+		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
+		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
+		public ChannelNameMarker(string name, int buffersize, ChannelNameScope targetScope, int maxPendingReaders, int maxPendingWriters, QueueOverflowStrategy pendingReadersOverflowStrategy, QueueOverflowStrategy pendingWritersOverflowStrategy)
 		{
-			Attribute = new ChannelNameAttribute(name, buffersize, targetScope);
+			Attribute = new ChannelNameAttribute(name, buffersize, targetScope, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
 		}
 
 		/// <summary>
@@ -119,8 +160,12 @@ namespace CoCoL
 		/// <param name="name">The name of the channel.</param>
 		/// <param name="buffersize">The desired buffersize to use if the channel is created.</param>
 		/// <param name="targetScope">The scope to create or locate the name in.</param>
-		public ReadMarker(string name, int buffersize = 0, ChannelNameScope targetScope = ChannelNameScope.Local)
-			: base(name, buffersize, targetScope)
+		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
+		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
+		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
+		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
+		public ReadMarker(string name, int buffersize = 0, ChannelNameScope targetScope = ChannelNameScope.Local, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject)
+			: base(name, buffersize, targetScope, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy)
 		{
 		}
 
@@ -178,8 +223,12 @@ namespace CoCoL
 		/// <param name="name">The name of the channel.</param>
 		/// <param name="buffersize">The desired buffersize to use if the channel is created.</param>
 		/// <param name="targetScope">The scope to create or locate the name in.</param>
-		public WriteMarker(string name, int buffersize = 0, ChannelNameScope targetScope = ChannelNameScope.Local)
-			: base(name, buffersize, targetScope)
+		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
+		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
+		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
+		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
+		public WriteMarker(string name, int buffersize = 0, ChannelNameScope targetScope = ChannelNameScope.Local, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject)
+			: base(name, buffersize, targetScope, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy)
 		{
 		}
 

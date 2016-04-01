@@ -7,7 +7,7 @@ namespace UnitTest
 	{
 		public static void Main(string[] args)
 		{
-			new ExecutionContextTests().TestUnlimitedThreadPool();
+			new ChannelOverflowTests().TestBufferedWriterFIFO();
 		}
 
 	}
