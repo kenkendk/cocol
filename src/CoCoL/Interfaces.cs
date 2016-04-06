@@ -320,6 +320,13 @@ namespace CoCoL
 		/// <param name="a">The work item.</param>
 		/// <param name="item">An optional callback parameter.</param>
 		void QueueItem(WAITCALLBACK a, object item);
+
+		/// <summary>
+		/// Puts an item into the work queue
+		/// </summary>
+		/// <param name="a">The work item.</param>
+		/// <returns>The awaitable task.</returns>
+		Task QueueTask(Action a);
 	}
 
 	/// <summary>

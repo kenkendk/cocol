@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 #if PCL_BUILD
 using WAITCALLBACK = System.Action<object>;
@@ -94,6 +95,16 @@ namespace CoCoL
 			m_threadPool.QueueItem(a, item);
 		}
 
+		/// <summary>
+		/// Puts an item into the work queue
+		/// </summary>
+		/// <param name="a">The work item.</param>
+		/// <returns>The awaitable task.</returns>
+		public Task QueueTask(Action a)
+		{
+			return m_threadPool.QueueTask(a);
+		}
+			
 		/// <summary>
 		/// Ensures that the threadpool is finished or throws an exception.
 		/// If the underlying threadpool does not support finishing, this call does nothing

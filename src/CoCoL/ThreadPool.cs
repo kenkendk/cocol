@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 #if PCL_BUILD
 using WAITCALLBACK = System.Action<object>;
@@ -70,6 +71,28 @@ namespace CoCoL
 #else
 			System.Threading.ThreadPool.QueueUserWorkItem(a, item);
 #endif
+		}
+
+		/// <summary>
+		/// Puts an item into the work queue
+		/// </summary>
+		/// <param name="a">The work item.</param>
+		/// <returns>The awaitable task.</returns>
+		public Task QueueTask(Action a)
+		{
+			var tcs = new TaskCompletionSource<bool>();
+			return QueueTask(() =>
+				{
+					try
+					{ 
+						a();
+						tcs.SetResult(true);
+					}
+					catch(Exception ex)
+					{
+						tcs.TrySetException(ex);
+					}
+				});
 		}
 
 		/// <summary>
@@ -178,6 +201,28 @@ namespace CoCoL
 		public void QueueItem(WAITCALLBACK a, object item) 
 		{
 			QueueItem(() => { a(item); });
+		}
+			
+		/// <summary>
+		/// Puts an item into the work queue
+		/// </summary>
+		/// <param name="a">The work item.</param>
+		/// <returns>The awaitable task.</returns>
+		public Task QueueTask(Action a)
+		{
+			var tcs = new TaskCompletionSource<bool>();
+			return QueueTask(() =>
+				{
+					try
+					{ 
+						a();
+						tcs.SetResult(true);
+					}
+					catch(Exception ex)
+					{
+						tcs.TrySetException(ex);
+					}
+				});
 		}
 
 		/// <summary>
