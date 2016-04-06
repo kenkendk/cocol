@@ -39,6 +39,15 @@ namespace CoCoL
 			ExecutionScope.Current.QueueItem(a, item);
 		}
 
+		/// <summary>
+		/// Puts an item into the work queue
+		/// </summary>
+		/// <param name="a">The work item.</param>
+		/// <returns>The awaitable task.</returns>
+		public static Task QueueTask(Action a)
+		{
+			return ExecutionScope.Current.QueueTask(a);
+		}
 	}
 
 	/// <summary>
