@@ -238,6 +238,9 @@ namespace CoCoL
 					return;
 			}
 
+			if (waittime == default(TimeSpan))
+				throw new Exception(string.Format("Thread pool was not completed, there are {0} instances running", m_instances));
+
 			var endttime = DateTime.Now + waittime;
 			while (DateTime.Now < endttime)
 			{
@@ -251,7 +254,7 @@ namespace CoCoL
 						return;
 			}
 
-			throw new TimeoutException("Failed to shut down execution context");
+			throw new TimeoutException(string.Format("Failed to shut down execution context, there are still {0} instances running", m_instances));
 
 		}
 
