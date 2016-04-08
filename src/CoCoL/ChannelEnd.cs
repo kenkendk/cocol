@@ -57,7 +57,6 @@ namespace CoCoL
 			if (m_target != null)
 				Leave();
 			m_target = null;
-
 		}
 
 
