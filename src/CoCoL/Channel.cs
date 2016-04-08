@@ -141,21 +141,6 @@ namespace CoCoL
 		private readonly object m_lock = new object();
 
 		/// <summary>
-		/// A cached instance of the timeout exception
-		/// </summary>
-		private static readonly Exception TimeoutException = new TimeoutException();
-
-		/// <summary>
-		/// A cached instance of the timeout exception
-		/// </summary>
-		private static readonly Exception RetiredException = new RetiredException();
-
-		/// <summary>
-		/// A cached instance of the channel overflow exception
-		/// </summary>
-		private static readonly Exception ChannelOverflowException = new ChannelOverflowException();
-
-		/// <summary>
 		/// Gets or sets the name of the channel
 		/// </summary>
 		/// <value>The name.</value>
@@ -273,7 +258,7 @@ namespace CoCoL
 			{
 				if (IsRetired)
 				{
-					ThreadPool.QueueItem(() => result.SetException(RetiredException));
+					ThreadPool.QueueItem(() => result.SetException(new RetiredException()));
 					return result.Task;
 				}
 
@@ -365,7 +350,7 @@ namespace CoCoL
 				// If this was a probe call, return a timeout now
 				if (timeout.Ticks >= 0 && expires < DateTime.Now)
 				{
-					ThreadPool.QueueItem(() => result.TrySetException(TimeoutException));
+					ThreadPool.QueueItem(() => result.TrySetException(new TimeoutException()));
 				}
 				else
 				{
@@ -378,19 +363,19 @@ namespace CoCoL
 								{
 									var exp = m_readerQueue[0].Source;
 									m_readerQueue.RemoveAt(0);
-									ThreadPool.QueueItem(() => exp.TrySetException(ChannelOverflowException));
+									ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException()));
 								}
 								break;
 							case QueueOverflowStrategy.LIFO:
 								{
 									var exp = m_readerQueue[m_readerQueue.Count - 1].Source;
 									m_readerQueue.RemoveAt(m_readerQueue.Count - 1);
-									ThreadPool.QueueItem(() => exp.TrySetException(ChannelOverflowException));
+									ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException()));
 								}
 								break;
 							case QueueOverflowStrategy.Reject:
 							default:
-								ThreadPool.QueueItem(() => result.TrySetException(ChannelOverflowException));
+								ThreadPool.QueueItem(() => result.TrySetException(new ChannelOverflowException()));
 								return result.Task;
 						}							
 					}
@@ -425,7 +410,7 @@ namespace CoCoL
 			{
 				if (IsRetired)
 				{
-					ThreadPool.QueueItem(() => result.SetException(RetiredException));
+					ThreadPool.QueueItem(() => result.SetException(new RetiredException()));
 					return result.Task;
 				}
 
@@ -533,7 +518,7 @@ namespace CoCoL
 					// If this was a probe call, return a timeout now
 					if (timeout.Ticks >= 0 && expires < DateTime.Now)
 					{
-						ThreadPool.QueueItem(() => result.SetException(TimeoutException));
+						ThreadPool.QueueItem(() => result.SetException(new TimeoutException()));
 					}
 					else
 					{
@@ -546,19 +531,19 @@ namespace CoCoL
 									{
 										var exp = m_writerQueue[m_bufferSize].Source;
 										m_writerQueue.RemoveAt(m_bufferSize);
-										ThreadPool.QueueItem(() => exp.TrySetException(ChannelOverflowException));
+										ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException()));
 									}
 									break;
 								case QueueOverflowStrategy.LIFO:
 									{
 										var exp = m_writerQueue[m_writerQueue.Count - 1].Source;
 										m_writerQueue.RemoveAt(m_writerQueue.Count - 1);
-										ThreadPool.QueueItem(() => exp.TrySetException(ChannelOverflowException));
+										ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException()));
 									}
 									break;
 								case QueueOverflowStrategy.Reject:
 								default:
-									ThreadPool.QueueItem(() => result.TrySetException(ChannelOverflowException));
+									ThreadPool.QueueItem(() => result.TrySetException(new ChannelOverflowException()));
 									return result.Task;
 							}							
 						}
@@ -671,7 +656,7 @@ namespace CoCoL
 					if (immediate)
 						while (m_retireCount > 1)
 						{
-							m_writerQueue[0].Source.TrySetException(RetiredException);
+							m_writerQueue[0].Source.TrySetException(new RetiredException());
 							m_writerQueue.RemoveAt(0);
 							m_retireCount--;
 						}
@@ -758,11 +743,11 @@ namespace CoCoL
 			{
 				if (readers != null)
 					foreach (var r in readers)
-						ThreadPool.QueueItem(() => r.Source.TrySetException(RetiredException));
+						ThreadPool.QueueItem(() => r.Source.TrySetException(new RetiredException()));
 
 				if (writers != null)
 					foreach (var w in writers)
-						ThreadPool.QueueItem(() => w.Source.TrySetException(RetiredException));
+						ThreadPool.QueueItem(() => w.Source.TrySetException(new RetiredException()));
 			}
 		}
 
@@ -778,6 +763,10 @@ namespace CoCoL
 			// Extract all expired items from their queues
 			lock (m_lock)
 			{
+				// If the channel is expired, there is nothing to do here
+				if (m_readerQueue == null || m_writerQueue == null)
+					return;
+				
 				var now = DateTime.Now;
 				expiredReaders = m_readerQueue.Zip(Enumerable.Range(0, m_readerQueue.Count), (n, i) => new KeyValuePair<int, ReaderEntry>(i, n)).Where(x => x.Value.Expires.Ticks != 0 && (x.Value.Expires - now).Ticks <= ExpirationManager.ALLOWED_ADVANCE_EXPIRE_TICKS).ToArray();
 				expiredWriters = m_writerQueue.Zip(Enumerable.Range(0, m_writerQueue.Count), (n, i) => new KeyValuePair<int, WriterEntry>(i, n)).Where(x => x.Value.Expires.Ticks != 0 && (x.Value.Expires - now).Ticks <= ExpirationManager.ALLOWED_ADVANCE_EXPIRE_TICKS).ToArray();
@@ -790,11 +779,11 @@ namespace CoCoL
 
 			// Send the notifications
 			foreach (var r in expiredReaders.OrderBy(x => x.Value.Expires))
-				r.Value.Source.TrySetException(TimeoutException);
+				r.Value.Source.TrySetException(new TimeoutException());
 
 			// Send the notifications
 			foreach (var w in expiredWriters.OrderBy(x => x.Value.Expires))
-				w.Value.Source.TrySetException(TimeoutException);
+				w.Value.Source.TrySetException(new TimeoutException());
 		}
 	}
 }
