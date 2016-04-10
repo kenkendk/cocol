@@ -20,6 +20,11 @@ namespace CoCoL
 		protected static readonly object __lock;
 
 		/// <summary>
+		/// Lookup table for scopes
+		/// </summary>
+		protected static readonly Dictionary<string, ChannelScope> __scopes = new Dictionary<string, ChannelScope>();
+
+		/// <summary>
 		/// Static initializer to control the creation order
 		/// </summary>
 		static ChannelScope()
@@ -45,6 +50,11 @@ namespace CoCoL
 		/// </summary>
 		/// <value><c>true</c> if this instance isolated; otherwise, <c>false</c>.</value>
 		public bool Isolated { get; private set; }
+
+		/// <summary>
+		/// The key for this instance
+		/// </summary>
+		private readonly string m_instancekey = Guid.NewGuid().ToString("N");
 
 		/// <summary>
 		/// The local storage for channels
@@ -83,6 +93,8 @@ namespace CoCoL
 			ParentScope = parent;
 			Isolated = isolated;
 			Current = this;
+			lock (__lock)
+				__scopes[m_instancekey] = this;
 		}
 
 		/// <summary>
@@ -224,6 +236,7 @@ namespace CoCoL
 					while (Current.m_isDisposed)
 						Current = Current.ParentScope;
 				}
+				__scopes.Remove(this.m_instancekey);
 				m_isDisposed = true;
 				m_lookup = null;
 			}
@@ -234,15 +247,13 @@ namespace CoCoL
 #if PCL_BUILD
 		private static bool __IsFirstUsage = true;
 		private static ChannelScope __Current = null;
-#endif
 
 		public static ChannelScope Current
 		{
-			get 
+			get
 			{
 				lock (__lock)
 				{
-#if PCL_BUILD
 					// TODO: Use AsyncLocal if targeting 4.6
 					//var cur = new System.Threading.AsyncLocal<ChannelScope>();
 					if (__IsFirstUsage)
@@ -252,9 +263,6 @@ namespace CoCoL
 					}
 
 					var cur = __Current;
-#else
-					var cur = System.Runtime.Remoting.Messaging.CallContext.LogicalGetData(LOGICAL_CONTEXT_KEY) as ChannelScope;
-#endif
 					if (cur == null)
 						return Current = Root;
 					else
@@ -265,14 +273,42 @@ namespace CoCoL
 			{
 				lock (__lock)
 				{
-#if PCL_BUILD				
 					__Current = value;
-#else
-					System.Runtime.Remoting.Messaging.CallContext.LogicalSetData(LOGICAL_CONTEXT_KEY, value);
-#endif
 				}
 			}
 		}
+
+#else
+
+		public static ChannelScope Current
+		{
+			get 
+			{
+				lock (__lock)
+				{
+					var cur = System.Runtime.Remoting.Messaging.CallContext.LogicalGetData(LOGICAL_CONTEXT_KEY) as string;
+					if (cur == null)
+						return Current = Root;
+					else
+					{
+						ChannelScope sc;
+						if (!__scopes.TryGetValue(cur, out sc))
+							throw new Exception(string.Format("Unable to find scope in lookup table, this may be caused by attempting to transport call contexts between AppDomains (eg. with remoting calls)"));
+
+						return sc;
+					}
+				}
+			}
+			private set
+			{
+				lock (__lock)
+					System.Runtime.Remoting.Messaging.CallContext.LogicalSetData(LOGICAL_CONTEXT_KEY, value.m_instancekey);
+			}
+		}
+
+#endif
+
+
 	}
 }
 

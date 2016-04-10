@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 #if PCL_BUILD
 using WAITCALLBACK = System.Action<object>;
@@ -22,6 +23,11 @@ namespace CoCoL
 		protected static readonly object __lock;
 
 		/// <summary>
+		/// Lookup table for scopes
+		/// </summary>
+		protected static readonly Dictionary<string, ExecutionScope> __scopes = new Dictionary<string, ExecutionScope>();
+
+		/// <summary>
 		/// The key used to assign the current scope into the current call-context
 		/// </summary>
 		protected const string LOGICAL_CONTEXT_KEY = "CoCoL:ExecutionScope";
@@ -37,6 +43,11 @@ namespace CoCoL
 		protected bool m_isDisposed = false;
 
 		/// <summary>
+		/// The key for this instance
+		/// </summary>
+		private readonly string m_instancekey = Guid.NewGuid().ToString("N");
+
+		/// <summary>
 		/// The parent scope, or null if this is the root scope
 		/// </summary>
 		/// <value>The parent scope.</value>
@@ -49,6 +60,7 @@ namespace CoCoL
 		{
 			__lock = new object();
 			Root = new ExecutionScope(null, ThreadPool.DEFAULT_THREADPOOL);
+			__scopes[Root.m_instancekey] = Root;
 		}
 
 		/// <summary>
@@ -72,6 +84,8 @@ namespace CoCoL
 
 			ParentScope = parent;
 			m_threadPool = threadPool;
+			lock (__lock)
+				__scopes[m_instancekey] = this;
 			Current = this;
 		}
 
@@ -141,6 +155,7 @@ namespace CoCoL
 					while (Current.m_isDisposed)
 						Current = Current.ParentScope;
 				}
+				__scopes.Remove(this.m_instancekey);
 				m_isDisposed = true;
 				m_threadPool = null;
 			}
@@ -149,21 +164,17 @@ namespace CoCoL
 		#endregion
 
 #if PCL_BUILD
-private static bool __IsFirstUsage = true;
-private static ExecutionScope __Current = null;
-#endif
-		/// <summary>
-		/// Gets the current execution scope
-		/// </summary>
+		private static bool __IsFirstUsage = true;
+		private static ExecutionScope __Current = null;
+
 		public static ExecutionScope Current
 		{
-			get 
+			get
 			{
 				lock (__lock)
 				{
-#if PCL_BUILD
 					// TODO: Use AsyncLocal if targeting 4.6
-					//var cur = new System.Threading.AsyncLocal<ChannelScope>();
+					//var cur = new System.Threading.AsyncLocal<ExecutionScope>();
 					if (__IsFirstUsage)
 					{
 						__IsFirstUsage = false;
@@ -171,9 +182,6 @@ private static ExecutionScope __Current = null;
 					}
 
 					var cur = __Current;
-#else
-					var cur = System.Runtime.Remoting.Messaging.CallContext.LogicalGetData(LOGICAL_CONTEXT_KEY) as ExecutionScope;
-#endif
 					if (cur == null)
 						return Current = Root;
 					else
@@ -184,14 +192,40 @@ private static ExecutionScope __Current = null;
 			{
 				lock (__lock)
 				{
-#if PCL_BUILD				
 					__Current = value;
-#else
-					System.Runtime.Remoting.Messaging.CallContext.LogicalSetData(LOGICAL_CONTEXT_KEY, value);
-#endif
 				}
 			}
 		}
+
+#else
+
+		public static ExecutionScope Current
+		{
+			get 
+			{
+				lock (__lock)
+				{
+					var cur = System.Runtime.Remoting.Messaging.CallContext.LogicalGetData(LOGICAL_CONTEXT_KEY) as string;
+					if (cur == null)
+						return Current = Root;
+					else
+					{
+						ExecutionScope sc;
+						if (!__scopes.TryGetValue(cur, out sc))
+							throw new Exception(string.Format("Unable to find scope in lookup table, this may be caused by attempting to transport call contexts between AppDomains (eg. with remoting calls)"));
+
+						return sc;
+					}
+				}
+			}
+			private set
+			{
+				lock (__lock)
+					System.Runtime.Remoting.Messaging.CallContext.LogicalSetData(LOGICAL_CONTEXT_KEY, value.m_instancekey);
+			}
+		}
+
+#endif
 	}
 }
 
