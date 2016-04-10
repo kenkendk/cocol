@@ -10,7 +10,7 @@ namespace UnitTest
 		[Test]
 		public void TestBufferedWrite()
 		{
-			var c = ChannelManager.CreateChannel<int>(2);
+			var c = ChannelManager.CreateChannel<int>(buffersize: 2);
 
 			c.Write(4);
 			if (!c.TryWrite(5))
@@ -27,7 +27,7 @@ namespace UnitTest
 		[Test]
 		public void TestOrderedRetire()
 		{
-			var c = ChannelManager.CreateChannel<int>(2);
+			var c = ChannelManager.CreateChannel<int>(buffersize: 2);
 
 			c.Write(6);
 			c.Write(7);
@@ -47,7 +47,7 @@ namespace UnitTest
 		[ExpectedException(typeof(RetiredException))]
 		public void TestImmediateRetire()
 		{
-			var c = ChannelManager.CreateChannel<int>(2);
+			var c = ChannelManager.CreateChannel<int>(buffersize: 2);
 
 			c.Write(7);
 			c.Write(8);

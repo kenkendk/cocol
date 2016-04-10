@@ -101,7 +101,7 @@ namespace CoCoL
 		public static IChannel<T> CreateChannel<T>(string name = null, int buffersize = 0, ChannelScope scope = null, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject)
 		{
 			if (string.IsNullOrWhiteSpace(name))
-				return CreateChannel<T>(buffersize, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
+				return CreateChannelForScope<T>(null, buffersize, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy); 
 			else
 				return GetChannel<T>(name, buffersize, scope, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
 		}
@@ -120,21 +120,6 @@ namespace CoCoL
 		internal static IChannel<T> CreateChannelForScope<T>(string name, int buffersize, int maxPendingReaders, int maxPendingWriters, QueueOverflowStrategy pendingReadersOverflowStrategy, QueueOverflowStrategy pendingWritersOverflowStrategy)
 		{
 			return new Channel<T>(name, buffersize, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy); 
-		}
-
-		/// <summary>
-		/// Creates an unnamed channel
-		/// </summary>
-		/// <returns>The channel.</returns>
-		/// <param name="buffersize">The number of buffers in the channel.</param>
-		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
-		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
-		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
-		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
-		/// <typeparam name="T">The channel type.</typeparam>
-		public static IChannel<T> CreateChannel<T>(int buffersize, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject) 
-		{ 
-			return CreateChannelForScope<T>(null, buffersize, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy); 
 		}
 	}
 }

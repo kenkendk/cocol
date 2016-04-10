@@ -223,7 +223,7 @@ namespace UnitTest
 		[Test]
 		public void TestTimeoutWithBuffers()
 		{
-			var c = ChannelManager.CreateChannel<int>(1);
+			var c = ChannelManager.CreateChannel<int>(buffersize: 1);
 
 			Func<Task> p = async() =>
 				{
