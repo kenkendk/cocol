@@ -35,7 +35,7 @@ namespace CoCoL
 	/// <summary>
 	/// Helper class for performing multi-channel access
 	/// </summary>
-	public static class MultiChannelAccess
+	public static partial class MultiChannelAccess
 	{
 		#region Creating requests from the channel
 		/// <summary>

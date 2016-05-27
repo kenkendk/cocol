@@ -24,7 +24,7 @@ namespace CoCoL
 		bool IsRead { get; }
 	}
 
-	public static class UntypedMultiChannelAccess
+	public static partial class MultiChannelAccess
 	{
 		#region Overloads for setting default parameters in the untyped read method
 		/// <summary>

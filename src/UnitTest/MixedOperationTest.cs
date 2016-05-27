@@ -145,7 +145,7 @@ namespace UnitTest
 			c1.WriteNoWait(1);
 			c2.WriteNoWait("2");
 
-			var r = UntypedMultiChannelAccess.ReadFromAnyAsync(c1.AsUntyped(), c2.AsUntyped()).WaitForTask().Result;
+			var r = MultiChannelAccess.ReadFromAnyAsync(c1.AsUntyped(), c2.AsUntyped()).WaitForTask().Result;
 			if (r == null)
 				throw new Exception("Unexpected null result");
 			if (r.Channel != c1)
@@ -156,7 +156,7 @@ namespace UnitTest
 			if ((int)r.Value != 1)
 				throw new Exception("Bad value?");
 
-			r = UntypedMultiChannelAccess.ReadFromAnyAsync(c1.RequestRead(), c2.RequestRead()).WaitForTask().Result;
+			r = MultiChannelAccess.ReadFromAnyAsync(c1.RequestRead(), c2.RequestRead()).WaitForTask().Result;
 			if (r == null)
 				throw new Exception("Unexpected null result");
 			if (r.Channel != c2)
@@ -166,7 +166,7 @@ namespace UnitTest
 			if ((string)r.Value != "2")
 				throw new Exception("Bad value?");
 
-			var t = UntypedMultiChannelAccess.WriteToAnyAsync(c1.AsUntyped().RequestWrite(4));
+			var t = new [] { c1.AsUntyped().RequestWrite(4) }.WriteToAnyAsync();
 			if (c1.Read() != 4)
 				throw new Exception("Bad value?");
 
