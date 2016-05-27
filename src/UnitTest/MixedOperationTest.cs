@@ -16,7 +16,7 @@ namespace UnitTest
 			try
 			{
 				var c1 = ChannelManager.CreateChannel<int>();
-				MultiChannelAccess.ReadOrWriteAnyAsync(MultisetRequest<int>.Read(c1), MultisetRequest<int>.Write(1, c1)).WaitForTask().Wait();
+				MultiChannelAccess.ReadOrWriteAnyAsync(MultisetRequest.Read(c1), MultisetRequest.Write(1, c1)).WaitForTask().Wait();
 			}
 			catch(AggregateException aex)
 			{
@@ -36,7 +36,7 @@ namespace UnitTest
 			Func<Task> p1 = async() => {
 				var val = await c2.ReadAsync();
 				while(true) {
-					var res = await MultiChannelAccess.ReadOrWriteAnyAsync(MultisetRequest<int>.Read(c2), MultisetRequest<int>.Write(val, c1));
+					var res = await MultiChannelAccess.ReadOrWriteAnyAsync(MultisetRequest.Read(c2), MultisetRequest.Write(val, c1));
 					if (res.IsRead)
 						val = res.Value + 1;
 				}
@@ -91,7 +91,7 @@ namespace UnitTest
 			Func<Task> p1 = async() => {
 				var val = int.Parse(await c2.ReadAsync());
 				while(true) {
-					var res = await UntypedMultiChannelAccess.ReadOrWriteAnyAsync(MultisetRequest<string>.Read(c2), MultisetRequest<int>.Write(val, c1));
+					var res = await MultiChannelAccess.ReadOrWriteAnyAsync(MultisetRequest.Read(c2), MultisetRequest.Write(val, c1));
 					if (res.IsRead)
 						val = int.Parse((string)res.Value) + 1;
 				}
