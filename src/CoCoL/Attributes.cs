@@ -88,6 +88,7 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="name">The name of the channel.</param>
 		/// <param name="buffersize">The size of the buffer on the created channel</param>
+		/// <param name="targetScope">The scope where the channel is created</param>
 		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
 		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
 		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>

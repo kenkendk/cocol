@@ -51,7 +51,7 @@ namespace CoCoL
 			public DateTime Expires;
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="CoCoL.Channel`1+ReaderEntry"/> struct.
+			/// Initializes a new instance of the <see cref="CoCoL.Channel&lt;T&gt;.ReaderEntry"/> struct.
 			/// </summary>
 			/// <param name="offer">The offer handler</param>
 			/// <param name="callback">The callback method for reporting progress.</param>
@@ -96,7 +96,7 @@ namespace CoCoL
 			public T Value;
 
 			/// <summary>
-			/// Initializes a new instance of the <see cref="CoCoL.Channel`1+WriterEntry"/> struct.
+			/// Initializes a new instance of the <see cref="CoCoL.Channel&lt;T&gt;.WriterEntry"/> struct.
 			/// </summary>
 			/// <param name="offer">The offer handler</param>
 			/// <param name="callback">The callback method for reporting progress.</param>
@@ -198,7 +198,7 @@ namespace CoCoL
 		private readonly QueueOverflowStrategy m_pendingWritersOverflowStrategy;
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.Channel`1"/> class.
+		/// Initializes a new instance of the <see cref="CoCoL.Channel&lt;T&gt;"/> class.
 		/// </summary>
 		/// <param name="buffersize">The size of the write buffer</param>
 		/// <param name="name">The name of the channel</param>
@@ -569,7 +569,7 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="queue">The queue to remove from.</param>
 		/// <param name="queueCleanup">The threshold parameter.</param>
-		/// <typeparam name="T">The type of list data.</typeparam>
+		/// <typeparam name="Tx">The type of list data.</typeparam>
 		private void PerformQueueCleanup<Tx>(List<Tx> queue, ref int queueCleanup)
 			where Tx : IOfferItem
 		{
@@ -763,7 +763,7 @@ namespace CoCoL
 			// Extract all expired items from their queues
 			lock (m_lock)
 			{
-				// If the channel is expired, there is nothing to do here
+				// If the channel is retired, there is nothing to do here
 				if (m_readerQueue == null || m_writerQueue == null)
 					return;
 				

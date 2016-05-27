@@ -7,6 +7,9 @@ using System.Runtime.CompilerServices;
 
 namespace CoCoL
 {
+	/// <summary>
+	/// Base class for implementing a communicating process as a class.
+	/// </summary>
 	public abstract class ProcessHelper : IAsyncProcess, IDisposable
 	{
 		/// <summary>

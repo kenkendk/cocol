@@ -116,7 +116,7 @@ namespace CoCoL
 			/// <summary>
 			/// Callback method for handling a timer event
 			/// </summary>
-			/// <param name="dummy">Unused parameter for matching the callback signature</param>
+			/// <param name="task">Unused parameter for matching the callback signature</param>
 			private void RunTimer(Task task)
 			{
 				var expires = new List<Action>();

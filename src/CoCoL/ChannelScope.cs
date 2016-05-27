@@ -103,7 +103,6 @@ namespace CoCoL
 		/// <returns>The or create.</returns>
 		/// <param name="name">The name of the channel to create.</param>
 		/// <param name="datatype">The type of data communicated through the channel.</param>
-		/// <param name="disableCreate"><c>True</c> if the function should return null instead of creating the channel if it was not found</param>
 		/// <param name="buffersize">The size of the channel buffer.</param>
 		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
 		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
@@ -120,7 +119,7 @@ namespace CoCoL
 		/// Gets or creates a channel
 		/// </summary>
 		/// <returns>The channel with the given name.</returns>
-		/// <param name="marker">The <see cref="ChannelMarkerWrapper"/> of the channel to create.</param>
+		/// <param name="marker">The <see cref="ChannelNameMarker"/> of the channel to create.</param>
 		/// <typeparam name="T">The type of data in the channel.</typeparam>
 		public IChannel<T> GetOrCreate<T>(ChannelNameMarker marker)
 		{
@@ -131,7 +130,7 @@ namespace CoCoL
 		/// Gets or creates a channel
 		/// </summary>
 		/// <returns>The channel with the given name.</returns>
-		/// <param name="marker">The <see cref="ChannelMarkerWrapper"/> of the channel to create.</param>
+		/// <param name="marker">The <see cref="ChannelNameMarker"/> of the channel to create.</param>
 		/// <typeparam name="T">The type of data in the channel.</typeparam>
 		public IChannel<T> GetOrCreate<T>(ChannelMarkerWrapper<T> marker)
 		{
@@ -279,7 +278,10 @@ namespace CoCoL
 		}
 
 #else
-
+		/// <summary>
+		/// Gets the current channel scope.
+		/// </summary>
+		/// <value>The current scope.</value>
 		public static ChannelScope Current
 		{
 			get 

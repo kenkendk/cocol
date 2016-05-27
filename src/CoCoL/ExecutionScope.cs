@@ -10,6 +10,9 @@ using WAITCALLBACK = System.Threading.WaitCallback;
 
 namespace CoCoL
 {
+	/// <summary>
+	/// A scope that defines how to execute tasks that await a channel
+	/// </summary>
 	public class ExecutionScope : IDisposable, IFinishAbleThreadPool
 	{
 		/// <summary>
@@ -198,7 +201,10 @@ namespace CoCoL
 		}
 
 #else
-
+		/// <summary>
+		/// Gets the current execution scope.
+		/// </summary>
+		/// <value>The current scope.</value>
 		public static ExecutionScope Current
 		{
 			get 

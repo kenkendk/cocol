@@ -21,7 +21,7 @@ namespace CoCoL
 		public readonly IReadChannel<T> Channel;
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.MultisetResult`1"/> struct.
+		/// Initializes a new instance of the <see cref="CoCoL.MultisetResult&lt;T&gt;"/> struct.
 		/// </summary>
 		/// <param name="value">The value read</param>
 		/// <param name="channel">The channel read from</param>
@@ -102,7 +102,6 @@ namespace CoCoL
 		/// <summary>
 		/// Reads from any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the read completes.</param>
 		/// <param name="channels">The list of channels to call.</param>
 		/// <param name="timeout">The maximum time to wait for a value to read.</param>
 		/// <param name="priority">The priority used to select channels, if multiple channels have a value that can be read.</param>
@@ -115,7 +114,6 @@ namespace CoCoL
 		/// <summary>
 		/// Reads from any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the read completes.</param>
 		/// <param name="channels">The list of channels to call.</param>
 		/// <param name="timeout">The maximum time to wait for a value to read.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
@@ -127,7 +125,6 @@ namespace CoCoL
 		/// <summary>
 		/// Reads from any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the read completes.</param>
 		/// <param name="channels">The list of channels to call.</param>
 		/// <param name="priority">The priority used to select channels, if multiple channels have a value that can be read.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
@@ -139,7 +136,6 @@ namespace CoCoL
 		/// <summary>
 		/// Reads from any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the read completes.</param>
 		/// <param name="channels">The list of channels to call.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
 		public static Task<MultisetResult<T>> ReadFromAnyAsync<T>(params IReadChannel<T>[] channels)
@@ -150,7 +146,6 @@ namespace CoCoL
 		/// <summary>
 		/// Reads from any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the read completes.</param>
 		/// <param name="channels">The list of channels to call.</param>
 		/// <param name="timeout">The maximum time to wait for a value to read.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
@@ -162,7 +157,6 @@ namespace CoCoL
 		/// <summary>
 		/// Reads from any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the read completes.</param>
 		/// <param name="channels">The list of channels to call.</param>
 		/// <param name="priority">The priority used to select channels, if multiple channels have a value that can be read.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
@@ -174,7 +168,6 @@ namespace CoCoL
 		/// <summary>
 		/// Reads from any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the read completes, or null.</param>
 		/// <param name="channels">The list of channels to attempt to read from.</param>
 		/// <param name="timeout">The maximum time to wait for a value to read.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be read.</param>
@@ -203,7 +196,6 @@ namespace CoCoL
 		/// <summary>
 		/// Writes to any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the write completes, or null.</param>
 		/// <param name="value">The value to write to the channel.</param>
 		/// <param name="channels">The list of channels to attempt to write.</param>
 		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
@@ -211,51 +203,47 @@ namespace CoCoL
 		/// <typeparam name="T">The channel data type.</typeparam>
 		public static Task<IWriteChannel<T>> WriteToAnyAsync<T>(T value, TimeSpan timeout, MultiChannelPriority priority, params IWriteChannel<T>[] channels)
 		{
-			return WriteToAnyAsync(null, value, channels.AsEnumerable(), timeout, priority);
+			return WriteToAnyAsync(null, value, channels, timeout, priority);
 		}
 
 		/// <summary>
 		/// Writes to any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the write completes, or null.</param>
 		/// <param name="value">The value to write to the channel.</param>
 		/// <param name="channels">The list of channels to attempt to write.</param>
 		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
 		public static Task<IWriteChannel<T>> WriteToAnyAsync<T>(T value, TimeSpan timeout, params IWriteChannel<T>[] channels)
 		{
-			return WriteToAnyAsync(null, value, channels.AsEnumerable(), timeout, MultiChannelPriority.Any);
+			return WriteToAnyAsync(null, value, channels, timeout, MultiChannelPriority.Any);
 		}
 
 		/// <summary>
 		/// Writes to any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the write completes, or null.</param>
 		/// <param name="value">The value to write to the channel.</param>
 		/// <param name="channels">The list of channels to attempt to write.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
 		public static Task<IWriteChannel<T>> WriteToAnyAsync<T>(T value, MultiChannelPriority priority, params IWriteChannel<T>[] channels)
 		{
-			return WriteToAnyAsync(value, channels.AsEnumerable(), Timeout.Infinite, priority);
+			return WriteToAnyAsync(null, value, channels, Timeout.Infinite, priority);
 		}
 
 		/// <summary>
 		/// Writes to any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the write completes, or null.</param>
 		/// <param name="value">The value to write to the channel.</param>
 		/// <param name="channels">The list of channels to attempt to write.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
 		public static Task<IWriteChannel<T>> WriteToAnyAsync<T>(T value, params IWriteChannel<T>[] channels)
 		{
-			return WriteToAnyAsync(null, value, channels.AsEnumerable(), Timeout.Infinite, MultiChannelPriority.Any);
+			return WriteToAnyAsync(null, value, channels, Timeout.Infinite, MultiChannelPriority.Any);
 		}
 
 		/// <summary>
 		/// Writes to any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the write completes, or null.</param>
 		/// <param name="value">The value to write to the channel.</param>
 		/// <param name="channels">The list of channels to attempt to write.</param>
 		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
@@ -268,7 +256,6 @@ namespace CoCoL
 		/// <summary>
 		/// Writes to any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the write completes, or null.</param>
 		/// <param name="value">The value to write to the channel.</param>
 		/// <param name="channels">The list of channels to attempt to write.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
@@ -281,7 +268,6 @@ namespace CoCoL
 		/// <summary>
 		/// Writes to any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the write completes, or null.</param>
 		/// <param name="value">The value to write to the channel.</param>
 		/// <param name="channels">The list of channels to attempt to write.</param>
 		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
@@ -295,7 +281,6 @@ namespace CoCoL
 		/// <summary>
 		/// Writes to any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the write completes, or null.</param>
 		/// <param name="value">The value to write to the channel.</param>
 		/// <param name="channels">The list of channels to attempt to write.</param>
 		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
@@ -308,7 +293,6 @@ namespace CoCoL
 		/// <summary>
 		/// Writes to any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the write completes, or null.</param>
 		/// <param name="value">The value to write to the channel.</param>
 		/// <param name="channels">The list of channels to attempt to write.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
@@ -321,7 +305,6 @@ namespace CoCoL
 		/// <summary>
 		/// Writes to any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the write completes, or null.</param>
 		/// <param name="value">The value to write to the channel.</param>
 		/// <param name="channels">The list of channels to attempt to write.</param>
 		/// <param name="timeout">The maximum time to wait for a channel to become ready for writing.</param>
@@ -351,8 +334,7 @@ namespace CoCoL
 		/// <summary>
 		/// Reads from any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the read completes.</param>
-		/// <param name="channels">The list of channels to call.</param>
+		/// <param name="requests">The list of requests</param>
 		/// <param name="timeout">The maximum time to wait for a value to read.</param>
 		/// <param name="priority">The priority used to select channels, if multiple channels have a value that can be read.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
@@ -364,8 +346,7 @@ namespace CoCoL
 		/// <summary>
 		/// Reads from any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the read completes.</param>
-		/// <param name="channels">The list of channels to call.</param>
+		/// <param name="requests">The list of requests</param>
 		/// <param name="timeout">The maximum time to wait for a value to read.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
 		public static Task<MultisetRequest<T>> ReadOrWriteAnyAsync<T>(TimeSpan timeout, params MultisetRequest<T>[] requests)
@@ -376,8 +357,7 @@ namespace CoCoL
 		/// <summary>
 		/// Reads from any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the read completes.</param>
-		/// <param name="channels">The list of channels to call.</param>
+		/// <param name="requests">The list of requests</param>
 		/// <param name="priority">The priority used to select channels, if multiple channels have a value that can be read.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
 		public static Task<MultisetRequest<T>> ReadOrWriteAnyAsync<T>(MultiChannelPriority priority, params MultisetRequest<T>[] requests)
@@ -388,8 +368,7 @@ namespace CoCoL
 		/// <summary>
 		/// Reads from any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the read completes.</param>
-		/// <param name="channels">The list of channels to call.</param>
+		/// <param name="requests">The list of requests</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
 		public static Task<MultisetRequest<T>> ReadOrWriteAnyAsync<T>(params MultisetRequest<T>[] requests)
 		{
@@ -399,8 +378,7 @@ namespace CoCoL
 		/// <summary>
 		/// Reads from any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the read completes.</param>
-		/// <param name="channels">The list of channels to call.</param>
+		/// <param name="requests">The list of requests</param>
 		/// <param name="timeout">The maximum time to wait for a value to read.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
 		public static Task<MultisetRequest<T>> ReadOrWriteAnyAsync<T>(this IEnumerable<MultisetRequest<T>> requests, TimeSpan timeout)
@@ -411,8 +389,7 @@ namespace CoCoL
 		/// <summary>
 		/// Reads from any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the read completes.</param>
-		/// <param name="channels">The list of channels to call.</param>
+		/// <param name="requests">The list of requests</param>
 		/// <param name="priority">The priority used to select channels, if multiple channels have a value that can be read.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
 		public static Task<MultisetRequest<T>> ReadOrWriteAnyAsync<T>(this IEnumerable<MultisetRequest<T>> requests, MultiChannelPriority priority)
@@ -423,8 +400,7 @@ namespace CoCoL
 		/// <summary>
 		/// Reads from any of the specified channels
 		/// </summary>
-		/// <param name="callback">The method to call after the read completes, or null.</param>
-		/// <param name="channels">The list of channels to attempt to read from.</param>
+		/// <param name="requests">The list of requests</param>
 		/// <param name="timeout">The maximum time to wait for a value to read.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be read.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
@@ -437,7 +413,7 @@ namespace CoCoL
 		/// Reads from any of the specified channels
 		/// </summary>
 		/// <param name="callback">The method to call when the read completes, or null.</param>
-		/// <param name="channels">The list of channels to attempt to read from.</param>
+		/// <param name="requests">The list of requests</param>
 		/// <param name="timeout">The maximum time to wait for a value to read.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be read.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
@@ -451,10 +427,9 @@ namespace CoCoL
 		/// Reads from any of the specified channels
 		/// </summary>
 		/// <param name="callback">The method to call when the read completes, or null.</param>
-		/// <param name="channels">The list of channels to attempt to read from.</param>
+		/// <param name="requests">The list of requests</param>
 		/// <param name="timeout">The maximum time to wait for a value to read.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be read.</param>
-		/// <param name="singleOperationType">True if there is are only reads or writes in the queue</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
 		private static Task<MultisetRequest<T>> ReadOrWriteAnyAsync<T>(Action<object> callback, IEnumerable<MultisetRequest<T>> requests, TimeSpan timeout, MultiChannelPriority priority)
 		{

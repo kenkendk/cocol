@@ -20,8 +20,9 @@ namespace CoCoL
 		/// Blocking wait for a task, equivalent to calling Task.Wait(),
 		/// but works around a race in Mono that causes Wait() to hang
 		/// </summary>
-		/// <param name="t">The task to wait for</param>
+		/// <param name="task">The task to wait for</param>
 		/// <returns>The task</returns>
+		/// <typeparam name="T">The task data type.</typeparam>
 		public static Task<T> WaitForTask<T>(this Task<T> task)
 		{
 			// Mono has a race when waiting for a
@@ -55,7 +56,7 @@ namespace CoCoL
 		/// Blocking wait for a task, equivalent to calling Task.Wait(),
 		/// but works around a race in Mono that causes Wait() to hang
 		/// </summary>
-		/// <param name="t">The task to wait for</param>
+		/// <param name="task">The task to wait for</param>
 		/// <returns>The task</returns>
 		public static Task WaitForTask(this Task task)
 		{
@@ -91,7 +92,7 @@ namespace CoCoL
 		/// but works around a race in Mono that causes Wait() to hang.
 		/// If an error occurs, an exception is thrown
 		/// </summary>
-		/// <param name="t">The task to wait for</param>
+		/// <param name="task">The task to wait for</param>
 		/// <returns>The task</returns>
 		public static Task WaitForTaskOrThrow(this Task task)
 		{
@@ -153,7 +154,6 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="value">The value to write into the channel</param>
 		/// <param name="self">The channel to read from</param>
-		/// <param name="timeout">The maximum time to wait for an available slot</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		public static void WriteNoWait<T>(this IWriteChannel<T> self, T value)
 		{
@@ -181,7 +181,7 @@ namespace CoCoL
 
 		#region Simple channel overload methods
 		/// <summary>
-		/// Registers a desire to read from the channel
+		/// Reads the channel asynchronously
 		/// </summary>
 		/// <param name="self">The channel to read from</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
@@ -191,7 +191,7 @@ namespace CoCoL
 			return self.ReadAsync(Timeout.Infinite, null);
 		}
 		/// <summary>
-		/// Registers a desire to write to the channel
+		/// Writes the channel asynchronously
 		/// </summary>
 		/// <param name="self">The channel to write to</param>
 		/// <param name="value">The value to write to the channel.</param>
@@ -202,7 +202,7 @@ namespace CoCoL
 			return self.WriteAsync(value, Timeout.Infinite, null);
 		}
 		/// <summary>
-		/// Write to the channel in a probing manner
+		/// Write to the channel in a probing and asynchronous manner
 		/// </summary>
 		/// <param name="value">The value to write into the channel</param>
 		/// <param name="self">The channel to read from</param>
@@ -213,12 +213,11 @@ namespace CoCoL
 			return self.WriteAsync(value, Timeout.Immediate, null).ContinueWith(x => x.IsCompleted);
 		}
 		/// <summary>
-		/// Write to the channel in a probing manner
+		/// Reads the channel in a probing and asynchronous manner
 		/// </summary>
-		/// <param name="value">The value to write into the channel</param>
 		/// <param name="self">The channel to read from</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
-		/// <returns>True if the write succeeded, false otherwise</returns>
+		/// <returns>True if the read succeeded, false otherwise</returns>
 		public static Task<KeyValuePair<bool, T>> TryReadAsync<T>(this IReadChannel<T> self)
 		{
 			return self.ReadAsync(Timeout.Immediate, null).ContinueWith(x => {
@@ -302,7 +301,6 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="value">The value to write into the channel</param>
 		/// <param name="self">The channel to read from</param>
-		/// <param name="timeout">The maximum time to wait for an available slot</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		public static void Write<T>(this IWriteChannel<T> self, T value)
 		{
@@ -436,7 +434,8 @@ namespace CoCoL
 		/// Read from the channel set in a probing manner
 		/// </summary>
 		/// <param name="self">The channels to read from</param>
-		/// <param name="channel">The channel written to</param>
+		/// <param name="value">The value that was read</param>
+		/// <param name="channel">The channel read from</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		/// <returns>The value read from a channel</returns>
 		public static bool TryReadFromAny<T>(this MultiChannelSet<T> self, out T value, out IReadChannel<T> channel)
@@ -461,7 +460,7 @@ namespace CoCoL
 		/// Read from the channel set in a probing manner
 		/// </summary>
 		/// <param name="self">The channels to read from</param>
-		/// <param name="channel">The channel written to</param>
+		/// <param name="value">The value read</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		/// <returns>The value read from a channel</returns>
 		public static bool TryReadFromAny<T>(this MultiChannelSet<T> self, out T value)
@@ -474,10 +473,9 @@ namespace CoCoL
 		/// Read from the channel set in a blocking manner
 		/// </summary>
 		/// <param name="self">The channels to read from</param>
-		/// <param name="channel">The channel written to</param>
 		/// <param name="timeout">The maximum time to wait for a value</param>
-		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		/// <returns>The value read from a channel</returns>
+		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		public static MultisetResult<T> ReadFromAny<T>(this MultiChannelSet<T> self, TimeSpan timeout)
 		{
 			try
@@ -497,9 +495,8 @@ namespace CoCoL
 		/// Write to the channel set in a blocking manner
 		/// </summary>
 		/// <param name="self">The channels to read from</param>
-		/// <param name="channel">The channel written to</param>
-		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		/// <param name="value">The value to write into the channel</param>
+		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		public static IWriteChannel<T> WriteToAny<T>(this MultiChannelSet<T> self, T value)
 		{
 			return WriteToAny(self, value, Timeout.Infinite);
@@ -509,10 +506,9 @@ namespace CoCoL
 		/// Write to the channel set in a blocking manner
 		/// </summary>
 		/// <param name="self">The channels to read from</param>
-		/// <param name="channel">The channel written to</param>
 		/// <param name="timeout">The maximum time to wait for a slot</param>
-		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		/// <param name="value">The value to write into the channel</param>
+		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		public static IWriteChannel<T> WriteToAny<T>(this MultiChannelSet<T> self, T value, TimeSpan timeout)
 		{
 			try
@@ -532,10 +528,8 @@ namespace CoCoL
 		/// Read from the channel set in a probing manner
 		/// </summary>
 		/// <param name="self">The channels to read from</param>
-		/// <param name="channel">The channel written to</param>
-		/// <param name="timeout">The maximum time to wait for a slot</param>
-		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		/// <param name="value">The value to write into the channel</param>
+		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		public static bool TryWriteToAny<T>(this MultiChannelSet<T> self, T value)
 		{
 			IWriteChannel<T> dummy;
@@ -547,9 +541,8 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="self">The channels to read from</param>
 		/// <param name="channel">The channel written to</param>
-		/// <param name="timeout">The maximum time to wait for a slot</param>
-		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		/// <param name="value">The value to write into the channel</param>
+		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		public static bool TryWriteToAny<T>(this MultiChannelSet<T> self, T value, out IWriteChannel<T> channel)
 		{
 			var res = self.WriteToAnyAsync(value, Timeout.Immediate).WaitForTask();
@@ -724,6 +717,7 @@ namespace CoCoL
 		/// <param name="self">The channel to write.</param>
 		/// <param name="value">The value to write.</param>
 		/// <param name="timeout">The write timeout.</param>
+		/// <param name="offer">The two-phase offer instance or null.</param>
 		public static void Write(this IUntypedChannel self, object value, TimeSpan timeout, ITwoPhaseOffer offer = null)
 		{
 			var res = WriteAsync(self, value, timeout, offer).WaitForTask();

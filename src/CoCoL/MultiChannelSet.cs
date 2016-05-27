@@ -38,7 +38,7 @@ namespace CoCoL
 		private Dictionary<object, int> m_channelLookup;
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.SortedChannelList`1"/> class.
+		/// Initializes a new instance of the <see cref="CoCoL.SortedChannelList&lt;T&gt;"/> class.
 		/// </summary>
 		/// <param name="channels">The channels to keep sorted</param>
 		public SortedChannelList(IChannel<T>[] channels)
@@ -144,7 +144,7 @@ namespace CoCoL
 		private readonly MultiChannelPriority m_priority;
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet`1"/> class.
+		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet&lt;T&gt;"/> class.
 		/// </summary>
 		/// <param name="priority">The priority to use when selecting a channel.</param>
 		/// <param name="channels">The channels to consider.</param>
@@ -158,7 +158,7 @@ namespace CoCoL
 
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet`1"/> class.
+		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet&lt;T&gt;"/> class.
 		/// </summary>
 		/// <param name="channels">The channels to consider.</param>
 		public MultiChannelSet(params IChannel<T>[] channels)
@@ -167,7 +167,7 @@ namespace CoCoL
 		}
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet`1"/> class.
+		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet&lt;T&gt;"/> class.
 		/// </summary>
 		/// <param name="priority">The priority to use when selecting a channel.</param>
 		/// <param name="channels">The channels to consider.</param>
@@ -178,7 +178,7 @@ namespace CoCoL
 
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet`1"/> class.
+		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet&lt;T&gt;"/> class.
 		/// </summary>
 		/// <param name="channels">The channels to consider.</param>
 		public MultiChannelSet(IEnumerable<IChannel<T>> channels)
@@ -189,7 +189,6 @@ namespace CoCoL
 		/// <summary>
 		/// Reads from any channel
 		/// </summary>
-		/// <param name="callback">The continuation callback to invoke after reading a value.</param>
 		public Task<MultisetResult<T>> ReadFromAnyAsync()
 		{
 			return ReadFromAnyAsync(Timeout.Infinite);
@@ -198,7 +197,6 @@ namespace CoCoL
 		/// <summary>
 		/// Reads from any channel
 		/// </summary>
-		/// <param name="callback">The continuation callback to invoke after reading a value.</param>
 		/// <param name="timeout">The maximum time to wait for a result.</param>
 		public Task<MultisetResult<T>> ReadFromAnyAsync(TimeSpan timeout)
 		{
@@ -230,7 +228,6 @@ namespace CoCoL
 		/// <summary>
 		/// Writes to any of the channels.
 		/// </summary>
-		/// <param name="callback">The callback to invoke, or null.</param>
 		/// <param name="value">The value to write into the channel.</param>
 		/// <param name="timeout">The maximum time to wait for any channel to become ready.</param>
 		public Task<IWriteChannel<T>> WriteToAnyAsync(T value, TimeSpan timeout)

@@ -3,6 +3,9 @@ using System.Threading.Tasks;
 
 namespace CoCoL
 {
+	/// <summary>
+	/// Base class for a channel end, that is a channel interface that is either read or write
+	/// </summary>
 	public abstract class ChannelEndBase : IJoinAbleChannelEnd, IDisposable
 	{
 		/// <summary>
@@ -21,7 +24,7 @@ namespace CoCoL
 		private readonly bool m_isReader = false;
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.ChannelReadEnd`1"/> class.
+		/// Initializes a new instance of the <see cref="CoCoL.ChannelEndBase"/> class.
 		/// </summary>
 		public ChannelEndBase(IRetireAbleChannel target, bool isReader)
 		{
@@ -42,13 +45,13 @@ namespace CoCoL
 		}
 
 		/// <summary>
-		/// Releases all resource used by the <see cref="CoCoL.ChannelReadEnd`1"/> object.
+		/// Releases all resource used by the <see cref="CoCoL.ChannelEndBase"/> object.
 		/// </summary>
 		/// <param name="disposing"><c>true</c> if disposing, <c>false</c> otherwise</param>
-		/// <remarks>Call <see cref="Dispose"/> when you are finished using the <see cref="CoCoL.ChannelReadEnd`1"/>. The
-		/// <see cref="Dispose"/> method leaves the <see cref="CoCoL.ChannelReadEnd`1"/> in an unusable state. After calling
-		/// <see cref="Dispose"/>, you must release all references to the <see cref="CoCoL.ChannelReadEnd`1"/> so the garbage
-		/// collector can reclaim the memory that the <see cref="CoCoL.ChannelReadEnd`1"/> was occupying.</remarks>
+		/// <remarks>Call <see cref="Dispose()"/> when you are finished using the <see cref="CoCoL.ChannelEndBase"/>. The
+		/// <see cref="Dispose()"/> method leaves the <see cref="CoCoL.ChannelEndBase"/> in an unusable state. After calling
+		/// <see cref="Dispose()"/>, you must release all references to the <see cref="CoCoL.ChannelEndBase"/> so the garbage
+		/// collector can reclaim the memory that the <see cref="CoCoL.ChannelEndBase"/> was occupying.</remarks>
 		public void Dispose(bool disposing)
 		{
 			if (!disposing)
@@ -129,12 +132,12 @@ namespace CoCoL
 
 		#region IDisposable implementation
 		/// <summary>
-		/// Releases all resource used by the <see cref="CoCoL.ChannelReadEnd`1"/> object.
+		/// Releases all resource used by the <see cref="CoCoL.ChannelEndBase"/> object.
 		/// </summary>
-		/// <remarks>Call <see cref="Dispose"/> when you are finished using the <see cref="CoCoL.ChannelReadEnd`1"/>. The
-		/// <see cref="Dispose"/> method leaves the <see cref="CoCoL.ChannelReadEnd`1"/> in an unusable state. After calling
-		/// <see cref="Dispose"/>, you must release all references to the <see cref="CoCoL.ChannelReadEnd`1"/> so the garbage
-		/// collector can reclaim the memory that the <see cref="CoCoL.ChannelReadEnd`1"/> was occupying.</remarks>
+		/// <remarks>Call <see cref="Dispose()"/> when you are finished using the <see cref="CoCoL.ChannelEndBase"/>. The
+		/// <see cref="Dispose()"/> method leaves the <see cref="CoCoL.ChannelEndBase"/> in an unusable state. After calling
+		/// <see cref="Dispose()"/>, you must release all references to the <see cref="CoCoL.ChannelEndBase"/> so the garbage
+		/// collector can reclaim the memory that the <see cref="CoCoL.ChannelEndBase"/> was occupying.</remarks>
 		public void Dispose()
 		{
 			Dispose(true);
@@ -148,7 +151,7 @@ namespace CoCoL
 	public class ChannelReadEnd<T> : ChannelEndBase, IReadChannelEnd<T>
 	{
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.ChannelReadEnd`1"/> class.
+		/// Initializes a new instance of the <see cref="CoCoL.ChannelReadEnd&lt;T&gt;"/> class.
 		/// </summary>
 		public ChannelReadEnd(IReadChannel<T> target)
 			: base(target, true)
@@ -160,7 +163,6 @@ namespace CoCoL
 		/// Registers a desire to read from the channel
 		/// </summary>
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-		/// <param name="callback">A callback method that is called with the result of the operation</param>
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a
 		/// negative span to wait forever.</param>
 		/// <returns>The async.</returns>
@@ -180,7 +182,7 @@ namespace CoCoL
 	public class ChannelWriteEnd<T> : ChannelEndBase, IWriteChannelEnd<T>
 	{
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.ChannelReadEnd`1"/> class.
+		/// Initializes a new instance of the <see cref="CoCoL.ChannelWriteEnd&lt;T&gt;"/> class.
 		/// </summary>
 		public ChannelWriteEnd(IWriteChannel<T> target)
 			: base(target, false)

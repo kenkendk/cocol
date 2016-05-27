@@ -93,7 +93,7 @@ namespace CoCoL
 		public QueueOverflowStrategy PendingWritersOverflowStrategy;
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.ChannelMarkerWrapper`1"/> class.
+		/// Initializes a new instance of the <see cref="CoCoL.ChannelMarkerWrapper&lt;T&gt;"/> class.
 		/// </summary>
 		/// <param name="name">The name of the channel.</param>
 		/// <param name="buffersize">The desired buffersize to use if the channel is created.</param>
@@ -155,7 +155,7 @@ namespace CoCoL
 	internal class ReadMarker<T> : ChannelNameMarker, IReadChannel<T>
 	{
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.ReadMarker`1"/> class.
+		/// Initializes a new instance of the <see cref="CoCoL.ReadMarker&lt;T&gt;"/> class.
 		/// </summary>
 		/// <param name="name">The name of the channel.</param>
 		/// <param name="buffersize">The desired buffersize to use if the channel is created.</param>
@@ -218,7 +218,7 @@ namespace CoCoL
 	internal class WriteMarker<T> : ChannelNameMarker, IWriteChannel<T>
 	{
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.WriteMarker`1"/> class.
+		/// Initializes a new instance of the <see cref="CoCoL.WriteMarker&lt;T&gt;"/> class.
 		/// </summary>
 		/// <param name="name">The name of the channel.</param>
 		/// <param name="buffersize">The desired buffersize to use if the channel is created.</param>

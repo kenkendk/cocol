@@ -150,7 +150,7 @@ namespace CoCoL
 		/// Creates an acessor from the given itemtype
 		/// </summary>
 		/// <returns>The accessor.</returns>
-		/// <param name="itemtype">Itemtype.</param>
+		/// <param name="item">The item to create the interface for.</param>
 		public static IGenericTypeHelper CreateReadAccessor(this IUntypedChannel item)
 		{
 			var readinterface = ReadInterface(item);

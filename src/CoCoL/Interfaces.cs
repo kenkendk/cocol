@@ -97,7 +97,7 @@ namespace CoCoL
 		void Retire(bool immediate);
 
 		/// <summary>
-		/// Gets a value indicating whether this <see cref="CoCoL.IRetireAbleChannel`1"/> is retired.
+		/// Gets a value indicating whether this <see cref="CoCoL.IRetireAbleChannel"/> is retired.
 		/// </summary>
 		/// <value><c>true</c> if is retired; otherwise, <c>false</c>.</value>
 		bool IsRetired { get; }

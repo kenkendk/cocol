@@ -3,7 +3,32 @@
 namespace CoCoL
 {
 	/// <summary>
-	/// A request in a multi-channel operation
+	/// A request for a multi-channel operation
+	/// </summary>
+	public static class MultisetRequest
+	{
+		/// <summary>
+		/// Constructs a request to read a channel.
+		/// </summary>
+		/// <param name="channel">The channel to read from.</param>
+		public static MultisetRequest<T> Read<T>(IReadChannel<T> channel)
+		{
+			return new MultisetRequest<T>(default(T), channel, null, true);
+		}
+
+		/// <summary>
+		/// Constructs a request to write a channel.
+		/// </summary>
+		/// <param name="value">The value to write to the channel.</param>
+		/// <param name="channel">The channel to write to.</param>
+		public static MultisetRequest<T> Write<T>(T value, IWriteChannel<T> channel)
+		{
+			return new MultisetRequest<T>(value, null, channel, false);
+		}
+	}
+
+	/// <summary>
+	/// A request for a multi-channel operation
 	/// </summary>
 	public struct MultisetRequest<T> : IMultisetRequestUntyped
 	{
@@ -25,10 +50,11 @@ namespace CoCoL
 		public readonly bool IsRead;
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.MultisetRequest`1"/> struct.
+		/// Initializes a new instance of the <see cref="CoCoL.MultisetRequest&lt;T&gt;"/> struct.
 		/// </summary>
 		/// <param name="value">The value to write</param>
-		/// <param name="channel">The channel to read or write.</param>
+		/// <param name="readChannel">The channel to read.</param>
+		/// <param name="writeChannel">The channel to write.</param>
 		/// <param name="read"><c>true</c> if this is a read operation, <c>false</c> otherwise</param>
 		internal MultisetRequest(T value, IReadChannel<T> readChannel, IWriteChannel<T> writeChannel, bool read)
 		{

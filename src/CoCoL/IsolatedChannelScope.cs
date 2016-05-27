@@ -4,6 +4,9 @@ using System.Linq;
 
 namespace CoCoL
 {
+	/// <summary>
+	/// A scope that does not inherit channels from its parent scope
+	/// </summary>
 	public class IsolatedChannelScope : ChannelScope
 	{
 		/// <summary>
@@ -96,9 +99,8 @@ namespace CoCoL
 		/// Injects a channel into the current scope, by looking in the parent scope.
 		/// This is particularly useful in isolated scopes, to selectively forward channels
 		/// </summary>
-		/// <param name="name">The name of the channel to create.</param>
+		/// <param name="names">The names of the channel to create.</param>
 		/// <param name="parent">The scope to look in, <code>null</code> means the current parent</param>
-		/// <param name="channel">The channel to inject.</param>
 		public void InjectChannelsFromParent(IEnumerable<string> names, ChannelScope parent = null)
 		{
 			foreach (var n in names)
@@ -109,8 +111,7 @@ namespace CoCoL
 		/// Injects a channel into the current scope, by looking in the parent scope.
 		/// This is particularly useful in isolated scopes, to selectively forward channels
 		/// </summary>
-		/// <param name="name">The name of the channel to create.</param>
-		/// <param name="channel">The channel to inject.</param>
+		/// <param name="names">The name of the channel to create.</param>
 		public void InjectChannelsFromParent(params string[] names)
 		{
 			foreach (var n in names)
@@ -123,7 +124,6 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="name">The name of the channel to create.</param>
 		/// <param name="parent">The scope to look in, <code>null</code> means the current parent</param>
-		/// <param name="channel">The channel to inject.</param>
 		public void InjectChannelFromParent(string name, ChannelScope parent = null)
 		{
 			if (string.IsNullOrWhiteSpace(name))

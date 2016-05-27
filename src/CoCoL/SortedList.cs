@@ -110,7 +110,7 @@ namespace CoCoL
 		}
 
 		/// <summary>
-		/// Gets or sets the <see cref="CoCoL.SortedList`2"/> at the specified index.
+		/// Gets or sets the <see cref="CoCoL.SortedList&lt;Tkey, TValue&gt;"/> at the specified index.
 		/// </summary>
 		/// <param name="index">Index.</param>
 		public TValue this[TKey index]
