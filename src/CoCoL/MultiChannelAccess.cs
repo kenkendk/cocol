@@ -473,6 +473,12 @@ namespace CoCoL
 
 			offer.ProbePhaseComplete();
 
+			if (tasks.Count == 0)
+			{
+				tcs.TrySetException(new InvalidOperationException("List of channels was empty"));
+				return tcs.Task;
+			}
+
 			tasks.Keys.WhenAnyNonCancelled().ContinueWith(item => Task.Run(() =>
 				{
 					var n = item.Result;
