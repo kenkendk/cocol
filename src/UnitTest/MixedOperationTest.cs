@@ -23,7 +23,6 @@ namespace UnitTest
 				if (aex.InnerExceptions.Count == 1)
 					throw aex.InnerExceptions.First();
 			}
-
 		}
 
 		[Test]
