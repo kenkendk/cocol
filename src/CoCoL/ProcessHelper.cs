@@ -71,15 +71,30 @@ namespace CoCoL
 		}
 
 		/// <summary>
+		/// <summary>
 		/// Releases all resource used by the <see cref="CoCoL.ProcessHelper"/> object.
 		/// </summary>
-		/// <remarks>Call <see cref="Dispose"/> when you are finished using the <see cref="CoCoL.ProcessHelper"/>. The
-		/// <see cref="Dispose"/> method leaves the <see cref="CoCoL.ProcessHelper"/> in an unusable state. After calling
-		/// <see cref="Dispose"/>, you must release all references to the <see cref="CoCoL.ProcessHelper"/> so the garbage
+		/// <remarks>Call <see cref="Dispose()"/> when you are finished using the <see cref="CoCoL.ProcessHelper"/>. The
+		/// <see cref="Dispose()"/> method leaves the <see cref="CoCoL.ProcessHelper"/> in an unusable state. After calling
+		/// <see cref="Dispose()"/>, you must release all references to the <see cref="CoCoL.ProcessHelper"/> so the garbage
+		/// collector can reclaim the memory that the <see cref="CoCoL.ProcessHelper"/> was occupying.</remarks>
+		/// </summary>
+		/// <param name="disposing">If set to <c>true</c> disposing.</param>
+		public virtual void Dispose(bool disposing)
+		{
+			AutomationExtensions.RetireAllChannels(this);
+		}
+
+		/// <summary>
+		/// Releases all resource used by the <see cref="CoCoL.ProcessHelper"/> object.
+		/// </summary>
+		/// <remarks>Call <see cref="Dispose()"/> when you are finished using the <see cref="CoCoL.ProcessHelper"/>. The
+		/// <see cref="Dispose()"/> method leaves the <see cref="CoCoL.ProcessHelper"/> in an unusable state. After calling
+		/// <see cref="Dispose()"/>, you must release all references to the <see cref="CoCoL.ProcessHelper"/> so the garbage
 		/// collector can reclaim the memory that the <see cref="CoCoL.ProcessHelper"/> was occupying.</remarks>
 		public void Dispose()
 		{
-			AutomationExtensions.RetireAllChannels(this);
+			Dispose(true);
 		}
 
 		/// <summary>
