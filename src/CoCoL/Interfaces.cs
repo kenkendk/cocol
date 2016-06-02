@@ -10,21 +10,6 @@ using WAITCALLBACK = System.Threading.WaitCallback;
 namespace CoCoL
 {
 	/// <summary>
-	/// The communication mode
-	/// </summary>
-	public enum CommunicationMode
-	{
-		/// <summary>
-		/// The request is a read
-		/// </summary>
-		Read,
-		/// <summary>
-		/// The request is a write
-		/// </summary>
-		Write
-	}
-
-	/// <summary>
 	/// Priorities for selecting a channel when multiple are available
 	/// </summary>
 	public enum MultiChannelPriority
@@ -268,39 +253,6 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="caller">The offer initiator.</param>
 		void Withdraw(object caller);
-	}
-
-
-	/// <summary>
-	/// An untyped communication intent
-	/// </summary>
-	public interface ICommunicationIntent
-	{
-		/// <summary>
-		/// The direction of the communication
-		/// </summary>
-		CommunicationMode Mode { get; }
-
-		/// <summary>
-		/// The two-phase offer handler or null
-		/// </summary>
-		ITwoPhaseOffer Offer { get; }
-
-		/// <summary>
-		/// The channel to which the communication should be performed
-		/// </summary>
-		IUntypedChannel Channel { get; }
-
-		/// <summary>
-		/// The value being written, or null
-		/// </summary>
-		object Value { get; }
-
-		/// <summary>
-		/// The method to call after a successfull read or write
-		/// </summary>
-		/// <value>The callback method.</value>
-		Delegate CallbackMethod { get; }
 	}
 
 	/// <summary>
