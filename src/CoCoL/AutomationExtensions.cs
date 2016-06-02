@@ -332,6 +332,21 @@ namespace CoCoL
 
 			return false;
 		}
+
+		/// <summary>
+		/// Determines if is the exception is a TimeoutException.
+		/// </summary>
+		/// <returns><c>true</c> the exception is a TimeoutException; otherwise, <c>false</c>.</returns>
+		/// <param name="self">The exception to investigate.</param>
+		public static bool IsTimeoutException(this Exception self)
+		{
+			if (self is RetiredException)
+				return true;
+			else if (self is AggregateException && ((AggregateException)self).Flatten().InnerExceptions.First() is TimeoutException)
+				return true;
+
+			return false;
+		}
 	}
 }
 
