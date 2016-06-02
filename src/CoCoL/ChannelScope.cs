@@ -148,22 +148,6 @@ namespace CoCoL
 		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
 		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
 		/// <typeparam name="T">The type of data in the channel.</typeparam>
-		public IChannel<T> GetOrCreate<T>(INamedItem name, int buffersize = 0, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject)
-		{
-			return ParentScope.GetOrCreate<T>(name.Name, buffersize, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
-		}
-
-		/// <summary>
-		/// Gets or creates a channel
-		/// </summary>
-		/// <returns>The channel with the given name.</returns>
-		/// <param name="name">The name of the channel to create.</param>
-		/// <param name="buffersize">The size of the channel buffer.</param>
-		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
-		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
-		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
-		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
-		/// <typeparam name="T">The type of data in the channel.</typeparam>
 		public IChannel<T> GetOrCreate<T>(string name, int buffersize = 0, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject)
 		{
 			lock (__lock)
@@ -173,11 +157,28 @@ namespace CoCoL
 					return (IChannel<T>)res;
 				else
 				{
-					var chan = ChannelManager.CreateChannelForScope<T>(name, buffersize, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
-					m_lookup.Add(name, chan);
+					var chan = DoCreateChannel<T>(name, buffersize, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
+					if (!string.IsNullOrWhiteSpace(name))
+						m_lookup.Add(name, chan);
 					return chan;
 				}
 			}
+		}
+
+		/// <summary>
+		/// Creates the channel by calling the ChannelManager.
+		/// </summary>
+		/// <returns>The channel with the given name.</returns>
+		/// <param name="name">The name of the channel to create.</param>
+		/// <param name="buffersize">The size of the channel buffer.</param>
+		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
+		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
+		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
+		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
+		/// <typeparam name="T">The type of data in the channel.</typeparam>
+		protected virtual IChannel<T> DoCreateChannel<T>(string name, int buffersize, int maxPendingReaders, int maxPendingWriters, QueueOverflowStrategy pendingReadersOverflowStrategy, QueueOverflowStrategy pendingWritersOverflowStrategy)
+		{
+			return ChannelManager.CreateChannelForScope<T>(name, buffersize, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
 		}
 
 		/// <summary>
@@ -188,6 +189,9 @@ namespace CoCoL
 		/// <param name="name">The name to look for.</param>
 		internal IRetireAbleChannel RecursiveLookup(string name)
 		{
+			if (string.IsNullOrWhiteSpace(name))
+				return null;
+
 			IRetireAbleChannel res;
 			if (m_lookup.TryGetValue(name, out res))
 				return res;
