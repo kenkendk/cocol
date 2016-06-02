@@ -114,6 +114,12 @@ namespace CoCoL
 		}
 
 		/// <summary>
+		/// Leaves the task un-awaited, supressing warnings if the task is not awaited
+		/// </summary>
+		/// <param name="task">he task to suppress.</param>
+		public static void FireAndForget(this Task task) { }
+
+		/// <summary>
 		/// Helper method that implements WhenAny with the NotOnCancelled flag
 		/// </summary>
 		/// <returns>A task that completes when a NonCancelled task returns, or no more tasks are available</returns>
