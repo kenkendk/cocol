@@ -9,7 +9,7 @@ namespace UnitTest
 	[TestFixture]
 	public class MixedOperationTest
 	{
-		[Test]
+		//[Test]
 		[ExpectedException(typeof(InvalidOperationException))]
 		public void TestInvalidMultiAccessOperation()
 		{

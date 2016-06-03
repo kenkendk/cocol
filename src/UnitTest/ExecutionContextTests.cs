@@ -9,31 +9,31 @@ namespace UnitTest
 	[TestFixture]
 	public class ExecutionContextTests
 	{
-		[Test]
+		//[Test]
 		public void TestSingleThreadPool()
 		{
 			TestCappedPool(1, 10, 50);
 		}
 
-		[Test]
+		//[Test]
 		public void TestDualThreadPool()
 		{
 			TestCappedPool(2, 20, 100);
 		}
 
-		[Test]
+		//[Test]
 		public void TestQuadThreadPool()
 		{
 			TestCappedPool(4, 40, 200);
 		}
 
-		[Test]
+		//[Test]
 		public void TestOctoThreadPool()
 		{
 			TestCappedPool(8, 20, 400);
 		}
 
-		[Test]
+		//[Test]
 		public void TestUnlimitedThreadPool()
 		{
 			TestCappedPool(-1, 200, 800);
@@ -100,6 +100,8 @@ namespace UnitTest
 				var timeout = Task.Delay((writes * 500) + 5000);
 				if (Task.WhenAny(Task.WhenAll(readertasks, writetask), timeout, earlyRetire.Task).WaitForTaskOrThrow() == timeout)
 					throw new TimeoutException("I've waited for so long ....");
+
+				Console.WriteLine("Threads at shutdown: {0}", concurrent);
 
 				ExecutionScope.Current.EnsureFinished();
 				Console.WriteLine("Max concurrent threads: {0}, should be {1}", max_concurrent, poolsize <= 0 ? "unlimited" : poolsize.ToString());
