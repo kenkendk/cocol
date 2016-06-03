@@ -254,10 +254,11 @@ namespace CoCoL
 		/// Retires all channels in the set
 		/// </summary>
 		/// <param name="immediate">Retires the channel without processing the queue, which may cause lost messages</param>
-		public void Retire(bool immediate = false)
+		/// <returns>An awaitable task</returns>
+		public async Task RetireAsync(bool immediate = false)
 		{
 			foreach (var c in m_channels)
-				c.Retire(immediate);
+				await c.RetireAsync(immediate);
 		}
 
 		/// <summary>

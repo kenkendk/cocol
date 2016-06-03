@@ -189,7 +189,7 @@ namespace CoCoL
 		/// <summary>
 		/// Stops this channel from processing messages
 		/// </summary>
-		public void Retire()
+		public Task RetireAsync()
 		{
 			throw new NotImplementedException();
 		}
@@ -197,7 +197,7 @@ namespace CoCoL
 		/// Stops this channel from processing messages
 		/// </summary>
 		/// <param name="immediate">Retires the channel without processing the queue, which may cause lost messages</param>
-		public void Retire(bool immediate)
+		public Task RetireAsync(bool immediate)
 		{
 			throw new NotImplementedException();
 		}
@@ -205,7 +205,7 @@ namespace CoCoL
 		/// Gets a value indicating whether this instance is retired.
 		/// </summary>
 		/// <value><c>true</c> if this instance is retired; otherwise, <c>false</c>.</value>
-		public bool IsRetired
+		public Task<bool> IsRetiredAsync
 		{
 			get
 			{
@@ -252,7 +252,7 @@ namespace CoCoL
 		/// <summary>
 		/// Stops this channel from processing messages
 		/// </summary>
-		public void Retire()
+		public Task RetireAsync()
 		{
 			throw new NotImplementedException();
 		}
@@ -260,7 +260,7 @@ namespace CoCoL
 		/// Stops this channel from processing messages
 		/// </summary>
 		/// <param name="immediate">Retires the channel without processing the queue, which may cause lost messages</param>
-		public void Retire(bool immediate)
+		public Task RetireAsync(bool immediate)
 		{
 			throw new NotImplementedException();
 		}
@@ -268,7 +268,7 @@ namespace CoCoL
 		/// Gets a value indicating whether this instance is retired.
 		/// </summary>
 		/// <value><c>true</c> if this instance is retired; otherwise, <c>false</c>.</value>
-		public bool IsRetired
+		public Task<bool> IsRetiredAsync
 		{
 			get
 			{

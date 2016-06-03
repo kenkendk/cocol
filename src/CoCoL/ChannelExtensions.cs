@@ -163,10 +163,7 @@ namespace CoCoL
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		public static void WriteNoWait<T>(this IWriteChannel<T> self, T value)
 		{
-			ThreadPool.QueueItem(() =>
-				{
-					self.WriteAsync(value, Timeout.Infinite);
-				});
+			self.WriteAsync(value, Timeout.Infinite).FireAndForget();
 		}
 
 		/// <summary>
@@ -178,10 +175,7 @@ namespace CoCoL
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		public static void WriteNoWait<T>(this IWriteChannel<T> self, T value, TimeSpan timeout)
 		{
-			ThreadPool.QueueItem(() =>
-				{
-					self.WriteAsync(value, timeout);
-				});
+			self.WriteAsync(value, timeout).FireAndForget();
 		}
 		#endregion
 
@@ -362,6 +356,53 @@ namespace CoCoL
 			return !(task.IsFaulted || task.IsCanceled) && task.IsCompleted;
 		}
 
+		/// <summary>
+		/// Leave the channel in a blocking manner
+		/// </summary>
+		/// <param name="self">The channel to leave.</param>
+		/// <param name="immediate">Set to <c>true</c> if the channel is retired immediately.</param>
+		public static void Retire(this IRetireAbleChannel self, bool immediate = false)
+		{
+			self.RetireAsync(immediate).WaitForTaskOrThrow();
+		}
+
+		/// <summary>
+		/// Leave the channel in a blocking manner
+		/// </summary>
+		/// <param name="self">The channel to leave.</param>
+		/// <param name="asReader">Set to <c>true</c> if leaving as reader and <c>false</c> if leaving as writer.</param>
+		public static void Leave(this IJoinAbleChannel self, bool asReader)
+		{
+			self.LeaveAsync(asReader).WaitForTaskOrThrow();
+		}
+
+		/// <summary>
+		/// Join the channel in a blocking manner
+		/// </summary>
+		/// <param name="self">The channel to join.</param>
+		/// <param name="asReader">Set to <c>true</c> if joining as reader and <c>false</c> if joining as writer.</param>
+		public static void Join(this IJoinAbleChannel self, bool asReader)
+		{
+			self.JoinAsync(asReader).WaitForTaskOrThrow();
+		}
+
+		/// <summary>
+		/// Leave the channel in a blocking manner
+		/// </summary>
+		/// <param name="self">The channel to leave.</param>
+		public static void Leave(this IJoinAbleChannelEnd self)
+		{
+			self.LeaveAsync().WaitForTaskOrThrow();
+		}
+
+		/// <summary>
+		/// Join the channel in a blocking manner
+		/// </summary>
+		/// <param name="self">The channel to join.</param>
+		public static void Join(this IJoinAbleChannelEnd self)
+		{
+			self.JoinAsync().WaitForTaskOrThrow();
+		}
 		#endregion
 
 		#region Blocking multi-channel usage
@@ -564,6 +605,17 @@ namespace CoCoL
 				return false;
 			}
 		}
+
+		/// <summary>
+		/// Invokes the retire method on all channels in the set
+		/// </summary>
+		/// <param name="self">The channels to retire</param>
+		/// <param name="immediate">A value indicating if the retire is performed immediately.</param>
+		/// <typeparam name="T">The channel data type parameter.</typeparam>
+		public static void Retire<T>(this MultiChannelSet<T> self, bool immediate = false)
+		{
+			self.RetireAsync(immediate).WaitForTaskOrThrow();
+		}
 		#endregion
 
 		#region Readable, Writeable and Untyped casting
@@ -585,28 +637,6 @@ namespace CoCoL
 		/// <param name="channel">The channel to cast.</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
 		public static IWriteChannel<T> AsWrite<T>(this IChannel<T> channel)
-		{
-			return channel;
-		}
-
-		/// <summary>
-		/// Returns the channel as a read channel
-		/// </summary>
-		/// <returns>The channel as a read channel</returns>
-		/// <param name="channel">The channel to cast.</param>
-		/// <typeparam name="T">The channel data type.</typeparam>
-		public static IBlockingReadableChannel<T> AsRead<T>(this IBlockingChannel<T> channel)
-		{
-			return channel;
-		}
-
-		/// <summary>
-		/// Returns the channel as a write channel
-		/// </summary>
-		/// <returns>The channel as a write channel</returns>
-		/// <param name="channel">The channel to cast.</param>
-		/// <typeparam name="T">The channel data type.</typeparam>
-		public static IBlockingWriteableChannel<T> AsWrite<T>(this IBlockingChannel<T> channel)
 		{
 			return channel;
 		}
@@ -655,22 +685,20 @@ namespace CoCoL
 		/// <param name="list">The list of channels to retire</param>
 		/// <param name="immediate">Retires the channel without processing the queue, which may cause lost messages</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static void Retire<T>(this IEnumerable<IChannel<T>> list, bool immediate = false)
+		public static async Task RetireAsync<T>(this IEnumerable<IChannel<T>> list, bool immediate = false)
 		{
 			foreach (var c in list)
-				c.Retire(immediate);
+				await c.RetireAsync(immediate);
 		}
-
 		/// <summary>
 		/// Retires all channels in the list
 		/// </summary>
 		/// <param name="list">The list of channels to retire</param>
 		/// <param name="immediate">Retires the channel without processing the queue, which may cause lost messages</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		public static void Retire<T>(this IEnumerable<IBlockingChannel<T>> list, bool immediate = false)
+		public static void Retire<T>(this IEnumerable<IChannel<T>> list, bool immediate = false)
 		{
-			foreach (var c in list)
-				c.Retire(immediate);
+			list.RetireAsync(immediate).WaitForTaskOrThrow();
 		}
 		#endregion
 

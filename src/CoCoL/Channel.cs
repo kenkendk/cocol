@@ -9,7 +9,7 @@ namespace CoCoL
 	/// <summary>
 	/// A channel that uses continuation callbacks
 	/// </summary>
-	public class Channel<T> : IBlockingChannel<T>, IChannel<T>, IUntypedChannel, IJoinAbleChannel, INamedItem
+	public class Channel<T> : IChannel<T>, IUntypedChannel, IJoinAbleChannel, INamedItem
 	{
 		/// <summary>
 		/// The minium value for the cleanup threshold
@@ -138,7 +138,7 @@ namespace CoCoL
 		/// <summary>
 		/// The lock object protecting access to the queues
 		/// </summary>
-		private readonly object m_lock = new object();
+		private readonly AsyncLock m_asynclock = new AsyncLock();
 
 		/// <summary>
 		/// Gets or sets the name of the channel
@@ -150,7 +150,12 @@ namespace CoCoL
 		/// Gets a value indicating whether this instance is retired.
 		/// </summary>
 		/// <value><c>true</c> if this instance is retired; otherwise, <c>false</c>.</value>
-		public bool IsRetired { get; private set; }
+		public Task<bool> IsRetiredAsync { get { return GetIsRetiredAsync(); } }
+
+		/// <summary>
+		/// Gets a value indicating whether this instance is retired.
+		/// </summary>
+		private bool m_isRetired;
 
 		/// <summary>
 		/// The number of messages to process before marking the channel as retired
@@ -221,45 +226,32 @@ namespace CoCoL
 		}
 
 		/// <summary>
-		/// Read from the channel in a blocking manner
+		/// Helper method for accessor to get the retired state
 		/// </summary>
-		public T Read()
+		/// <returns>The is retired async.</returns>
+		private async Task<bool> GetIsRetiredAsync()
 		{
-			var t = ReadAsync(Timeout.Infinite);
-			return t .WaitForTask().Result;
+			using (await m_asynclock.LockAsync())
+				return m_isRetired;
 		}
-
-		/// <summary>
-		/// Write to the channel in a blocking manner
-		/// </summary>
-		/// <param name="value">The value to write into the channel</param>
-		public void Write(T value)
-		{
-			var v = WriteAsync(value, Timeout.Infinite);
-			v.WaitForTask();
-			if (v.Exception != null)
-				throw v.Exception;
-			else if (v.IsCanceled)
-				throw new OperationCanceledException();
-		}
-
+		
 		/// <summary>
 		/// Registers a desire to read from the channel
 		/// </summary>
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-		public Task<T> ReadAsync(TimeSpan timeout, ITwoPhaseOffer offer = null)
+		public async Task<T> ReadAsync(TimeSpan timeout, ITwoPhaseOffer offer = null)
 		{				
 			// Store entry time in case we need it and the offer dance takes some time
 			var entry = DateTime.Now;
 			var result = new TaskCompletionSource<T>();
 
-			lock (m_lock)
+			using (await m_asynclock.LockAsync())
 			{
-				if (IsRetired)
+				if (m_isRetired)
 				{
 					ThreadPool.QueueItem(() => result.SetException(new RetiredException()));
-					return result.Task;
+					return await result.Task;
 				}
 
 				while (m_writerQueue.Count > 0)
@@ -272,36 +264,36 @@ namespace CoCoL
 					if (!offerWriter)
 						try
 						{
-							offerWriter = kp.Source.Task.Status == TaskStatus.WaitingForActivation && kp.Offer.Offer(this);
+							offerWriter = kp.Source.Task.Status == TaskStatus.WaitingForActivation && await kp.Offer.OfferAsync(this);
 						}
 						catch(Exception ex)
 						{
 							result.TrySetException(ex);
-							return result.Task;
+							return await result.Task;
 						}
 
 					if (!offerReader)
 						try 
 						{						
-							offerReader = result.Task.Status == TaskStatus.WaitingForActivation && offer.Offer(this); 
+							offerReader = result.Task.Status == TaskStatus.WaitingForActivation && await offer.OfferAsync(this); 
 						}
 						catch(Exception ex) 
 						{ 
-							if (offerWriter)
-								kp.Offer.Withdraw(this);
+							if (offerWriter && kp.Offer != null)
+								await kp.Offer.WithdrawAsync(this);
 							
 							result.TrySetException(ex);
-							return result.Task;
+							return await result.Task;
 						}
 
 
 					if (!(offerReader && offerWriter))
 					{
 						if (kp.Offer != null && offerWriter)
-							kp.Offer.Withdraw(this);
+							await kp.Offer.WithdrawAsync(this);
 
 						if (offer != null && offerReader)
-							offer.Withdraw(this);
+							await offer.WithdrawAsync(this);
 
 						// if the writer bailed, remove it from the queue
 						if (!offerWriter)
@@ -314,7 +306,7 @@ namespace CoCoL
 						if (!offerReader)
 						{
 							result.TrySetCanceled();
-							return result.Task;
+							return await result.Task;
 						}
 					}
 					else
@@ -323,15 +315,15 @@ namespace CoCoL
 						m_writerQueue.RemoveAt(0);
 
 						if (kp.Offer != null)
-							kp.Offer.Commit(this);
+							await kp.Offer.CommitAsync(this);
 						if (offer != null)
-							offer.Commit(this);
+							await offer.CommitAsync(this);
 
 						ThreadPool.QueueItem(() => result.SetResult(kp.Value));
 						ThreadPool.QueueItem(() => kp.Source.SetResult(true));
 
 						// Release items if there is space in the buffer
-						ProcessWriteQueueBufferAfterRead();
+						await ProcessWriteQueueBufferAfterReadAsync(true);
 
 						// Adjust the cleanup threshold
 						if (m_writerQueue.Count <= m_writerQueueCleanup - MIN_QUEUE_CLEANUP_THRESHOLD)
@@ -339,9 +331,9 @@ namespace CoCoL
 
 						// If this was the last item before the retirement, 
 						// flush all following and set the retired flag
-						EmptyQueueIfRetired();
+						await EmptyQueueIfRetiredAsync(true);
 
-						return result.Task;
+						return await result.Task;
 					}
 				}
 
@@ -376,7 +368,7 @@ namespace CoCoL
 							case QueueOverflowStrategy.Reject:
 							default:
 								ThreadPool.QueueItem(() => result.TrySetException(new ChannelOverflowException()));
-								return result.Task;
+								return await result.Task;
 						}							
 					}
 
@@ -384,14 +376,14 @@ namespace CoCoL
 					m_readerQueue.Add(new ReaderEntry(offer, result, expires));
 
 					// If we have expanded the queue with a new batch, see if we can purge old entries
-					PerformQueueCleanup(m_readerQueue, ref m_readerQueueCleanup);
+					m_readerQueueCleanup = await PerformQueueCleanupAsync(m_readerQueue, true, m_readerQueueCleanup);
 
 					if (expires != Timeout.InfiniteDateTime)
-						ExpirationManager.AddExpirationCallback(expires, ExpireItems);
+						ExpirationManager.AddExpirationCallback(expires, () => ExpireItemsAsync());
 				}
 			}
 
-			return result.Task;
+			return await result.Task;
 		}
 			
 		/// <summary>
@@ -400,18 +392,19 @@ namespace CoCoL
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
 		/// <param name="value">The value to write to the channel.</param>
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-		public Task WriteAsync(T value, TimeSpan timeout, ITwoPhaseOffer offer = null)
+		public async Task WriteAsync(T value, TimeSpan timeout, ITwoPhaseOffer offer = null)
 		{
 			// Store entry time in case we need it and the offer dance takes some time
 			var entry = DateTime.Now;
 			var result = new TaskCompletionSource<bool>();
 
-			lock (m_lock)
+			using (await m_asynclock.LockAsync())
 			{
-				if (IsRetired)
+				if (m_isRetired)
 				{
 					ThreadPool.QueueItem(() => result.SetException(new RetiredException()));
-					return result.Task;
+					await result.Task;
+					return;
 				}
 
 				while (m_readerQueue.Count > 0)
@@ -424,26 +417,28 @@ namespace CoCoL
 					if (!offerReader)
 						try 
 						{
-							offerReader = kp.Source.Task.Status == TaskStatus.WaitingForActivation && kp.Offer.Offer(this);
+							offerReader = kp.Source.Task.Status == TaskStatus.WaitingForActivation && await kp.Offer.OfferAsync(this);
 						}
 						catch(Exception ex)
 						{
 							result.TrySetException(ex);
-							return result.Task;
+							await result.Task;
+							return;
 						}
 
 					if (!offerWriter)
 						try 
 						{ 
-							offerWriter = result.Task.Status == TaskStatus.WaitingForActivation && offer.Offer(this); 
+							offerWriter = result.Task.Status == TaskStatus.WaitingForActivation && await offer.OfferAsync(this); 
 						}
 						catch(Exception ex)
 						{
-							if (offerReader)
-								kp.Offer.Withdraw(this);
+						if (offerReader && kp.Offer != null)
+								await kp.Offer.WithdrawAsync(this);
 							result.TrySetException(ex);
 
-							return result.Task;
+							await result.Task;
+							return;
 						}
 
 
@@ -451,10 +446,10 @@ namespace CoCoL
 					if (!(offerReader && offerWriter))
 					{
 						if (kp.Offer != null && offerReader)
-							kp.Offer.Withdraw(this);
+							await kp.Offer.WithdrawAsync(this);
 
 						if (offer != null && offerWriter)
-							offer.Withdraw(this);
+							await offer.WithdrawAsync(this);
 
 						// If the reader bailed, remove it from the queue
 						if (!offerReader)
@@ -467,7 +462,8 @@ namespace CoCoL
 						if (!offerWriter)
 						{
 							result.TrySetCanceled();
-							return result.Task;
+							await result.Task;
+							return;
 						}
 					}
 					else
@@ -476,9 +472,9 @@ namespace CoCoL
 						m_readerQueue.RemoveAt(0);
 
 						if (kp.Offer != null)
-							kp.Offer.Commit(this);
+							await kp.Offer.CommitAsync(this);
 						if (offer != null)
-							offer.Commit(this);
+							await offer.CommitAsync(this);
 
 						ThreadPool.QueueItem(() => result.SetResult(true));
 						ThreadPool.QueueItem(() => kp.Source.SetResult(value));
@@ -489,19 +485,20 @@ namespace CoCoL
 
 						// If this was the last item before the retirement, 
 						// flush all following and set the retired flag
-						EmptyQueueIfRetired();
+						await EmptyQueueIfRetiredAsync(true);
 
-						return result.Task;
+						await result.Task;
+						return;
 					}
 				}
 
 				// If we have a buffer slot to use
 				if (m_writerQueue.Count < m_bufferSize && m_retireCount < 0)
 				{
-					if (offer == null || offer.Offer(this))
+					if (offer == null || await offer.OfferAsync(this))
 					{
 						if (offer != null)
-							offer.Commit(this);
+							await offer.CommitAsync(this);
 
 						m_writerQueue.Add(new WriterEntry(null, new TaskCompletionSource<bool>(), Timeout.InfiniteDateTime, value));
 						result.TrySetResult(true);
@@ -544,7 +541,8 @@ namespace CoCoL
 								case QueueOverflowStrategy.Reject:
 								default:
 									ThreadPool.QueueItem(() => result.TrySetException(new ChannelOverflowException()));
-									return result.Task;
+									await result.Task;
+									return;
 							}							
 						}
 
@@ -552,16 +550,16 @@ namespace CoCoL
 						m_writerQueue.Add(new WriterEntry(offer, result, expires, value));
 
 						// If we have expanded the queue with a new batch, see if we can purge old entries
-						PerformQueueCleanup(m_writerQueue, ref m_writerQueueCleanup);
+						m_writerQueueCleanup = await PerformQueueCleanupAsync(m_writerQueue, true, m_writerQueueCleanup);
 
 						if (expires != Timeout.InfiniteDateTime)
-							ExpirationManager.AddExpirationCallback(expires, ExpireItems);
+							ExpirationManager.AddExpirationCallback(expires, () => ExpireItemsAsync());
 					}
 				}
 			}
 
-			return result.Task;
-
+			await result.Task;
+			return;
 		}
 
 		/// <summary>
@@ -569,19 +567,20 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="queue">The queue to remove from.</param>
 		/// <param name="queueCleanup">The threshold parameter.</param>
+		/// <param name="isLocked"><c>True</c> if we are already holding the lock, <c>false</c> otherwise</param>
 		/// <typeparam name="Tx">The type of list data.</typeparam>
-		private void PerformQueueCleanup<Tx>(List<Tx> queue, ref int queueCleanup)
+		private async Task<int> PerformQueueCleanupAsync<Tx>(List<Tx> queue, bool isLocked, int queueCleanup)
 			where Tx : IOfferItem
 		{
-			lock (m_lock)
+			using(isLocked ? default(AsyncLock.Releaser) : await m_asynclock.LockAsync())
 			{
 				if (queue.Count > queueCleanup)
 				{
 					for (var i = queue.Count - 1; i >= 0; i--)
 					{
 						if (queue[i].Offer != null)
-						if (queue[i].Offer.Offer(this))
-							queue[i].Offer.Withdraw(this);
+						if (await queue[i].Offer.OfferAsync(this))
+							await queue[i].Offer.WithdrawAsync(this);
 						else
 						{
 							queue[i].TrySetCancelled();
@@ -593,24 +592,27 @@ namespace CoCoL
 					queueCleanup = Math.Max(MIN_QUEUE_CLEANUP_THRESHOLD, queue.Count + MIN_QUEUE_CLEANUP_THRESHOLD);
 				}
 			}
+
+			return queueCleanup;
 		}
 			
 		/// <summary>
 		/// Helper method for dequeueing write requests after space has been allocated in the writer queue
 		/// </summary>
-		private void ProcessWriteQueueBufferAfterRead()
+		/// <param name="isLocked"><c>True</c> if we are already holding the lock, <c>false</c> otherwise</param>
+		private async Task ProcessWriteQueueBufferAfterReadAsync(bool isLocked)
 		{
-			lock (m_lock)
+			using(isLocked ? default(AsyncLock.Releaser) : await m_asynclock.LockAsync())
 			{
 				// If there is now a buffer slot in the queue, trigger a callback to a waiting item
 				while (m_retireCount < 0 && m_bufferSize > 0 && m_writerQueue.Count >= m_bufferSize)
 				{
 					var nextItem = m_writerQueue[m_bufferSize - 1];
 
-					if (nextItem.Offer == null || nextItem.Offer.Offer(this))
+					if (nextItem.Offer == null || await nextItem.Offer.OfferAsync(this))
 					{
 						if (nextItem.Offer != null)
-							nextItem.Offer.Commit(this);
+							await nextItem.Offer.CommitAsync(this);
 
 						nextItem.Source.SetResult(true);
 
@@ -630,20 +632,30 @@ namespace CoCoL
 		/// <summary>
 		/// Stops this channel from processing messages
 		/// </summary>
-		public void Retire()
+		public Task RetireAsync()
 		{
-			Retire(false);
+			return RetireAsync(false, false);
 		}
 
 		/// <summary>
 		/// Stops this channel from processing messages
 		/// </summary>
 		/// <param name="immediate">Retires the channel without processing the queue, which may cause lost messages</param>
-		public void Retire(bool immediate)
+		public Task RetireAsync(bool immediate)
 		{
-			lock (m_lock)
+			return RetireAsync(immediate, false);
+		}
+
+		/// <summary>
+		/// Stops this channel from processing messages
+		/// </summary>
+		/// <param name="immediate">Retires the channel without processing the queue, which may cause lost messages</param>
+		/// <param name="isLocked"><c>True</c> if we are already holding the lock, <c>false</c> otherwise</param>
+		private async Task RetireAsync(bool immediate, bool isLocked)
+		{
+			using (isLocked ? default(AsyncLock.Releaser) : await m_asynclock.LockAsync())
 			{
-				if (IsRetired)
+				if (m_isRetired)
 					return;
 
 				if (m_retireCount < 0)
@@ -662,7 +674,7 @@ namespace CoCoL
 						}
 				}
 				
-				EmptyQueueIfRetired();
+				await EmptyQueueIfRetiredAsync(true);
 			}
 		}
 
@@ -670,12 +682,12 @@ namespace CoCoL
 		/// Join the channel
 		/// </summary>
 		/// <param name="asReader"><c>true</c> if joining as a reader, <c>false</c> otherwise</param>
-		public void Join(bool asReader)
+		public async Task JoinAsync(bool asReader)
 		{
-			lock (m_lock)
+			using (await m_asynclock.LockAsync())
 			{
 				// Do not allow anyone to join after we retire the channel
-				if (IsRetired)
+				if (m_isRetired)
 					throw new RetiredException();
 
 				if (asReader)
@@ -689,12 +701,12 @@ namespace CoCoL
 		/// Leave the channel.
 		/// </summary>
 		/// <param name="asReader"><c>true</c> if leaving as a reader, <c>false</c> otherwise</param>
-		public void Leave(bool asReader)
+		public async Task LeaveAsync(bool asReader)
 		{
-			lock (m_lock)
+			using (await m_asynclock.LockAsync())
 			{
 				// If we are already retired, skip this call
-				if (IsRetired)
+				if (m_isRetired)
 					return;
 
 				// Countdown
@@ -704,20 +716,21 @@ namespace CoCoL
 					m_joinedWriterCount--;
 
 				// Retire if required
-				if (m_joinedReaderCount <= 0 || m_joinedWriterCount <= 0)
-					Retire();
+				if ((asReader && m_joinedReaderCount <= 0) || (!asReader && m_joinedWriterCount <= 0))
+					await RetireAsync(false, true);
 			}
 		}
 
 		/// <summary>
 		/// Empties the queue if the channel is retired.
 		/// </summary>
-		private void EmptyQueueIfRetired()
+		/// <param name="isLocked"><c>True</c> if we are already holding the lock, <c>false</c> otherwise</param>
+		private async Task EmptyQueueIfRetiredAsync(bool isLocked)
 		{
 			List<ReaderEntry> readers = null;
 			List<WriterEntry> writers = null;
 
-			lock (m_lock)
+			using (isLocked ? default(AsyncLock.Releaser) : await m_asynclock.LockAsync())
 			{
 				// Countdown as required
 				if (m_retireCount > 0)
@@ -730,7 +743,7 @@ namespace CoCoL
 						writers = m_writerQueue;
 
 						// Make sure nothing new enters the queues
-						IsRetired = true;
+						m_isRetired = true;
 						m_readerQueue = null;
 						m_writerQueue = null;
 
@@ -755,13 +768,13 @@ namespace CoCoL
 		/// <summary>
 		/// Callback method used to signal timeout on expired items
 		/// </summary>
-		private void ExpireItems()
+		private async Task ExpireItemsAsync()
 		{
 			KeyValuePair<int, ReaderEntry>[] expiredReaders;
 			KeyValuePair<int, WriterEntry>[] expiredWriters;
 
 			// Extract all expired items from their queues
-			lock (m_lock)
+			using (await m_asynclock.LockAsync())
 			{
 				// If the channel is retired, there is nothing to do here
 				if (m_readerQueue == null || m_writerQueue == null)

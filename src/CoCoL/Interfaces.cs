@@ -73,19 +73,21 @@ namespace CoCoL
 		/// <summary>
 		/// Stops this channel from processing messages
 		/// </summary>
-		void Retire();
+		/// <returns>An awaitable task</returns>
+		Task RetireAsync();
 
 		/// <summary>
 		/// Stops this channel from processing messages
 		/// </summary>
 		/// <param name="immediate">Retires the channel without processing the queue, which may cause lost messages</param>
-		void Retire(bool immediate);
+		/// <returns>An awaitable task</returns>
+		Task RetireAsync(bool immediate);
 
 		/// <summary>
 		/// Gets a value indicating whether this <see cref="CoCoL.IRetireAbleChannel"/> is retired.
 		/// </summary>
 		/// <value><c>true</c> if is retired; otherwise, <c>false</c>.</value>
-		bool IsRetired { get; }
+		Task<bool> IsRetiredAsync { get; }
 	}
 
 	/// <summary>
@@ -97,13 +99,15 @@ namespace CoCoL
 		/// Join the channel
 		/// </summary>
 		/// <param name="asReader"><c>true</c> if joining as a reader, <c>false</c> otherwise</param>
-		void Join(bool asReader);
+		/// <returns>An awaitable task</returns>
+		Task JoinAsync(bool asReader);
 
 		/// <summary>
 		/// Leave the channel.
 		/// </summary>
 		/// <param name="asReader"><c>true</c> if leaving as a reader, <c>false</c> otherwise</param>
-		void Leave(bool asReader);
+		/// <returns>An awaitable task</returns>
+		Task LeaveAsync(bool asReader);
 	}
 
 	/// <summary>
@@ -114,44 +118,16 @@ namespace CoCoL
 		/// <summary>
 		/// Join the channel
 		/// </summary>
-		void Join();
+		/// <returns>An awaitable task</returns>
+		Task JoinAsync();
 
 		/// <summary>
 		/// Leave the channel.
 		/// </summary>
-		void Leave();
+		/// <returns>An awaitable task</returns>
+		Task LeaveAsync();
 	}
-
-	/// <summary>
-	/// Read interface for a blocking synchronous communication channel
-	/// </summary>
-	public interface IBlockingReadableChannel<T> : IRetireAbleChannel
-	{
-		/// <summary>
-		/// Perform a blocking read
-		/// </summary>
-		T Read();
-	}
-
-	/// <summary>
-	/// Write interface for a blocking synchronous communication channel
-	/// </summary>
-	public interface IBlockingWriteableChannel<T> : IRetireAbleChannel
-	{
-		/// <summary>
-		/// Perform a blocking write
-		/// </summary>
-		/// <param name="value">The value to write</param>
-		void Write(T value);
-	}
-
-	/// <summary>
-	/// Interface for a blocking synchronous communication channel
-	/// </summary>
-	public interface IBlockingChannel<T> : IBlockingReadableChannel<T>, IBlockingWriteableChannel<T>
-	{		
-	}
-
+		
 	/// <summary>
 	/// Interface for the read-end of a channel that supports continuation
 	/// </summary>
@@ -242,17 +218,18 @@ namespace CoCoL
 		/// Starts the two-phase sequence
 		/// </summary>
 		/// <param name="caller">The offer initiator.</param>
-		bool Offer(object caller);
+		Task<bool> OfferAsync(object caller);
+
 		/// <summary>
 		/// Commits the two-phase sequence
 		/// </summary>
 		/// <param name="caller">The offer initiator.</param>
-		void Commit(object caller);
+		Task CommitAsync(object caller);
 		/// <summary>
 		/// Cancels the two-phase sequence
 		/// </summary>
 		/// <param name="caller">The offer initiator.</param>
-		void Withdraw(object caller);
+		Task WithdrawAsync(object caller);
 	}
 
 	/// <summary>

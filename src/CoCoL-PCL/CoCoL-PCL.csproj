@@ -107,6 +107,9 @@
     <Compile Include="..\CoCoL\ExecutionScope.cs">
       <Link>ExecutionScope.cs</Link>
     </Compile>
+    <Compile Include="..\CoCoL\AsyncLock.cs">
+      <Link>AsyncLock.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
 </Project>

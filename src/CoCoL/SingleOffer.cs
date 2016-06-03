@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace CoCoL
 {
@@ -43,6 +44,10 @@ namespace CoCoL
 		/// Keeping track of the lock state
 		/// </summary>
 		private bool m_isLocked = false;
+		/// <summary>
+		/// The list of offers
+		/// </summary>
+		private Queue<TaskCompletionSource<bool>> m_offers = new Queue<TaskCompletionSource<bool>>();
 
 		/// <summary>
 		/// Creates a new SingleOffer instance
@@ -74,42 +79,33 @@ namespace CoCoL
 		/// Starts the two-phase sequence
 		/// </summary>
 		/// <param name="caller">The offer initiator.</param>
-		public bool Offer(object caller)
+		/// <returns>The awaitable result.</returns>
+		public Task<bool> OfferAsync(object caller)
 		{
-			// We can never be un-taken
 			if (m_taken || m_isFirst != TRUE)
-				return false;
+				return Task.FromResult(false);
+			
+			lock (m_lock)
+				if (m_isLocked)
+				{
+					var tcs = new TaskCompletionSource<bool>();
+					m_offers.Enqueue(tcs);
+					return tcs.Task;
+				}
+				else
+				{
+					System.Diagnostics.Debug.Assert(m_offers.Count == 0, "Two-Phase instance was unlocked but with pending offers?");
 
-			// Atomic access
-			Monitor.Enter(m_lock);
-
-			// If we are already locked, then we arrived
-			// here from the same thread, because the lock
-			// is re-entrant
-			if (m_isLocked)
-			{
-				Monitor.Exit(m_lock);
-				throw new InvalidOperationException("Attempted to use same channel in both read and write during a multiset operation, which is not supported");
-			}
-
-			if (m_taken || m_isFirst != TRUE)
-			{
-				// We do not offer, so release the lock
-				Monitor.Exit(m_lock);
-				return false;
-			}
-			else
-			{
-				m_isLocked = true;
-				return true;
-			}
+					m_isLocked = true;
+					return Task.FromResult(true);
+				}
 		}
 
 		/// <summary>
 		/// Commits the two-phase sequence
 		/// </summary>
 		/// <param name="caller">The offer initiator.</param>
-		public void Commit(object caller)
+		public Task CommitAsync(object caller)
 		{
 			System.Diagnostics.Debug.Assert(m_taken == false, "Item was taken before commit");
 
@@ -117,18 +113,38 @@ namespace CoCoL
 			if (m_commitCallback != null)
 				m_commitCallback(caller);
 
-			Monitor.Exit(m_lock);
+			lock (m_lock)
+			{
+				m_isLocked = false;
+				while (m_offers.Count > 0)
+				{
+					var offer = m_offers.Dequeue();
+					ThreadPool.QueueItem(() => offer.TrySetResult(false));
+				}
+			}
+
+			return Task.FromResult(true);
 		}
 
 		/// <summary>
 		/// Cancels the two-phase sequence
 		/// </summary>
 		/// <param name="caller">The offer initiator.</param>
-		public void Withdraw(object caller)
+		public Task WithdrawAsync(object caller)
 		{
-			System.Diagnostics.Debug.Assert(m_taken == false, "Item was taken before commit");
-			m_isLocked = false;
-			Monitor.Exit(m_lock);
+			System.Diagnostics.Debug.Assert(m_taken == false, "Item was taken before withdraw");
+
+			lock (m_lock)
+			{
+				if (m_offers.Count > 0)
+				{
+					var offer = m_offers.Dequeue();
+					ThreadPool.QueueItem(() => offer.TrySetResult(true));
+				}
+				else
+					m_isLocked = false;
+			}
+			return Task.FromResult(true);
 		}
 
 		/// <summary>
