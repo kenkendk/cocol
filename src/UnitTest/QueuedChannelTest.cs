@@ -39,7 +39,7 @@ namespace UnitTest
 			if (c.Read() != 7)
 				throw new Exception("Invalid data read");
 
-			if (!c.IsRetired)
+			if (!c.IsRetiredAsync.WaitForTask().Result)
 				throw new Exception("Channel was not retired as expected");
 		}
 

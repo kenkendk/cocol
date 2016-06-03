@@ -21,20 +21,21 @@ namespace UnitTest
 				AllowPass = allowPass;
 			}
 
-			public bool Offer(object caller)
+			public Task<bool> OfferAsync(object caller)
 			{
 				HasOffered = true;
-				return AllowPass;
+				return Task.FromResult(AllowPass);
 			}
-			public void Commit(object caller)
+			public Task CommitAsync(object caller)
 			{
 				if (!AllowPass)
 					throw new Exception("Unexpected commit?");
 
 				HasComitted = true;
+				return Task.FromResult(true);
 			}
 
-			public void Withdraw(object caller)
+			public Task WithdrawAsync(object caller)
 			{
 				if (!HasOffered)
 					throw new Exception("Withdraw without offer?");
@@ -42,6 +43,7 @@ namespace UnitTest
 					throw new Exception("Multple withdraws?");
 
 				HasWithdrawn = true;
+				return Task.FromResult(true);
 			}
 		}
 

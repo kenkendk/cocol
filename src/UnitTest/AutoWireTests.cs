@@ -14,7 +14,7 @@ namespace UnitTest
 
 			public bool HasChannel { get { return m_read != null; } }
 
-			public bool IsChannelRetired { get { return m_read.IsRetired; } }
+			public bool IsChannelRetired { get { return m_read.IsRetiredAsync.WaitForTask().Result; } }
 		}
 
 		private class Writer
@@ -24,7 +24,7 @@ namespace UnitTest
 
 			public bool HasChannel { get { return m_write != null; } }
 
-			public bool IsChannelRetired { get { return m_write.IsRetired; } }
+			public bool IsChannelRetired { get { return m_write.IsRetiredAsync.WaitForTask().Result; } }
 		}
 
 		private class ReaderEnd
@@ -34,7 +34,7 @@ namespace UnitTest
 
 			public bool HasChannel { get { return m_read != null; } }
 
-			public bool IsChannelRetired { get { return m_read.IsRetired; } }
+			public bool IsChannelRetired { get { return m_read.IsRetiredAsync.WaitForTask().Result; } }
 		}
 
 		private class WriterEnd
@@ -44,7 +44,7 @@ namespace UnitTest
 
 			public bool HasChannel { get { return m_write != null; } }
 
-			public bool IsChannelRetired { get { return m_write.IsRetired; } }
+			public bool IsChannelRetired { get { return m_write.IsRetiredAsync.WaitForTask().Result; } }
 		}
 
 		[Test]
@@ -73,12 +73,12 @@ namespace UnitTest
 
 			AutomationExtensions.RetireAllChannels(x1);
 
-			if (c.IsRetired)
+			if (c.IsRetiredAsync.WaitForTask().Result)
 				throw new Exception("Unexpected early retire");
 
 			AutomationExtensions.RetireAllChannels(x2);
 
-			if (!c.IsRetired)
+			if (!c.IsRetiredAsync.WaitForTask().Result)
 				throw new Exception("Unexpected non-retire");
 
 			using (new ChannelScope())
@@ -115,12 +115,12 @@ namespace UnitTest
 
 			AutomationExtensions.RetireAllChannels(x1);
 
-			if (c.IsRetired)
+			if (c.IsRetiredAsync.WaitForTask().Result)
 				throw new Exception("Unexpected early retire");
 
 			AutomationExtensions.RetireAllChannels(x2);
 
-			if (!c.IsRetired)
+			if (!c.IsRetiredAsync.WaitForTask().Result)
 				throw new Exception("Unexpected non-retire");
 
 			using (new ChannelScope())
