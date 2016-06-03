@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -31,10 +31,11 @@
     <ConsolePause>false</ConsolePause>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="nunit.framework">
-      <HintPath>..\..\packages\NUnit.3.0.1\lib\net45\nunit.framework.dll</HintPath>
+    <Reference Include="nunit.framework, Version=3.0.5813.39031, Culture=neutral, PublicKeyToken=2638cd05610744eb, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\NUnit.2.6.4\lib\nunit.framework.dll</HintPath>
     </Reference>
+    <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
@@ -55,6 +56,7 @@
     <Compile Include="QueueCleanupTest.cs" />
     <Compile Include="ExecutionContextTests.cs" />
     <Compile Include="ChannelOverflowTests.cs" />
+    <Compile Include="NetworkChannelTest.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
@@ -85,6 +87,10 @@
     <ProjectReference Include="..\examples\MonteCarloPi\MonteCarloPi.csproj">
       <Project>{A34DD3BF-9A1F-4167-B487-8D7E75530ED4}</Project>
       <Name>MonteCarloPi</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CoCoL.Network\CoCoL.Network.csproj">
+      <Project>{2138966B-CB50-4F7C-B53A-A0A2F882BE07}</Project>
+      <Name>CoCoL.Network</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
