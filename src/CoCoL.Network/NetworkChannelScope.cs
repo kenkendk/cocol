@@ -8,17 +8,10 @@ namespace CoCoL.Network
 	public class NetworkChannelScope : ChannelScope
 	{
 		/// <summary>
-		/// The channel prefix used to choose if a channel should be network based or not.
+		/// The channel selector method used to choose if a channel should be network based or not.
+		/// Return <c>true</c> to create the channel as a network channel, <c>false</c> to use a local.
 		/// </summary>
-		private readonly string m_prefix;
-
-		/// <summary>
-		/// A value indicating if unnamed channels are also created as network channels.
-		/// Usually this is not desired as they can only be passed by reference,
-		/// and thus all access must be local anyway.
-		/// Consider only using this option for testing network channels.
-		/// </summary>
-		private readonly bool m_redirectunnamed;
+		private readonly Func<string, bool> m_selector;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.Network.NetworkChannelScope"/> class.
@@ -27,8 +20,28 @@ namespace CoCoL.Network
 		/// <param name="redirectunnamed">Set to <c>true</c> if unnamed channels should be created as network channels. Usually this is not desired as they can only be passed by reference, and thus all access must be local anyway. Consider only using this option for testing network channels.</param>
 		public NetworkChannelScope(string prefix = null, bool redirectunnamed = false)
 		{
-			m_prefix = prefix ?? "";
-			m_redirectunnamed = redirectunnamed;
+			prefix = prefix ?? "";
+
+			m_selector = (name) => {
+				// If all channels need to be network channels, we assign a name to this channel
+				if (string.IsNullOrWhiteSpace(name) && redirectunnamed)
+					name = prefix + Guid.NewGuid().ToString("N");
+
+				// Only create those with the right prefix
+				return !string.IsNullOrWhiteSpace(name) && name.StartsWith(prefix);					
+			};
+
+		}
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="CoCoL.Network.NetworkChannelScope"/> class.
+		/// </summary>
+		/// <param name="selector">The selector method used too determine if a channel should be network based or not. Return <c>true</c> to create the channel as a network channel, <c>false</c> to use a local.</param>
+		public NetworkChannelScope(Func<string, bool> selector)
+		{
+			if (selector == null)
+				throw new ArgumentNullException("selector");
+			m_selector = selector;
 		}
 
 		/// <summary>
@@ -44,18 +57,16 @@ namespace CoCoL.Network
 		/// <typeparam name="T">The type of data in the channel.</typeparam>
 		protected override IChannel<T> DoCreateChannel<T>(string name, int buffersize, int maxPendingReaders, int maxPendingWriters, QueueOverflowStrategy pendingReadersOverflowStrategy, QueueOverflowStrategy pendingWritersOverflowStrategy)
 		{			
-			// If all channels need to be network channels, we assign a name to this channel
-			if (string.IsNullOrWhiteSpace(name) && m_redirectunnamed)
-				name = m_prefix + Guid.NewGuid().ToString("N");
+			if (m_selector(name))
+			{
+				// Transmit the desired channel properties to the channel server
+				var ca = new ChannelNameAttribute(name, buffersize, ChannelNameScope.Local, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
+				NetworkConfig.TransmitRequestAsync(new PendingNetworkRequest(name, typeof(T), NetworkMessageType.CreateChannelRequest, ca));				
+				return new NetworkChannel<T>(ca);
+			}
 
-			// Only create those with the right prefix
-			if (string.IsNullOrWhiteSpace(name) || !name.StartsWith(m_prefix))
-				return base.DoCreateChannel<T>(name, buffersize, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingReadersOverflowStrategy);
+			return base.DoCreateChannel<T>(name, buffersize, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingReadersOverflowStrategy);
 
-			// Transmit the desired channel properties to the channel server
-			var ca = new ChannelNameAttribute(name, buffersize, ChannelNameScope.Local, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
-			NetworkConfig.TransmitRequestAsync(new PendingNetworkRequest(name, typeof(T), NetworkMessageType.CreateChannelRequest, ca));				
-			return new NetworkChannel<T>(ca);
 		}
 	}
 }
