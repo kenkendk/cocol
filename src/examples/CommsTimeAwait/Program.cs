@@ -2,6 +2,8 @@
 using CoCoL;
 using System.Threading.Tasks;
 using T = System.Int32;
+using CoCoL.Network;
+using System.Threading;
 
 namespace CommsTimeAwait
 {
@@ -44,6 +46,35 @@ namespace CommsTimeAwait
 					await Task.WhenAll(
 						chan_a.WriteAsync(value),
 						chan_b.WriteAsync(value)
+					);
+				}
+			}
+			catch(RetiredException)
+			{
+				chan_read.Retire();
+				chan_a.Retire();
+				chan_b.Retire();
+			}
+		}
+
+		/// <summary>
+		/// Runs the delta process, which copies the value it reads onto two different channels
+		/// </summary>
+		/// <param name="chan_read">The channel to read from</param>
+		/// <param name="chan_a">The channel to write to</param>
+		/// <param name="chan_b">The channel to write to</param>
+		private static async void RunDeltaAlt(IReadChannel<T> chan_read, IWriteChannel<T> chan_a, IWriteChannel<T> chan_b)
+		{
+			var tgchans = new [] { chan_b };
+			try
+			{
+				while (true)
+				{
+					var value = await chan_read.ReadAsync();
+
+					await Task.WhenAll(
+						chan_a.WriteAsync(value),
+						MultiChannelAccess.WriteToAnyAsync(value, tgchans)
 					);
 				}
 			}
@@ -132,57 +163,92 @@ namespace CommsTimeAwait
 		/// </summary>
 		public static int TICKS = 1000000;
 
-
 		public static void Main(string[] args)
 		{
 			var stop_with_ticks = true;
+			var networktype = 0;
+			var tickbuffer = 0;
+			var otherbuff = 0;
+			var usedeltaalt = 0;
 
 			if (args.Length != 0)
 			{
 				PROCESSES = int.Parse(args[0]);
-				Console.WriteLine("Running with {0} processes", PROCESSES);
 				stop_with_ticks = false;
 
 				if (args.Length >= 2)
 				{
 					TICKS = int.Parse(args[1]);
-					Console.WriteLine("Running with {0} ticks", TICKS);
 					stop_with_ticks = true;
 				}
+
+				if (args.Length >= 3)
+					networktype = int.Parse(args[2]);
+				if (args.Length >= 4)
+					tickbuffer = int.Parse(args[3]);
+				if (args.Length >= 5)
+					otherbuff = int.Parse(args[4]);
+				if (args.Length >= 6)
+					usedeltaalt = int.Parse(args[6]);
 			}
 
-			var chan_in = ChannelManager.CreateChannel<T>();
-			var chan_tick = ChannelManager.CreateChannel<T>();
-			var chan_out = ChannelManager.CreateChannel<T>();
+			Console.WriteLine("Config is {0} processes, for {1} ticks, network {2}, tickbuffer={3} and other buffer={4}", PROCESSES, TICKS, networktype, tickbuffer, otherbuff);
 
-			// Start the delta process
-			RunDelta(chan_in, chan_out, chan_tick);
+			var servertoken = new CancellationTokenSource();
+			var server = networktype == 0 ? null : NetworkChannelServer.HostServer(servertoken.Token);
+			using (networktype == 0 ? null : new NetworkChannelScope(n => {
 
-			IChannel<T> chan_new = null;
+				if (networktype == 1)
+					return string.Equals(n, "tick");
+				if (networktype == 2)
+					return true;
 
-			// Spin up the forwarders
-			for (var i = 0; i < PROCESSES - 2; i++)
+				return false;
+
+			}))
 			{
-				//Console.WriteLine("Starting process {0}", i);
-				chan_new = ChannelManager.CreateChannel<T>();
-				RunIdentity(chan_out, chan_new);
-				chan_out = chan_new;
-			}
+				var chan_in = ChannelManager.CreateChannel<T>(buffersize: otherbuff);
+				var chan_tick = ChannelManager.CreateChannel<T>("tick", buffersize: tickbuffer);
+				var chan_out = ChannelManager.CreateChannel<T>(buffersize: otherbuff);
+
+				// Start the delta process
+				if (usedeltaalt != 0)
+					RunDeltaAlt(chan_in, chan_out, chan_tick);
+				else
+					RunDelta(chan_in, chan_out, chan_tick);
+
+				IChannel<T> chan_new = null;
+
+				// Spin up the forwarders
+				for (var i = 0; i < PROCESSES - 2; i++)
+				{
+					//Console.WriteLine("Starting process {0}", i);
+					chan_new = ChannelManager.CreateChannel<T>(buffersize: otherbuff);
+					RunIdentity(chan_out, chan_new);
+					chan_out = chan_new;
+				}
 				
-			// Close the ring
-			RunIdentity(chan_out, chan_in);
+				// Close the ring
+				RunIdentity(chan_out, chan_in);
 
-			// Start the tick collector 
-			var t = RunTickCollectorAsync(chan_tick, chan_in, stop_with_ticks);
+				// Start the tick collector 
+				var t = RunTickCollectorAsync(chan_tick, chan_in, stop_with_ticks);
 
-			// Inject a value into the ring
-			chan_in.WriteNoWait(1);
+				// Inject a value into the ring
+				chan_in.WriteNoWait(1);
 
-			Console.WriteLine("Running, press CTRL+C to stop");
+				Console.WriteLine("Running, press CTRL+C to stop");
 
-			// Wait for the tick collector to finish measuring
-			t.Wait();
+				// Wait for the tick collector to finish measuring
+				t.WaitForTaskOrThrow();
 
+				// Shut down the server if it is running
+				if (server != null)
+				{
+					servertoken.Cancel();
+					server.WaitForTaskOrThrow();
+				}
+			}
 		}
 	}
 }
