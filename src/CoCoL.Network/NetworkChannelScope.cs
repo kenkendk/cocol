@@ -25,7 +25,7 @@ namespace CoCoL.Network
 			m_selector = (name) => {
 				// If all channels need to be network channels, we assign a name to this channel
 				if (string.IsNullOrWhiteSpace(name) && redirectunnamed)
-					name = prefix + Guid.NewGuid().ToString("N");
+					return true;
 
 				// Only create those with the right prefix
 				return !string.IsNullOrWhiteSpace(name) && name.StartsWith(prefix);					
@@ -59,6 +59,10 @@ namespace CoCoL.Network
 		{			
 			if (m_selector(name))
 			{
+				// We do not support annoymous channels, so we assign a random ID
+				if (string.IsNullOrWhiteSpace(name))
+					name = Guid.NewGuid().ToString("N");
+				
 				// Transmit the desired channel properties to the channel server
 				var ca = new ChannelNameAttribute(name, buffersize, ChannelNameScope.Local, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
 				NetworkConfig.TransmitRequestAsync(new PendingNetworkRequest(name, typeof(T), NetworkMessageType.CreateChannelRequest, ca));				
