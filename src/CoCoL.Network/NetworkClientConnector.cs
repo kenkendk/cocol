@@ -67,33 +67,41 @@ namespace CoCoL.Network
 		/// </summary>
 		protected override async Task Start()
 		{
-			while (true)
+			try
 			{
-				// Grab the next request
-				var req = await m_requests.ReadAsync();
-				LOG.DebugFormat("Found request with ID: {0}, channel: {3}, type: {1}, dtype: {2}", req.RequestID, req.RequestType, req.ChannelDataType, req.ChannelID);
-
-				var nwc = await LocateChannelHandler(req.ChannelID);
-				lock (m_lock)
+				while (true)
 				{
-					LOG.DebugFormat("Registered pending request with ID: {0}, channel: {3}, type: {1}, dtype: {2}", req.RequestID, req.RequestType, req.ChannelDataType, req.ChannelID);
-					m_pendingRequests[req.ChannelID].Add(req.RequestID, req);
-				}
+					// Grab the next request
+					var req = await m_requests.ReadAsync();
+					LOG.DebugFormat("Found request with ID: {0}, channel: {3}, type: {1}, dtype: {2}", req.RequestID, req.RequestType, req.ChannelDataType, req.ChannelID);
 
-				try
-				{
-					await nwc.WriteAsync(req);
-					LOG.DebugFormat("Passed req {0}, channel: {3}, with type {1}, dtype: {2}", req.RequestID, req.RequestType, req.ChannelDataType, req.ChannelID);
-				}
-				catch(Exception ex)
-				{
-					LOG.Error("Failed to send request", ex);
-					// If the connection closed in some way
-					// restart the connection and try again
+					var nwc = await LocateChannelHandler(req.ChannelID);
+					lock (m_lock)
+					{
+						LOG.DebugFormat("Registered pending request with ID: {0}, channel: {3}, type: {1}, dtype: {2}", req.RequestID, req.RequestType, req.ChannelDataType, req.ChannelID);
+						m_pendingRequests[req.ChannelID].Add(req.RequestID, req);
+					}
 
-					// otherwise:
-					TrySetException(req.Task, ex);
+					try
+					{
+						await nwc.WriteAsync(req);
+						LOG.DebugFormat("Passed req {0}, channel: {3}, with type {1}, dtype: {2}", req.RequestID, req.RequestType, req.ChannelDataType, req.ChannelID);
+					}
+					catch(Exception ex)
+					{
+						LOG.Error("Failed to send request", ex);
+						// If the connection closed in some way
+						// restart the connection and try again
+
+						// otherwise:
+						TrySetException(req.Task, ex);
+					}
 				}
+			}
+			catch(Exception ex)
+			{
+				LOG.Fatal("Crashed network client", ex);
+				throw;
 			}
 		}
 
