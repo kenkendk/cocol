@@ -3,6 +3,8 @@ using CoCoL;
 using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Threading;
+using CoCoL.Network;
 
 namespace StressedAlt
 {
@@ -154,22 +156,32 @@ namespace StressedAlt
 
 		public static void Main(string[] args)
 		{
-			if (args.Length == 2)
+			var usenetwork = 0;
+			if (args.Length >= 2)
 			{
 				CHANNELS = int.Parse(args[0]);
 				WRITERS_PR_CHANNEL = int.Parse(args[1]);
+
+				if (args.Length > 2)
+					usenetwork = int.Parse(args[2]);
 			}
 
-			Console.WriteLine("Running with {0} channels and {1} writers, a total of {2} communications pr. round", CHANNELS, WRITERS_PR_CHANNEL, CHANNELS * WRITERS_PR_CHANNEL);
+			var servertoken = new CancellationTokenSource();
+			var server = usenetwork == 0 ? null : NetworkChannelServer.HostServer(servertoken.Token);
+			using (usenetwork == 0 ? null : new NetworkChannelScope(redirectunnamed: true))
+			{
 
-			var allchannels = (from n in Enumerable.Range(0, CHANNELS)
-				select ChannelManager.CreateChannel<long>()).ToArray();
+				Console.WriteLine("Running with {0} channels and {1} writers, a total of {2} communications pr. round", CHANNELS, WRITERS_PR_CHANNEL, CHANNELS * WRITERS_PR_CHANNEL);
 
-			for(var i = 0; i < allchannels.Length; i++)
-				for (var j = 0; j < WRITERS_PR_CHANNEL; j++)
-					RunWriterAsync(i, allchannels[i]);
+				var allchannels = (from n in Enumerable.Range(0, CHANNELS)
+				                  select ChannelManager.CreateChannel<long>()).ToArray();
 
-			new Reader(allchannels, WRITERS_PR_CHANNEL).Run();
+				for (var i = 0; i < allchannels.Length; i++)
+					for (var j = 0; j < WRITERS_PR_CHANNEL; j++)
+						RunWriterAsync(i, allchannels[i]);
+
+				new Reader(allchannels, WRITERS_PR_CHANNEL).Run();
+			}
 		}
 	}
 }
