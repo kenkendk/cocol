@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace CoCoL.Network
 {
@@ -243,6 +244,32 @@ namespace CoCoL.Network
 			catch { }
 
 			base.Dispose(disposing);
+		}
+
+		/// <summary>
+		/// Runs a channel server in the current process
+		/// </summary>
+		/// <returns>The awaitable task for server exit.</returns>
+		/// <param name="token">A cancellationtoken for stopping the server.</param>
+		/// <param name="host">The hostname to use.</param>
+		/// <param name="port">The port to use.</param>
+		public static Task HostServer(CancellationToken token, string host = "localhost", int port = 8888, bool configureclient = true)
+		{
+			var addr = 
+				string.Equals("localhost", host, StringComparison.InvariantCultureIgnoreCase) || string.Equals("127.0.0.1", host, StringComparison.InvariantCultureIgnoreCase)
+				? System.Net.IPAddress.Loopback
+				: System.Net.IPAddress.Any;
+			
+			var channelserver = new NetworkChannelServer(new System.Net.IPEndPoint(addr, port));
+			if(configureclient)
+				NetworkConfig.Configure(host, port, true);
+
+			if (token.CanBeCanceled)
+				token.Register(() => {
+					channelserver.Dispose();
+				});
+
+			return channelserver.RunAsync();
 		}
 	}
 }
