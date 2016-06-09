@@ -160,7 +160,7 @@ namespace CoCoL.Network
 				var tcl = new TcpClient();
 				await tcl.ConnectAsync(ep.Item1, ep.Item2);
 				var ncl = new NetworkClient(tcl);
-				ncl.m_selfid = string.Format("CLIENT:{0}", m_connectedClientLookup.Count);
+				ncl.SelfID = string.Format("CLIENT:{0}", m_connectedClientLookup.Count);
 				await ncl.ConnectAsync();
 
 				RunClient(ncl).FireAndForget();

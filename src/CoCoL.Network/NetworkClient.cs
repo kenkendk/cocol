@@ -127,7 +127,10 @@ namespace CoCoL.Network
 		/// </summary>
 		private IChannel<PendingNetworkRequest> m_readRequests;
 
-		public string m_selfid = Guid.NewGuid().ToString("N");
+		/// <summary>
+		/// An ID for this network connection, used for easy identificaiton while debugging
+		/// </summary>
+		public string SelfID = Guid.NewGuid().ToString("N");
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.Network.NetworkClient"/> class.
@@ -232,7 +235,7 @@ namespace CoCoL.Network
 		/// </summary>
 		public async Task ConnectAsync()
 		{
-			LOG.DebugFormat("{0} is connecting", m_selfid);
+			LOG.DebugFormat("{0} is connecting", SelfID);
 			if (!m_socket.Connected)
 				throw new InvalidOperationException("Cannot use socket if not connected");
 			try
@@ -258,8 +261,8 @@ namespace CoCoL.Network
 				throw;
 			}
 
-			ReaderProcess(m_socket, m_stream, m_readRequests.AsWriteOnly(), m_selfid).FireAndForget();
-			WriterProcess(m_socket, m_stream, m_writeRequests.AsReadOnly(), m_selfid).FireAndForget();
+			ReaderProcess(m_socket, m_stream, m_readRequests.AsWriteOnly(), SelfID).FireAndForget();
+			WriterProcess(m_socket, m_stream, m_writeRequests.AsReadOnly(), SelfID).FireAndForget();
 		}
 	
 		/// <summary>

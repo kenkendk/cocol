@@ -62,7 +62,7 @@ namespace CoCoL.Network
 					}
 
 					var nwc = new NetworkClient(tcl);
-					nwc.m_selfid = string.Format("SERVER:{0}", i++);
+					nwc.SelfID = string.Format("SERVER:{0}", i++);
 					LOG.Debug("Accepted a new connection");
 					Task.Run(() => {
 						try { RunChannelHandler(nwc, sc); }
@@ -219,7 +219,7 @@ namespace CoCoL.Network
 											responseitem,
 											true
 										));									
-								});
+								}).FireAndForget();
 
 						break;
 						
@@ -253,6 +253,7 @@ namespace CoCoL.Network
 		/// <param name="token">A cancellationtoken for stopping the server.</param>
 		/// <param name="host">The hostname to use.</param>
 		/// <param name="port">The port to use.</param>
+		/// <param name="configureclient"><c>True</c> if the client config should be set automatically</param>
 		public static Task HostServer(CancellationToken token, string host = "localhost", int port = 8888, bool configureclient = true)
 		{
 			var addr = 
