@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using T = System.Int32;
 using CoCoL.Network;
 using System.Threading;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace CommsTimeAwait
 {
@@ -122,14 +124,14 @@ namespace CommsTimeAwait
 
 					bool round_complete;
 					if (stop_after_tickcount)
-						round_complete = tickcount >= TICKS;
+						round_complete = tickcount >= Config.TICKS;
 					else
 						round_complete = (DateTime.Now - m_last).Ticks >= measure_span;
 
 					if (round_complete)
 					{
 						var duration = DateTime.Now - m_last;
-						Console.WriteLine("Got {0} ticks in {1} seconds, speed is {2} rounds/s ({3} msec/comm)", tickcount, duration, tickcount / duration.TotalSeconds, duration.TotalMilliseconds / ((tickcount) * PROCESSES));
+						Console.WriteLine("Got {0} ticks in {1} seconds, speed is {2} rounds/s ({3} msec/comm)", tickcount, duration, tickcount / duration.TotalSeconds, duration.TotalMilliseconds / ((tickcount) * Config.PROCESSES));
 						Console.WriteLine("Time per iteration: {0} microseconds", (duration.TotalMilliseconds * 1000) / tickcount);
 						Console.WriteLine("Time per communication: {0} microseconds", (duration.TotalMilliseconds * 1000) / tickcount / 4);
 
@@ -137,7 +139,7 @@ namespace CommsTimeAwait
 						m_last = DateTime.Now;
 
 						// For shutdown, we retire the initial channel
-						if (++rounds >= MEASURE_COUNT)
+						if (++rounds >= Config.MEASURE_COUNT)
 							stop.Retire();
 					}
 				}
@@ -148,91 +150,173 @@ namespace CommsTimeAwait
 			}
 		}
 
-		/// <summary>
-		/// The number of measurements to perform in the tick collector before exiting
-		/// </summary>
-		public const int MEASURE_COUNT = 10;
-
-		/// <summary>
-		/// The number of processes in the ring
-		/// </summary>
-		public static int PROCESSES = 3; //10000000;
-
-		/// <summary>
-		/// The number of ticks to measure in each round
-		/// </summary>
-		public static int TICKS = 1000000;
-
-		public static void Main(string[] args)
+		public static class Config
 		{
-			var stop_with_ticks = true;
-			var networktype = 0;
-			var tickbuffer = 0;
-			var otherbuff = 0;
-			var usedeltaalt = 0;
+			/// <summary>
+			/// The number of measurements to perform in the tick collector before exiting
+			/// </summary>
+			public const int MEASURE_COUNT = 10;
 
-			if (args.Length != 0)
+			/// <summary>
+			/// The number of processes in the ring
+			/// </summary>
+			public static int PROCESSES = 3; //10000000;
+
+			/// <summary>
+			/// The number of ticks to measure in each round
+			/// </summary>
+			public static int TICKS = 1000000;
+
+			/// <summary>
+			/// A value indicating if the network should stop after MEASURE_COUNT * TICKS
+			/// </summary>
+			public static bool StopWithTicks = true;
+
+			/// <summary>
+			/// A value indicating if the tick channel should be network based
+			/// </summary>
+			public static bool TickChannelNetworked = false;
+
+			/// <summary>
+			/// A value indicating if the delta process should use two-phase offers
+			/// </summary>
+			public static bool UseAltingForDeltaProcess = false;
+
+			/// <summary>
+			/// A value indicating if all channels should be network based
+			/// </summary>
+			public static bool AllChannelsNetworked = false;
+
+			/// <summary>
+			/// The size of the latency hiding buffer used on network channels
+			/// </summary>
+			public static int NetworkChannelLatencyBufferSize = 0;
+
+			/// <summary>
+			/// Parses the commandline args
+			/// </summary>
+			/// <param name="args">The commandline arguments.</param>
+			public static void Parse(string[] args)
 			{
-				PROCESSES = int.Parse(args[0]);
-				stop_with_ticks = false;
+				var re = new System.Text.RegularExpressions.Regex("--(?<key>[^=]+)((=\\\"(?<value>[^\"]*)\\\")|=(?<value>.*))?", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+				if (args != null)
+					foreach (var n in args)
+					{
+						var m = re.Match(n);
+						if (!m.Success || m.Length != n.Length)
+							Console.WriteLine("Unmatched option: {0}", n);
+						else
+						{
+							var key = m.Groups["key"].Value;
+							var value = m.Groups["value"].Value;
 
-				if (args.Length >= 2)
-				{
-					TICKS = int.Parse(args[1]);
-					stop_with_ticks = true;
-				}
-
-				if (args.Length >= 3)
-					networktype = int.Parse(args[2]);
-				if (args.Length >= 4)
-					tickbuffer = int.Parse(args[3]);
-				if (args.Length >= 5)
-					otherbuff = int.Parse(args[4]);
-				if (args.Length >= 6)
-					usedeltaalt = int.Parse(args[6]);
+							var field = typeof(Config).GetField(key, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.IgnoreCase);
+							if (field == null)
+								Console.WriteLine("No such option: {0}", key);
+							else
+							{
+								if (field.FieldType == typeof(int))
+									field.SetValue(null, int.Parse(value));
+								else if (field.FieldType == typeof(long))
+									field.SetValue(null, long.Parse(value));
+								else if (field.FieldType == typeof(bool))
+									field.SetValue(null, bool.Parse(string.IsNullOrWhiteSpace(value) ? "true" : value));
+								else if (field.FieldType == typeof(string))
+									field.SetValue(null, value);
+								else if (field.FieldType.IsEnum)
+									field.SetValue(null, Enum.Parse(field.FieldType, value, true));
+								else
+									Console.WriteLine("Not a valid field type: {0} for option: {1}", field.FieldType.FullName, key);								
+							}
+						}
+					}
 			}
 
-			Console.WriteLine("Config is {0} processes, for {1} ticks, network {2}, tickbuffer={3} and other buffer={4}", PROCESSES, TICKS, networktype, tickbuffer, otherbuff);
+			/// <summary>
+			/// Returns the config object as a human readable string
+			/// </summary>
+			/// <returns>The string.</returns>
+			public static string AsString()
+			{
+				return string.Join(", ", typeof(Config).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static).Select(x => string.Format("{0}={1}", x.Name, x.GetValue(null))));
+			}
+		}
+			
+		/// <summary>
+		/// Wraps the channel with a latency hiding instance, if required by config
+		/// </summary>
+		/// <returns>The buffered write channel.</returns>
+		/// <param name="input">The input channel.</param>
+		private static IWriteChannel<T> AsBufferedWrite(IWriteChannel<T> input)
+		{
+			if (Config.NetworkChannelLatencyBufferSize != 0 && input is NetworkChannel<T> && (Config.AllChannelsNetworked || ((INamedItem)input).Name == "tick"))
+				return new LatencyHidingWriter<T>(input, Config.NetworkChannelLatencyBufferSize);
+			return input;
+		}
+
+		/// <summary>
+		/// Wraps the channel with a latency hidign instance, if required by config
+		/// </summary>
+		/// <returns>The buffered read channel.</returns>
+		/// <param name="input">The input channel.</param>
+		private static IReadChannel<T> AsBufferedRead(IReadChannel<T> input)
+		{
+			if (Config.NetworkChannelLatencyBufferSize != 0 && input is NetworkChannel<T> && (Config.AllChannelsNetworked || ((INamedItem)input).Name == "tick"))
+				return new LatencyHidingReader<T>(input, Config.NetworkChannelLatencyBufferSize);
+			return input;
+		}
+
+		/// <summary>
+		/// The entry point of the program, where the program control starts and ends.
+		/// </summary>
+		/// <param name="args">The command-line arguments.</param>
+		public static void Main(string[] args)
+		{
+			Config.Parse(args);
+
+			Console.WriteLine("Config is: {0}", Config.AsString());
+
+			var anynetwork = Config.AllChannelsNetworked || Config.TickChannelNetworked;
 
 			var servertoken = new CancellationTokenSource();
-			var server = networktype == 0 ? null : NetworkChannelServer.HostServer(servertoken.Token);
-			using (networktype == 0 ? null : new NetworkChannelScope(n => {
+			var server = anynetwork ? NetworkChannelServer.HostServer(servertoken.Token) : null;
+			using (anynetwork ? new NetworkChannelScope(n => {
 
-				if (networktype == 1)
+				if (Config.TickChannelNetworked)
 					return string.Equals(n, "tick");
-				if (networktype == 2)
+				else if (Config.AllChannelsNetworked)
 					return true;
 
 				return false;
 
-			}))
+			}) : null)
 			{
-				var chan_in = ChannelManager.CreateChannel<T>(buffersize: otherbuff);
-				var chan_tick = ChannelManager.CreateChannel<T>("tick", buffersize: tickbuffer);
-				var chan_out = ChannelManager.CreateChannel<T>(buffersize: otherbuff);
+				var chan_in = ChannelManager.CreateChannel<T>();
+				var chan_tick = ChannelManager.CreateChannel<T>("tick");
+				var chan_out = ChannelManager.CreateChannel<T>();
 
 				// Start the delta process
-				if (usedeltaalt != 0)
-					RunDeltaAlt(chan_in, chan_out, chan_tick);
+				if (Config.UseAltingForDeltaProcess)
+					RunDeltaAlt(AsBufferedRead(chan_in), AsBufferedWrite(chan_out), AsBufferedWrite(chan_tick));
 				else
-					RunDelta(chan_in, chan_out, chan_tick);
+					RunDelta(AsBufferedRead(chan_in), AsBufferedWrite(chan_out), AsBufferedWrite(chan_tick));
 
 				IChannel<T> chan_new = null;
 
 				// Spin up the forwarders
-				for (var i = 0; i < PROCESSES - 2; i++)
+				for (var i = 0; i < Config.PROCESSES - 2; i++)
 				{
 					//Console.WriteLine("Starting process {0}", i);
-					chan_new = ChannelManager.CreateChannel<T>(buffersize: otherbuff);
-					RunIdentity(chan_out, chan_new);
+					chan_new = ChannelManager.CreateChannel<T>();
+					RunIdentity(AsBufferedRead(chan_out), AsBufferedWrite(chan_new));
 					chan_out = chan_new;
 				}
 				
 				// Close the ring
-				RunIdentity(chan_out, chan_in);
+				RunIdentity(AsBufferedRead(chan_out), AsBufferedWrite(chan_in));
 
 				// Start the tick collector 
-				var t = RunTickCollectorAsync(chan_tick, chan_in, stop_with_ticks);
+				var t = RunTickCollectorAsync(AsBufferedRead(chan_tick), chan_in, Config.StopWithTicks);
 
 				// Inject a value into the ring
 				chan_in.WriteNoWait(1);
