@@ -52,6 +52,7 @@
     <Compile Include="TwoPhaseNetworkHandler.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="NetworkChannelScope.cs" />
+    <Compile Include="LatencyHidingChannel.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
