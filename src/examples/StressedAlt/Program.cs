@@ -182,6 +182,10 @@ namespace StressedAlt
 
 				new Reader(allchannels, WRITERS_PR_CHANNEL).Run();
 			}
+
+			servertoken.Cancel();
+			if (server != null)
+				server.WaitForTaskOrThrow();
 		}
 	}
 }
