@@ -117,7 +117,7 @@ namespace CoCoL
 			/// <summary>
 			/// Tries to set the source to Cancelled
 			/// </summary>
-			void IOfferItem.TrySetCancelled() { Source.TrySetCanceled(); }
+			void IOfferItem.TrySetCancelled() { if (Source != null) Source.TrySetCanceled(); }
 		}
 
 		/// <summary>
@@ -264,7 +264,7 @@ namespace CoCoL
 					if (!offerWriter)
 						try
 						{
-							offerWriter = kp.Source.Task.Status == TaskStatus.WaitingForActivation && await kp.Offer.OfferAsync(this);
+						offerWriter = (kp.Source == null || kp.Source.Task.Status == TaskStatus.WaitingForActivation) && await kp.Offer.OfferAsync(this);
 						}
 						catch(Exception ex)
 						{
@@ -298,7 +298,8 @@ namespace CoCoL
 						// if the writer bailed, remove it from the queue
 						if (!offerWriter)
 						{
-							kp.Source.TrySetCanceled();
+							if (kp.Source != null)
+								kp.Source.TrySetCanceled();
 							m_writerQueue.RemoveAt(0);
 						}
 
@@ -320,7 +321,8 @@ namespace CoCoL
 							await offer.CommitAsync(this);
 
 						ThreadPool.QueueItem(() => result.SetResult(kp.Value));
-						ThreadPool.QueueItem(() => kp.Source.SetResult(true));
+						if (kp.Source != null)
+							ThreadPool.QueueItem(() => kp.Source.SetResult(true));
 
 						// Release items if there is space in the buffer
 						await ProcessWriteQueueBufferAfterReadAsync(true);
@@ -500,7 +502,7 @@ namespace CoCoL
 						if (offer != null)
 							await offer.CommitAsync(this);
 
-						m_writerQueue.Add(new WriterEntry(null, new TaskCompletionSource<bool>(), Timeout.InfiniteDateTime, value));
+						m_writerQueue.Add(new WriterEntry(null, null, Timeout.InfiniteDateTime, value));
 						result.TrySetResult(true);
 					}
 					else
@@ -528,14 +530,16 @@ namespace CoCoL
 									{
 										var exp = m_writerQueue[m_bufferSize].Source;
 										m_writerQueue.RemoveAt(m_bufferSize);
-										ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException()));
+										if (exp != null)
+											ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException()));
 									}
 									break;
 								case QueueOverflowStrategy.LIFO:
 									{
 										var exp = m_writerQueue[m_writerQueue.Count - 1].Source;
 										m_writerQueue.RemoveAt(m_writerQueue.Count - 1);
-										ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException()));
+										if (exp != null)
+											ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException()));
 									}
 									break;
 								case QueueOverflowStrategy.Reject:
@@ -614,11 +618,11 @@ namespace CoCoL
 						if (nextItem.Offer != null)
 							await nextItem.Offer.CommitAsync(this);
 
-						nextItem.Source.SetResult(true);
+						if (nextItem.Source != null)
+							nextItem.Source.SetResult(true);
 
 						// Now that the transaction has completed for the writer, record it as waiting forever
-						if (nextItem.Expires != Timeout.InfiniteDateTime)
-							m_writerQueue[m_bufferSize - 1] = new WriterEntry(nextItem.Offer, nextItem.Source, Timeout.InfiniteDateTime, nextItem.Value);
+						m_writerQueue[m_bufferSize - 1] = new WriterEntry(null, null, Timeout.InfiniteDateTime, nextItem.Value);
 
 						// We can have at most one, since we process at most one read
 						break;
@@ -668,7 +672,8 @@ namespace CoCoL
 					if (immediate)
 						while (m_retireCount > 1)
 						{
-							m_writerQueue[0].Source.TrySetException(new RetiredException());
+							if (m_writerQueue[0].Source != null)
+								m_writerQueue[0].Source.TrySetException(new RetiredException());
 							m_writerQueue.RemoveAt(0);
 							m_retireCount--;
 						}
@@ -760,7 +765,8 @@ namespace CoCoL
 
 				if (writers != null)
 					foreach (var w in writers)
-						ThreadPool.QueueItem(() => w.Source.TrySetException(new RetiredException()));
+						if (w.Source != null)
+							ThreadPool.QueueItem(() => w.Source.TrySetException(new RetiredException()));
 			}
 		}
 
@@ -796,7 +802,8 @@ namespace CoCoL
 
 			// Send the notifications
 			foreach (var w in expiredWriters.OrderBy(x => x.Value.Expires))
-				w.Value.Source.TrySetException(new TimeoutException());
+				if (w.Value.Source != null)
+					w.Value.Source.TrySetException(new TimeoutException());
 		}
 	}
 }
