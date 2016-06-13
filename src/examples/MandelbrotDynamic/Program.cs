@@ -5,6 +5,9 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Threading.Tasks;
 using System.Linq;
+using CoCoL.Network;
+using System.Threading;
+using System.Collections.Generic;
 
 namespace MandelbrotDynamic
 {
@@ -54,7 +57,7 @@ namespace MandelbrotDynamic
 
 		public void Run()
 		{
-			RunAsync().Wait();
+			RunAsync().WaitForTaskOrThrow();
 		}
 
 		public async Task RunAsync()
@@ -154,36 +157,109 @@ namespace MandelbrotDynamic
 		}
 	}
 
+	public class Config
+	{
+		/// <summary>
+		/// The width of the image
+		/// </summary>
+		[CommandlineOption("The width of the image", "width", "w")]
+		public static int Width = 500;
+
+		/// <summary>
+		/// The height of the image
+		/// </summary>
+		[CommandlineOption("The height of the image", "height", "h")]
+		public static int Height = 500;
+
+		/// <summary>
+		/// The number of iterations on each pixel
+		/// </summary>
+		[CommandlineOption("The number of iterations on each pixel", "iterations", "i")]
+		public static int Iterations = 100;
+
+		/// <summary>
+		/// The number of iterations on each pixel
+		/// </summary>
+		[CommandlineOption("The number of repeated runs", "repeats", "r")]
+		public static int Repeats = 1;
+
+		/// <summary>
+		/// A value indicating if the channels should be network based
+		/// </summary>
+		[CommandlineOption("Indicates if the channels are network hosted", longname: "network")]
+		public static bool NetworkedChannels = false;
+
+		/// <summary>
+		/// The size of the latency hiding buffer used on network channels
+		/// </summary>
+		[CommandlineOption("The buffer size for network channels", longname: "buffersize")]
+		public static int NetworkChannelLatencyBufferSize = 0;
+
+		/// <summary>
+		/// The hostname for the channel server
+		/// </summary>
+		[CommandlineOption("The hostname for the channel server", longname: "host")]
+		public static string ChannelServerHostname = "localhost";
+
+		/// <summary>
+		/// The port for the channel server
+		/// </summary>
+		[CommandlineOption("The port for the channel server", longname: "port")]
+		public static int ChannelServerPort = 8888;
+
+		/// <summary>
+		/// A value indicating if the channel server is on the local host
+		/// </summary>
+		[CommandlineOption("Indicates if the process hosts a server itself", longname: "selfhost")]
+		public static bool ChannelServerSelfHost = true;
+
+		/// <summary>
+		/// Parses the commandline args
+		/// </summary>
+		/// <param name="args">The commandline arguments.</param>
+		public static bool Parse(List<string> args)
+		{
+			return SettingsHelper.Parse<Config>(args, null);
+		}
+
+		/// <summary>
+		/// Returns the config object as a human readable string
+		/// </summary>
+		/// <returns>The string.</returns>
+		public static string AsString()
+		{
+			return string.Join(", ", typeof(Config).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static).Select(x => string.Format("{0}={1}", x.Name, x.GetValue(null))));
+		}
+	}
+
 	/// <summary>
 	/// The main class provides the driver for starting jobs
 	/// </summary>
 	class MainClass
 	{
-		public static void Main(string[] args)
+		public static void Main(string[] _args)
 		{
+			var args = new List<string>(_args);
 			// Send jobs into the network
+			if (!Config.Parse(args))
+				return;
 
-			Render[] jobs;
+			Console.WriteLine("Config is: {0}", Config.AsString());
 
-			if (args.Length == 3)
-			{
-				jobs = (
-					from n in Enumerable.Range(0, 11)
-					select new Render(int.Parse(args[0]), int.Parse(args[1]), int.Parse(args[2]))
-				).ToArray();
-			}
-			else
-			{
-				jobs = new Render[] {
-					new Render(500, 500, 10),	
-					new Render(500, 500, 10),	
-					new Render(500, 500, 100),
-					new Render(500, 500, 256),
-					new Render(500, 500, 1000)
-				};
-			}
-			foreach (var job in jobs)
-				job.Run();
+			var servertoken = new CancellationTokenSource();
+			var server = (Config.NetworkedChannels && Config.ChannelServerSelfHost) ? NetworkChannelServer.HostServer(servertoken.Token, Config.ChannelServerHostname, Config.ChannelServerPort) : null;
+
+			if (Config.NetworkedChannels && !Config.ChannelServerSelfHost)
+				NetworkConfig.Configure(Config.ChannelServerHostname, Config.ChannelServerPort, true);
+
+			using (Config.NetworkedChannels ? new NetworkChannelScope(redirectunnamed: true) : null)
+				foreach(var job in Enumerable.Range(0, Config.Repeats).Select(x => new Render(Config.Width, Config.Height, Config.Iterations)))
+					job.Run();
+
+			servertoken.Cancel();
+			if (server != null)
+				server.WaitForTaskOrThrow();
+
 		}
 	}
 

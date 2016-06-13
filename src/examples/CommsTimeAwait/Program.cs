@@ -124,14 +124,14 @@ namespace CommsTimeAwait
 
 					bool round_complete;
 					if (stop_after_tickcount)
-						round_complete = tickcount >= Config.TICKS;
+						round_complete = tickcount >= Config.Ticks;
 					else
 						round_complete = (DateTime.Now - m_last).Ticks >= measure_span;
 
 					if (round_complete)
 					{
 						var duration = DateTime.Now - m_last;
-						Console.WriteLine("Got {0} ticks in {1} seconds, speed is {2} rounds/s ({3} msec/comm)", tickcount, duration, tickcount / duration.TotalSeconds, duration.TotalMilliseconds / ((tickcount) * Config.PROCESSES));
+						Console.WriteLine("Got {0} ticks in {1} seconds, speed is {2} rounds/s ({3} msec/comm)", tickcount, duration, tickcount / duration.TotalSeconds, duration.TotalMilliseconds / ((tickcount) * Config.Processes));
 						Console.WriteLine("Time per iteration: {0} microseconds", (duration.TotalMilliseconds * 1000) / tickcount);
 						Console.WriteLine("Time per communication: {0} microseconds", (duration.TotalMilliseconds * 1000) / tickcount / 4);
 
@@ -139,7 +139,7 @@ namespace CommsTimeAwait
 						m_last = DateTime.Now;
 
 						// For shutdown, we retire the initial channel
-						if (++rounds >= Config.MEASURE_COUNT)
+						if (++rounds >= Config.MeasureCount)
 							stop.Retire();
 					}
 				}
@@ -150,86 +150,81 @@ namespace CommsTimeAwait
 			}
 		}
 
-		public static class Config
+		public class Config
 		{
 			/// <summary>
 			/// The number of measurements to perform in the tick collector before exiting
 			/// </summary>
-			public const int MEASURE_COUNT = 10;
+			[CommandlineOption("The number of measure rounds to perform", longname: "rounds")]
+			public const int MeasureCount = 10;
 
 			/// <summary>
 			/// The number of processes in the ring
 			/// </summary>
-			public static int PROCESSES = 3; //10000000;
+			[CommandlineOption("The number of processes in the communication ring", longname: "processes")]
+			public static int Processes = 3; //10000000;
 
 			/// <summary>
 			/// The number of ticks to measure in each round
 			/// </summary>
-			public static int TICKS = 1000000;
+			[CommandlineOption("The number of ticks in each measurement rount", longname: "ticks")]
+			public static int Ticks = 1000000;
 
 			/// <summary>
-			/// A value indicating if the network should stop after MEASURE_COUNT * TICKS
+			/// A value indicating if the network should stop after MeasureCount * Ticks
 			/// </summary>
+			[CommandlineOption("Indicates if the network should stop running after measurements are completed", longname: "autostop")]
 			public static bool StopWithTicks = true;
 
 			/// <summary>
 			/// A value indicating if the tick channel should be network based
 			/// </summary>
+			[CommandlineOption("Indicates if the tick channel is network hosted", longname: "ticknetwork")]
 			public static bool TickChannelNetworked = false;
 
 			/// <summary>
 			/// A value indicating if the delta process should use two-phase offers
 			/// </summary>
+			[CommandlineOption("Indicates if the delta process uses a WriteToAny call", longname: "deltaalt")]
 			public static bool UseAltingForDeltaProcess = false;
 
 			/// <summary>
 			/// A value indicating if all channels should be network based
 			/// </summary>
+			[CommandlineOption("Indicates if all channels are created as network channels", longname: "allnetwork")]
 			public static bool AllChannelsNetworked = false;
 
 			/// <summary>
 			/// The size of the latency hiding buffer used on network channels
 			/// </summary>
+			[CommandlineOption("The buffer size for network channels", longname: "buffersize")]
 			public static int NetworkChannelLatencyBufferSize = 0;
+
+			/// <summary>
+			/// The hostname for the channel server
+			/// </summary>
+			[CommandlineOption("The hostname for the channel server", longname: "host")]
+			public static string ChannelServerHostname = "localhost";
+
+			/// <summary>
+			/// The port for the channel server
+			/// </summary>
+			[CommandlineOption("The port for the channel server", longname: "port")]
+			public static int ChannelServerPort = 8888;
+
+			/// <summary>
+			/// A value indicating if the channel server is on the local host
+			/// </summary>
+			[CommandlineOption("Indicates if the process hosts a server itself", longname: "selfhost")]
+			public static bool ChannelServerSelfHost = true;
 
 			/// <summary>
 			/// Parses the commandline args
 			/// </summary>
 			/// <param name="args">The commandline arguments.</param>
-			public static void Parse(string[] args)
+			public static bool Parse(string[] args)
 			{
-				var re = new System.Text.RegularExpressions.Regex("--(?<key>[^=]+)((=\\\"(?<value>[^\"]*)\\\")|=(?<value>.*))?", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-				if (args != null)
-					foreach (var n in args)
-					{
-						var m = re.Match(n);
-						if (!m.Success || m.Length != n.Length)
-							Console.WriteLine("Unmatched option: {0}", n);
-						else
-						{
-							var key = m.Groups["key"].Value;
-							var value = m.Groups["value"].Value;
-
-							var field = typeof(Config).GetField(key, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.IgnoreCase);
-							if (field == null)
-								Console.WriteLine("No such option: {0}", key);
-							else
-							{
-								if (field.FieldType == typeof(int))
-									field.SetValue(null, int.Parse(value));
-								else if (field.FieldType == typeof(long))
-									field.SetValue(null, long.Parse(value));
-								else if (field.FieldType == typeof(bool))
-									field.SetValue(null, bool.Parse(string.IsNullOrWhiteSpace(value) ? "true" : value));
-								else if (field.FieldType == typeof(string))
-									field.SetValue(null, value);
-								else if (field.FieldType.IsEnum)
-									field.SetValue(null, Enum.Parse(field.FieldType, value, true));
-								else
-									Console.WriteLine("Not a valid field type: {0} for option: {1}", field.FieldType.FullName, key);								
-							}
-						}
-					}
+				return SettingsHelper.Parse<Config>(args.ToList(), null);
 			}
 
 			/// <summary>
@@ -272,14 +267,19 @@ namespace CommsTimeAwait
 		/// <param name="args">The command-line arguments.</param>
 		public static void Main(string[] args)
 		{
-			Config.Parse(args);
+			if (!Config.Parse(args))
+				return;
 
 			Console.WriteLine("Config is: {0}", Config.AsString());
 
 			var anynetwork = Config.AllChannelsNetworked || Config.TickChannelNetworked;
 
 			var servertoken = new CancellationTokenSource();
-			var server = anynetwork ? NetworkChannelServer.HostServer(servertoken.Token) : null;
+			var server = (anynetwork && Config.ChannelServerSelfHost) ? NetworkChannelServer.HostServer(servertoken.Token, Config.ChannelServerHostname, Config.ChannelServerPort) : null;
+
+			if (anynetwork && !Config.ChannelServerSelfHost)
+				NetworkConfig.Configure(Config.ChannelServerHostname, Config.ChannelServerPort, true);
+
 			using (anynetwork ? new NetworkChannelScope(n => {
 
 				if (Config.TickChannelNetworked)
@@ -304,7 +304,7 @@ namespace CommsTimeAwait
 				IChannel<T> chan_new = null;
 
 				// Spin up the forwarders
-				for (var i = 0; i < Config.PROCESSES - 2; i++)
+				for (var i = 0; i < Config.Processes - 2; i++)
 				{
 					//Console.WriteLine("Starting process {0}", i);
 					chan_new = ChannelManager.CreateChannel<T>();

@@ -45,5 +45,9 @@
       <Project>{00058DF8-C13F-4DD9-BD8E-775DDF72BF87}</Project>
       <Name>CoCoL</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\CoCoL.Network\CoCoL.Network.csproj">
+      <Project>{2138966B-CB50-4F7C-B53A-A0A2F882BE07}</Project>
+      <Name>CoCoL.Network</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>

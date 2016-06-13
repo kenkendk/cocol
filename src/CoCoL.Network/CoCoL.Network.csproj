@@ -53,6 +53,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="NetworkChannelScope.cs" />
     <Compile Include="LatencyHidingChannel.cs" />
+    <Compile Include="SettingsHelper.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
