@@ -262,29 +262,45 @@ namespace CoCoL
 					var offerReader = offer == null;
 
 					if (!offerWriter)
+					{
+						Exception tex = null;
 						try
 						{
-						offerWriter = (kp.Source == null || kp.Source.Task.Status == TaskStatus.WaitingForActivation) && await kp.Offer.OfferAsync(this);
+							offerWriter = (kp.Source == null || kp.Source.Task.Status == TaskStatus.WaitingForActivation) && await kp.Offer.OfferAsync(this);
 						}
-						catch(Exception ex)
+						catch (Exception ex)
 						{
-							result.TrySetException(ex);
-							return await result.Task;
+							tex = ex;
 						}
 
+						if (tex != null)
+						{
+							result.TrySetException(tex);
+							return await result.Task;
+						}
+					}
+
 					if (!offerReader)
-						try 
+					{
+						Exception tex = null;
+						try
 						{						
 							offerReader = result.Task.Status == TaskStatus.WaitingForActivation && await offer.OfferAsync(this); 
 						}
-						catch(Exception ex) 
+						catch (Exception ex)
 						{ 
+							tex = ex;
+						}
+
+						if (tex != null)
+						{
 							if (offerWriter && kp.Offer != null)
 								await kp.Offer.WithdrawAsync(this);
-							
-							result.TrySetException(ex);
+
+							result.TrySetException(tex);
 							return await result.Task;
 						}
+					}
 
 
 					if (!(offerReader && offerWriter))
@@ -417,31 +433,48 @@ namespace CoCoL
 					var offerReader = kp.Offer == null;
 
 					if (!offerReader)
-						try 
+					{
+						Exception tex = null;
+
+						try
 						{
 							offerReader = kp.Source.Task.Status == TaskStatus.WaitingForActivation && await kp.Offer.OfferAsync(this);
 						}
-						catch(Exception ex)
+						catch (Exception ex)
 						{
-							result.TrySetException(ex);
+							tex = ex;
+						}
+
+						if (tex != null)
+						{
+							result.TrySetException(tex);
 							await result.Task;
 							return;
 						}
+					}
 
 					if (!offerWriter)
-						try 
+					{
+						Exception tex = null;
+						try
 						{ 
 							offerWriter = result.Task.Status == TaskStatus.WaitingForActivation && await offer.OfferAsync(this); 
 						}
-						catch(Exception ex)
+						catch (Exception ex)
 						{
-						if (offerReader && kp.Offer != null)
+							tex = ex;
+						}
+
+						if (tex != null)
+						{
+							if (offerReader && kp.Offer != null)
 								await kp.Offer.WithdrawAsync(this);
-							result.TrySetException(ex);
+							result.TrySetException(tex);
 
 							await result.Task;
 							return;
 						}
+					}
 
 
 					// If the reader accepts ...
