@@ -31,7 +31,7 @@ namespace StressedAlt
 		/// <summary>
 		/// The set of channels to read from
 		/// </summary>
-		private readonly MultiChannelSet<long> m_set;
+		private readonly MultiChannelSetRead<long> m_set;
 
 		/// <summary>
 		/// The number of channels
@@ -53,9 +53,9 @@ namespace StressedAlt
 		/// </summary>
 		private long m_tracked_reads = 0;
 
-		public Reader(IEnumerable<IChannel<long>> channels, int writes_pr_channel)
+		public Reader(IEnumerable<IReadChannel<long>> channels, int writes_pr_channel)
 		{
-			m_set = new MultiChannelSet<long>(channels, MultiChannelPriority.Fair);
+			m_set = new MultiChannelSetRead<long>(channels, MultiChannelPriority.Fair);
 			m_tracking = new Dictionary<long, long>();
 			m_channelCount = m_set.Channels.Count();
 			m_writes_pr_channel = writes_pr_channel;
@@ -128,19 +128,101 @@ namespace StressedAlt
 		}
 	}
 
+	public class Config
+	{
+		/// <summary>
+		/// The number of channels to use
+		/// </summary>
+		[CommandlineOption("The number of channels", longname: "channels")]
+		public static int Channels = 200;
+
+		/// <summary>
+		/// The number of writers for each channel
+		/// </summary>
+		[CommandlineOption("The number of writers for each channel", longname: "writers")]
+		public static int Writers = 100;
+
+		/// <summary>
+		/// A value indicating if the channels should be network based
+		/// </summary>
+		[CommandlineOption("Indicates if the channels are network hosted", longname: "network")]
+		public static bool NetworkedChannels = false;
+
+		/// <summary>
+		/// The size of the latency hiding buffer used on network channels
+		/// </summary>
+		[CommandlineOption("The buffer size for network channels", longname: "buffersize")]
+		public static int NetworkChannelLatencyBufferSize = 0;
+
+		/// <summary>
+		/// The hostname for the channel server
+		/// </summary>
+		[CommandlineOption("The hostname for the channel server", longname: "host")]
+		public static string ChannelServerHostname = "localhost";
+
+		/// <summary>
+		/// The port for the channel server
+		/// </summary>
+		[CommandlineOption("The port for the channel server", longname: "port")]
+		public static int ChannelServerPort = 8888;
+
+		/// <summary>
+		/// A value indicating if the channel server is on the local host
+		/// </summary>
+		[CommandlineOption("Indicates if the process hosts a server itself", longname: "selfhost")]
+		public static bool ChannelServerSelfHost = true;
+
+		/// <summary>
+		/// Parses the commandline args
+		/// </summary>
+		/// <param name="args">The commandline arguments.</param>
+		public static bool Parse(string[] args)
+		{
+			return SettingsHelper.Parse<Config>(args.ToList(), null);
+		}
+
+		/// <summary>
+		/// Returns the config object as a human readable string
+		/// </summary>
+		/// <returns>The string.</returns>
+		public static string AsString()
+		{
+			return string.Join(", ", typeof(Config).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static).Select(x => string.Format("{0}={1}", x.Name, x.GetValue(null))));
+		}
+	}
 
 	public class MainClass
 	{
+		/// <summary>
+		/// Wraps the channel with a latency hiding instance, if required by config
+		/// </summary>
+		/// <returns>The buffered write channel.</returns>
+		/// <param name="input">The input channel.</param>
+		private static IWriteChannel<T> AsBufferedWrite<T>(IWriteChannel<T> input)
+		{
+			if (Config.NetworkChannelLatencyBufferSize != 0 && input is NetworkChannel<T> && Config.NetworkedChannels)
+				return new LatencyHidingWriter<T>(input, Config.NetworkChannelLatencyBufferSize);
+			return input;
+		}
 
-		private static int WRITERS_PR_CHANNEL = 100;
-		private static int CHANNELS = 200;
+		/// <summary>
+		/// Wraps the channel with a latency hidign instance, if required by config
+		/// </summary>
+		/// <returns>The buffered read channel.</returns>
+		/// <param name="input">The input channel.</param>
+		private static IReadChannel<T> AsBufferedRead<T>(IReadChannel<T> input)
+		{
+			if (Config.NetworkChannelLatencyBufferSize != 0 && input is NetworkChannel<T> && Config.NetworkedChannels)
+				return new LatencyHidingReader<T>(input, Config.NetworkChannelLatencyBufferSize);
+			return input;
+		}
 
 		/// <summary>
 		/// Runs the writer process
 		/// </summary>
 		/// <param name="id">The id to write into the channel.</param>
 		/// <param name="channel">The channel to write into.</param>
-		private static async void RunWriterAsync(long id, IChannel<long> channel)
+		private static async void RunWriterAsync(long id, IWriteChannel<long> channel)
 		{
 			try
 			{
@@ -156,31 +238,29 @@ namespace StressedAlt
 
 		public static void Main(string[] args)
 		{
-			var usenetwork = 0;
-			if (args.Length >= 2)
-			{
-				CHANNELS = int.Parse(args[0]);
-				WRITERS_PR_CHANNEL = int.Parse(args[1]);
+			if (!Config.Parse(args))
+				return;
 
-				if (args.Length > 2)
-					usenetwork = int.Parse(args[2]);
-			}
+			Console.WriteLine("Config is: {0}", Config.AsString());
 
 			var servertoken = new CancellationTokenSource();
-			var server = usenetwork == 0 ? null : NetworkChannelServer.HostServer(servertoken.Token);
-			using (usenetwork == 0 ? null : new NetworkChannelScope(redirectunnamed: true))
+			var server = (Config.NetworkedChannels && Config.ChannelServerSelfHost) ? NetworkChannelServer.HostServer(servertoken.Token, Config.ChannelServerHostname, Config.ChannelServerPort) : null;
+
+			if (Config.NetworkedChannels && !Config.ChannelServerSelfHost)
+				NetworkConfig.Configure(Config.ChannelServerHostname, Config.ChannelServerPort, true);
+			
+			using (Config.NetworkedChannels ? new NetworkChannelScope(redirectunnamed: true) : null)
 			{
+				Console.WriteLine("Running with {0} channels and {1} writers, a total of {2} communications pr. round", Config.Channels, Config.Writers, Config.Channels * Config.Writers);
 
-				Console.WriteLine("Running with {0} channels and {1} writers, a total of {2} communications pr. round", CHANNELS, WRITERS_PR_CHANNEL, CHANNELS * WRITERS_PR_CHANNEL);
-
-				var allchannels = (from n in Enumerable.Range(0, CHANNELS)
+				var allchannels = (from n in Enumerable.Range(0, Config.Channels)
 				                  select ChannelManager.CreateChannel<long>()).ToArray();
 
 				for (var i = 0; i < allchannels.Length; i++)
-					for (var j = 0; j < WRITERS_PR_CHANNEL; j++)
-						RunWriterAsync(i, allchannels[i]);
+					for (var j = 0; j < Config.Writers; j++)
+						RunWriterAsync(i, AsBufferedWrite(allchannels[i]));
 
-				new Reader(allchannels, WRITERS_PR_CHANNEL).Run();
+				new Reader(allchannels.Select(x => AsBufferedRead(x)), Config.Writers).Run();
 			}
 
 			servertoken.Cancel();

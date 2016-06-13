@@ -30,7 +30,7 @@ namespace CoCoL
 		/// The sorted list of channels, such that the index in
 		/// m_channels and m_usageCounts match
 		/// </summary>
-		private IChannel<T>[] m_channels;
+		private T[] m_channels;
 
 		/// <summary>
 		/// A channel lookup for constant time mapping a channel to the index
@@ -41,7 +41,7 @@ namespace CoCoL
 		/// Initializes a new instance of the <see cref="CoCoL.SortedChannelList&lt;T&gt;"/> class.
 		/// </summary>
 		/// <param name="channels">The channels to keep sorted</param>
-		public SortedChannelList(IChannel<T>[] channels)
+		public SortedChannelList(T[] channels)
 		{
 			m_channels = channels;
 			m_usageCounts = new long[m_channels.Length];
@@ -119,7 +119,7 @@ namespace CoCoL
 		/// Gets the channels in sorted order
 		/// </summary>
 		/// <value>The channels.</value>
-		public IChannel<T>[] Channels
+		public T[] Channels
 		{
 			get { return m_channels; }
 		}
@@ -128,16 +128,16 @@ namespace CoCoL
 	/// <summary>
 	/// A collection of channels that can be read or written
 	/// </summary>
-	public class MultiChannelSet<T>
+	public class MultiChannelSetRead<T>
 	{
 		/// <summary>
 		/// The channels to consider
 		/// </summary>
-		private readonly IChannel<T>[] m_channels;
+		private readonly IReadChannel<T>[] m_channels;
 		/// <summary>
 		/// The usage of the channels, used for tracking fair usage
 		/// </summary>
-		private readonly SortedChannelList<T> m_sortedChannels;
+		private readonly SortedChannelList<IReadChannel<T>> m_sortedChannels;
 		/// <summary>
 		/// The order in which the channels are picked
 		/// </summary>
@@ -148,11 +148,11 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="priority">The priority to use when selecting a channel.</param>
 		/// <param name="channels">The channels to consider.</param>
-		public MultiChannelSet(MultiChannelPriority priority, params IChannel<T>[] channels)
+		public MultiChannelSetRead(MultiChannelPriority priority, params IReadChannel<T>[] channels)
 		{
 			
 			m_channels = channels;
-			m_sortedChannels = priority == MultiChannelPriority.Fair ? new SortedChannelList<T>(channels) : null;
+			m_sortedChannels = priority == MultiChannelPriority.Fair ? new SortedChannelList<IReadChannel<T>>(channels) : null;
 			m_priority = priority;
 		}
 
@@ -161,7 +161,7 @@ namespace CoCoL
 		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet&lt;T&gt;"/> class.
 		/// </summary>
 		/// <param name="channels">The channels to consider.</param>
-		public MultiChannelSet(params IChannel<T>[] channels)
+		public MultiChannelSetRead(params IReadChannel<T>[] channels)
 			: this(MultiChannelPriority.Any, channels) 
 		{
 		}
@@ -171,7 +171,7 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="priority">The priority to use when selecting a channel.</param>
 		/// <param name="channels">The channels to consider.</param>
-		public MultiChannelSet(IEnumerable<IChannel<T>> channels, MultiChannelPriority priority = MultiChannelPriority.Any)
+		public MultiChannelSetRead(IEnumerable<IReadChannel<T>> channels, MultiChannelPriority priority = MultiChannelPriority.Any)
 			: this(priority, channels.ToArray())
 		{
 		}
@@ -181,7 +181,7 @@ namespace CoCoL
 		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet&lt;T&gt;"/> class.
 		/// </summary>
 		/// <param name="channels">The channels to consider.</param>
-		public MultiChannelSet(IEnumerable<IChannel<T>> channels)
+		public MultiChannelSetRead(IEnumerable<IReadChannel<T>> channels)
 			: this(MultiChannelPriority.Any, channels.ToArray())
 		{
 		}
@@ -217,6 +217,88 @@ namespace CoCoL
 		}
 
 		/// <summary>
+		/// Retires all channels in the set
+		/// </summary>
+		/// <param name="immediate">Retires the channel without processing the queue, which may cause lost messages</param>
+		/// <returns>An awaitable task</returns>
+		public async Task RetireAsync(bool immediate = false)
+		{
+			foreach (var c in m_channels)
+				await c.RetireAsync(immediate);
+		}
+
+		/// <summary>
+		/// Gets all channels in the set
+		/// </summary>
+		/// <value>The channels in the set</value>
+		public IEnumerable<IReadChannel<T>> Channels
+		{
+			get { return m_channels; }
+		}
+	}
+
+	/// <summary>
+	/// A collection of channels that can be read or written
+	/// </summary>
+	public class MultiChannelSetWrite<T>
+	{
+		/// <summary>
+		/// The channels to consider
+		/// </summary>
+		private readonly IWriteChannel<T>[] m_channels;
+		/// <summary>
+		/// The usage of the channels, used for tracking fair usage
+		/// </summary>
+		private readonly SortedChannelList<IWriteChannel<T>> m_sortedChannels;
+		/// <summary>
+		/// The order in which the channels are picked
+		/// </summary>
+		private readonly MultiChannelPriority m_priority;
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet&lt;T&gt;"/> class.
+		/// </summary>
+		/// <param name="priority">The priority to use when selecting a channel.</param>
+		/// <param name="channels">The channels to consider.</param>
+		public MultiChannelSetWrite(MultiChannelPriority priority, params IWriteChannel<T>[] channels)
+		{
+
+			m_channels = channels;
+			m_sortedChannels = priority == MultiChannelPriority.Fair ? new SortedChannelList<IWriteChannel<T>>(channels) : null;
+			m_priority = priority;
+		}
+
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet&lt;T&gt;"/> class.
+		/// </summary>
+		/// <param name="channels">The channels to consider.</param>
+		public MultiChannelSetWrite(params IWriteChannel<T>[] channels)
+			: this(MultiChannelPriority.Any, channels) 
+		{
+		}
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet&lt;T&gt;"/> class.
+		/// </summary>
+		/// <param name="priority">The priority to use when selecting a channel.</param>
+		/// <param name="channels">The channels to consider.</param>
+		public MultiChannelSetWrite(IEnumerable<IWriteChannel<T>> channels, MultiChannelPriority priority = MultiChannelPriority.Any)
+			: this(priority, channels.ToArray())
+		{
+		}
+
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet&lt;T&gt;"/> class.
+		/// </summary>
+		/// <param name="channels">The channels to consider.</param>
+		public MultiChannelSetWrite(IEnumerable<IWriteChannel<T>> channels)
+			: this(MultiChannelPriority.Any, channels.ToArray())
+		{
+		}
+			
+		/// <summary>
 		/// Writes to any of the channels.
 		/// </summary>
 		/// <param name="value">The value to write into the channel.</param>
@@ -224,7 +306,7 @@ namespace CoCoL
 		{
 			return WriteToAnyAsync(value, Timeout.Infinite);
 		}
-			
+
 		/// <summary>
 		/// Writes to any of the channels.
 		/// </summary>
@@ -265,11 +347,10 @@ namespace CoCoL
 		/// Gets all channels in the set
 		/// </summary>
 		/// <value>The channels in the set</value>
-		public IEnumerable<IChannel<T>> Channels
+		public IEnumerable<IWriteChannel<T>> Channels
 		{
 			get { return m_channels; }
 		}
-
 	}
 }
 

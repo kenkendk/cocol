@@ -92,9 +92,20 @@ namespace CoCoL
 		/// <param name="channels">The channels to make the set from.</param>
 		/// <param name="priority">The channel priority.</param>
 		/// <typeparam name="T">The type of the channel.</typeparam>
-		public static MultiChannelSet<T> CreateSet<T>(this IEnumerable<IChannel<T>> channels, MultiChannelPriority priority = MultiChannelPriority.Any)
+		public static MultiChannelSetRead<T> CreateSet<T>(this IEnumerable<IReadChannel<T>> channels, MultiChannelPriority priority = MultiChannelPriority.Any)
 		{
-			return new MultiChannelSet<T>(channels, priority);
+			return new MultiChannelSetRead<T>(channels, priority);
+		}
+		/// <summary>
+		/// Creates a multichannelset from a list of channels
+		/// </summary>
+		/// <returns>The multichannel set.</returns>
+		/// <param name="channels">The channels to make the set from.</param>
+		/// <param name="priority">The channel priority.</param>
+		/// <typeparam name="T">The type of the channel.</typeparam>
+		public static MultiChannelSetWrite<T> CreateSet<T>(this IEnumerable<IWriteChannel<T>> channels, MultiChannelPriority priority = MultiChannelPriority.Any)
+		{
+			return new MultiChannelSetWrite<T>(channels, priority);
 		}
 		#endregion
 
@@ -446,7 +457,7 @@ namespace CoCoL
 			switch (priority)
 			{
 				case MultiChannelPriority.Fair:
-					throw new Exception(string.Format("Construct a {0} object to use fair multichannel operations", typeof(MultiChannelSet<>).Name));
+					throw new Exception(string.Format("Construct a {0} or {1} object to use fair multichannel operations", typeof(MultiChannelSetRead<>).Name, typeof(MultiChannelSetWrite<>).Name));
 				case MultiChannelPriority.Random:
 					requests = Shuffle(requests);
 					break;
