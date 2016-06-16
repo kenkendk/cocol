@@ -189,11 +189,6 @@ namespace CoCoL.Network
 
 					LOG.DebugFormat("Processing request with ID: {0}", req.RequestID);
 
-					if (!m_pendingRequests.ContainsKey(req.ChannelID))
-						Console.WriteLine();
-					if (!m_pendingRequests[req.ChannelID].ContainsKey(req.RequestID))
-						Console.WriteLine("Unknown request ID: {0}", req.RequestID);
-
 					var prq = m_pendingRequests[req.ChannelID][req.RequestID];
 
 					switch (req.RequestType)
