@@ -52,7 +52,7 @@ namespace CoCoL
 				} 
 				else 
 				{ 
-					var waiter = new TaskCompletionSource<bool>(); 
+					var waiter = new TaskCompletionSource<bool>();
 					m_waiters.Enqueue(waiter); 
 					return waiter.Task; 
 				} 
@@ -72,8 +72,8 @@ namespace CoCoL
 				else 
 					++m_currentCount; 
 			} 
-			if (result != null) 
-				result.SetResult(true); 
+			if (result != null)
+				Task.Run(() => result.SetResult(true));
 		}
 	}
 
