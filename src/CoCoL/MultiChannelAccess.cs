@@ -492,6 +492,17 @@ namespace CoCoL
 
 			tasks.Keys.WhenAnyNonCancelled().ContinueWith(item => Task.Run(() =>
 				{
+					if (item.IsCanceled)
+					{
+						tcs.TrySetCanceled();
+						return;
+					}
+					else if (item.IsFaulted)
+					{
+						tcs.TrySetException(item.Exception);
+						return;
+					}
+
 					var n = item.Result;
 
 					if (offer.AtomicIsFirst())
