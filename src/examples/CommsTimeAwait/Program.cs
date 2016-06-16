@@ -67,16 +67,15 @@ namespace CommsTimeAwait
 		/// <param name="chan_b">The channel to write to</param>
 		private static async void RunDeltaAlt(IReadChannel<T> chan_read, IWriteChannel<T> chan_a, IWriteChannel<T> chan_b)
 		{
-			var tgchans = new [] { chan_b };
 			try
 			{
 				while (true)
 				{
 					var value = await chan_read.ReadAsync();
-
+					var offer = new SingleOffer<T>();
 					await Task.WhenAll(
 						chan_a.WriteAsync(value),
-						MultiChannelAccess.WriteToAnyAsync(value, tgchans)
+						chan_b.WriteAsync(value, CoCoL.Timeout.Infinite, offer)
 					);
 				}
 			}
