@@ -81,16 +81,15 @@ namespace CoCoL.Network
 		/// <param name="req">The request to transmit.</param>
 		public static Task TransmitRequestAsync(PendingNetworkRequest req)
 		{
-			lock (_lock)
-			{
-				if (_connector == null)
-				{
-					_connector = new NetworkClientConnector(NameServerHostname, NameServerPort);
-					_connectorTask = _connector.RunAsync();
-				}
+			if (_connector == null)
+				lock (_lock)
+					if (_connector == null)
+					{
+						_connector = new NetworkClientConnector(NameServerHostname, NameServerPort);
+						_connectorTask = _connector.RunAsync();
+					}
 
-				return _connector.Requests.WriteAsync(req);
-			}
+			return _connector.Requests.WriteAsync(req);
 		}
 
 		/// <summary>
@@ -100,16 +99,15 @@ namespace CoCoL.Network
 		/// <param name="req">The request to transmit.</param>
 		public static void TransmitRequest(PendingNetworkRequest req)
 		{
-			lock (_lock)
-			{
-				if (_connector == null)
-				{
-					_connector = new NetworkClientConnector(NameServerHostname, NameServerPort);
-					_connectorTask = _connector.RunAsync();
-				}
+			if (_connector == null)
+				lock (_lock)
+					if (_connector == null)
+					{
+						_connector = new NetworkClientConnector(NameServerHostname, NameServerPort);
+						_connectorTask = _connector.RunAsync();
+					}
 			
 				_connector.Requests.Write(req);
-			}
 		}
 
 		/// <summary>
