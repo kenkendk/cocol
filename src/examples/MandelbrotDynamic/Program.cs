@@ -79,6 +79,11 @@ namespace MandelbrotDynamic
 				)
 			);
 
+			var result_channel = 
+				Config.NetworkedChannels && Config.NetworkChannelLatencyBufferSize > 0
+				? new LatencyHidingReader<Pixel>(worker_channel, Config.NetworkChannelLatencyBufferSize)
+				: worker_channel.AsReadOnly();
+
 			// Set up an image buffer
 			var pixels = m_width * m_height;
 			using(var img = new Bitmap(m_width, m_height))
@@ -86,7 +91,7 @@ namespace MandelbrotDynamic
 				// Collect all pixels
 				for(var i = 0; i < pixels; i++)
 				{
-					var px = await worker_channel.ReadAsync();
+					var px = await result_channel.ReadAsync();
 					img.SetPixel(px.x - m_left, px.y - m_top, ColorMap(px.value, m_iterations));
 				}
 
