@@ -130,7 +130,7 @@ namespace CoCoL
 			var tcs = source ?? new TaskCompletionSource<Task>();
 			var lst = items is List<Task> ? (List<Task>)items : items.ToList();
 
-			Task.WhenAny(items).ContinueWith(x => {
+			Task.WhenAny(lst).ContinueWith(x => {
 				if (x.IsCanceled)
 					tcs.TrySetCanceled();
 				else if (x.IsFaulted)
