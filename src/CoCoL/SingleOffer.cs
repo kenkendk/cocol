@@ -50,6 +50,14 @@ namespace CoCoL
 		private Queue<TaskCompletionSource<bool>> m_offers = new Queue<TaskCompletionSource<bool>>();
 
 		/// <summary>
+		/// Creates a new SingleOffer instance with no expiration date
+		/// </summary>
+		public SingleOffer()
+			: this(null, Timeout.InfiniteDateTime)
+		{
+		}
+
+		/// <summary>
 		/// Creates a new SingleOffer instance
 		/// </summary>
 		/// <param name="tcs">The task completion source</param>
