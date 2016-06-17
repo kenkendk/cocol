@@ -9,8 +9,11 @@ using CoCoL.Network;
 using System.Threading;
 using System.Collections.Generic;
 
+using Pixel = System.Tuple<int, int, int>;
+
 namespace MandelbrotDynamic
 {
+	/*
 	/// <summary>
 	/// The pixel output
 	/// </summary>
@@ -28,7 +31,7 @@ namespace MandelbrotDynamic
 		/// The iteration count
 		/// </summary>
 		public int value;
-	}
+	}*/
 
 	/// <summary>
 	/// The render process is responsible for spawning the workers
@@ -92,7 +95,7 @@ namespace MandelbrotDynamic
 				for(var i = 0; i < pixels; i++)
 				{
 					var px = await result_channel.ReadAsync();
-					img.SetPixel(px.x - m_left, px.y - m_top, ColorMap(px.value, m_iterations));
+					img.SetPixel(px.Item1 - m_left, px.Item2 - m_top, ColorMap(px.Item3, m_iterations));
 				}
 
 				img.Save(string.Format("{0}-{1}x{2}-{3}.png", DateTime.Now.Ticks, m_width, m_height, m_iterations), ImageFormat.Png);
@@ -137,7 +140,7 @@ namespace MandelbrotDynamic
 				n = 0;
 
 			// Write the result, and terminate before completion
-			m_channel.WriteAsync(new Pixel() { x = m_x, y = m_y, value = n });
+			m_channel.WriteAsync(new Pixel( m_x, m_y, n ));
 		}
 
 		private const double RADIUS_SQUARED = 4.0;
