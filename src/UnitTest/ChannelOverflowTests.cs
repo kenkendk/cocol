@@ -102,7 +102,7 @@ namespace UnitTest
 				}
 
 				Assert.IsTrue(readertasks[discard].IsFaulted);
-				Assert.IsInstanceOfType(typeof(ChannelOverflowException), readertasks[discard].Exception.Flatten().InnerExceptions.First());
+				Assert.IsInstanceOf<ChannelOverflowException>(readertasks[discard].Exception.Flatten().InnerExceptions.First());
 
 				readertasks.RemoveAt(discard);
 
@@ -146,7 +146,7 @@ namespace UnitTest
 				}
 
 				Assert.IsTrue(writertasks[discard].IsFaulted);
-				Assert.IsInstanceOfType(typeof(ChannelOverflowException), writertasks[discard].Exception.Flatten().InnerExceptions.First());
+				Assert.IsInstanceOf<ChannelOverflowException>(writertasks[discard].Exception.Flatten().InnerExceptions.First());
 
 				writertasks.RemoveAt(discard);
 
