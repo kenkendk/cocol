@@ -45,9 +45,13 @@ namespace CoCoL
 		/// </summary>
 		private bool m_isLocked = false;
 		/// <summary>
+		/// The offer caller instance
+		/// </summary>
+		private object m_offerCaller = null;
+		/// <summary>
 		/// The list of offers
 		/// </summary>
-		private Queue<TaskCompletionSource<bool>> m_offers = new Queue<TaskCompletionSource<bool>>();
+		private Queue<KeyValuePair<TaskCompletionSource<bool>, object>> m_offers = new Queue<KeyValuePair<TaskCompletionSource<bool>, object>>();
 
 		/// <summary>
 		/// Creates a new SingleOffer instance with no expiration date
@@ -95,9 +99,12 @@ namespace CoCoL
 			
 			lock (m_lock)
 				if (m_isLocked)
-				{
+				{					
+					if (caller == m_offerCaller)
+						throw new InvalidOperationException("Cannot issue multiple operations on the same channel");
+				
 					var tcs = new TaskCompletionSource<bool>();
-					m_offers.Enqueue(tcs);
+					m_offers.Enqueue(new KeyValuePair<TaskCompletionSource<bool>, object>(tcs, caller));
 					return tcs.Task;
 				}
 				else
@@ -105,6 +112,7 @@ namespace CoCoL
 					System.Diagnostics.Debug.Assert(m_offers.Count == 0, "Two-Phase instance was unlocked but with pending offers?");
 
 					m_isLocked = true;
+					m_offerCaller = caller;
 					return Task.FromResult(true);
 				}
 		}
@@ -124,10 +132,11 @@ namespace CoCoL
 			lock (m_lock)
 			{
 				m_isLocked = false;
+				m_offerCaller = null;
 				while (m_offers.Count > 0)
 				{
 					var offer = m_offers.Dequeue();
-					ThreadPool.QueueItem(() => offer.TrySetResult(false));
+					ThreadPool.QueueItem(() => offer.Key.TrySetResult(false));
 				}
 			}
 
@@ -147,11 +156,17 @@ namespace CoCoL
 				if (m_offers.Count > 0)
 				{
 					var offer = m_offers.Dequeue();
-					ThreadPool.QueueItem(() => offer.TrySetResult(true));
+					m_offerCaller = offer.Value;
+
+					ThreadPool.QueueItem(() => offer.Key.TrySetResult(true));
 				}
 				else
+				{
 					m_isLocked = false;
+					m_offerCaller = null;
+				}
 			}
+
 			return Task.FromResult(true);
 		}
 
