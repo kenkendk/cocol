@@ -9,7 +9,7 @@ namespace UnitTest
 		[Test]
 		public void CommsTimeTest()
 		{
-			CommsTimeAwait.MainClass.Main(new string[] { "3", "10000" });
+			CommsTimeAwait.MainClass.Main(new string[] { "--processes=3", "--ticks=10000" });
 		}
 
 		[Test]
@@ -21,7 +21,7 @@ namespace UnitTest
 		[Test]
 		public void StressedAltTest()
 		{
-			StressedAlt.MainClass.Main(new string[] { "10", "10" });
+			StressedAlt.MainClass.Main(new string[] { "--writers=10", "--channels=10" });
 		}
 
 		[Test]
