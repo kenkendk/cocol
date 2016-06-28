@@ -144,7 +144,7 @@ namespace CoCoL
 		private readonly MultiChannelPriority m_priority;
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet&lt;T&gt;"/> class.
+		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSetRead&lt;T&gt;"/> class.
 		/// </summary>
 		/// <param name="priority">The priority to use when selecting a channel.</param>
 		/// <param name="channels">The channels to consider.</param>
@@ -158,7 +158,7 @@ namespace CoCoL
 
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet&lt;T&gt;"/> class.
+		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSetRead&lt;T&gt;"/> class.
 		/// </summary>
 		/// <param name="channels">The channels to consider.</param>
 		public MultiChannelSetRead(params IReadChannel<T>[] channels)
@@ -167,7 +167,7 @@ namespace CoCoL
 		}
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet&lt;T&gt;"/> class.
+		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSetRead&lt;T&gt;"/> class.
 		/// </summary>
 		/// <param name="priority">The priority to use when selecting a channel.</param>
 		/// <param name="channels">The channels to consider.</param>
@@ -178,7 +178,7 @@ namespace CoCoL
 
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet&lt;T&gt;"/> class.
+		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSetRead&lt;T&gt;"/> class.
 		/// </summary>
 		/// <param name="channels">The channels to consider.</param>
 		public MultiChannelSetRead(IEnumerable<IReadChannel<T>> channels)
@@ -256,7 +256,7 @@ namespace CoCoL
 		private readonly MultiChannelPriority m_priority;
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet&lt;T&gt;"/> class.
+		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSetWrite&lt;T&gt;"/> class.
 		/// </summary>
 		/// <param name="priority">The priority to use when selecting a channel.</param>
 		/// <param name="channels">The channels to consider.</param>
@@ -270,7 +270,7 @@ namespace CoCoL
 
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet&lt;T&gt;"/> class.
+		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSetWrite&lt;T&gt;"/> class.
 		/// </summary>
 		/// <param name="channels">The channels to consider.</param>
 		public MultiChannelSetWrite(params IWriteChannel<T>[] channels)
@@ -279,7 +279,7 @@ namespace CoCoL
 		}
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet&lt;T&gt;"/> class.
+		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSetWrite&lt;T&gt;"/> class.
 		/// </summary>
 		/// <param name="priority">The priority to use when selecting a channel.</param>
 		/// <param name="channels">The channels to consider.</param>
@@ -290,7 +290,7 @@ namespace CoCoL
 
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSet&lt;T&gt;"/> class.
+		/// Initializes a new instance of the <see cref="CoCoL.MultiChannelSetWrite&lt;T&gt;"/> class.
 		/// </summary>
 		/// <param name="channels">The channels to consider.</param>
 		public MultiChannelSetWrite(IEnumerable<IWriteChannel<T>> channels)
