@@ -709,7 +709,7 @@ namespace CoCoL
 		/// Join the channel
 		/// </summary>
 		/// <param name="asReader"><c>true</c> if joining as a reader, <c>false</c> otherwise</param>
-		public async Task JoinAsync(bool asReader)
+		public virtual async Task JoinAsync(bool asReader)
 		{
 			using (await m_asynclock.LockAsync())
 			{
@@ -728,7 +728,7 @@ namespace CoCoL
 		/// Leave the channel.
 		/// </summary>
 		/// <param name="asReader"><c>true</c> if leaving as a reader, <c>false</c> otherwise</param>
-		public async Task LeaveAsync(bool asReader)
+		public virtual async Task LeaveAsync(bool asReader)
 		{
 			using (await m_asynclock.LockAsync())
 			{
