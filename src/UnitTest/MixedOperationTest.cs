@@ -9,7 +9,7 @@ namespace UnitTest
 	[TestFixture]
 	public class MixedOperationTest
 	{
-		//[Test]
+		[Test]
 		[ExpectedException(typeof(InvalidOperationException))]
 		public void TestInvalidMultiAccessOperation()
 		{
@@ -22,6 +22,7 @@ namespace UnitTest
 			{
 				if (aex.InnerExceptions.Count == 1)
 					throw aex.InnerExceptions.First();
+				throw;
 			}
 		}
 
