@@ -5,4 +5,7 @@ install:
   - nuget install NUnit.Runners -Version 3.4.0 -OutputDirectory testrunner
 script:
   - xbuild /p:Configuration=Release src/CoCoL.sln
+  - ls -lah ./testrunner
+  - ls -lah ./testrunner/NUnit.Runners.3.4.0
+  - ls -lah ./testrunner/NUnit.Runners.3.4.0/tools
   - mono ./testrunner/NUnit.Runners.3.4.0/tools/nunit-console.exe ./src/UnitTest/bin/Release/UnitTest.exe
