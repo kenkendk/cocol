@@ -9,31 +9,31 @@ namespace UnitTest
 	[TestFixture]
 	public class ExecutionContextTests
 	{
-		//[Test]
+		[Test]
 		public void TestSingleThreadPool()
 		{
 			TestCappedPool(1, 10, 50);
 		}
 
-		//[Test]
+		[Test]
 		public void TestDualThreadPool()
 		{
 			TestCappedPool(2, 20, 100);
 		}
 
-		//[Test]
+		[Test]
 		public void TestQuadThreadPool()
 		{
 			TestCappedPool(4, 40, 200);
 		}
 
-		//[Test]
+		[Test]
 		public void TestOctoThreadPool()
 		{
 			TestCappedPool(8, 20, 400);
 		}
 
-		//[Test]
+		[Test]
 		public void TestUnlimitedThreadPool()
 		{
 			TestCappedPool(-1, 200, 800);
