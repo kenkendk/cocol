@@ -209,24 +209,21 @@ namespace CoCoL
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.Channel&lt;T&gt;"/> class.
 		/// </summary>
-		/// <param name="name">The name of the channel</param>
-		/// <param name="buffersize">The size of the write buffer</param>
-		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
-		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
-		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
-		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
-		internal Channel(string name = null, int buffersize = 0, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject)
+		/// <param name="attribute">The attribute describing the channel</param>
+		internal Channel(ChannelNameAttribute attribute)
 		{
-			if (buffersize < 0)
-				throw new ArgumentOutOfRangeException("buffersize", "The size parameter must be greater than or equal to zero");
+			if (attribute == null)
+				throw new ArgumentNullException("attribute");
+			if (attribute.BufferSize < 0)
+				throw new ArgumentOutOfRangeException("BufferSize", "The size parameter must be greater than or equal to zero");
 
-			this.Name = name;
+			this.Name = attribute.Name;
 
-			m_bufferSize = buffersize;
-			m_maxPendingReaders = maxPendingReaders;
-			m_maxPendingWriters = maxPendingWriters;
-			m_pendingReadersOverflowStrategy = pendingReadersOverflowStrategy;
-			m_pendingWritersOverflowStrategy = pendingWritersOverflowStrategy;
+			m_bufferSize = attribute.BufferSize;
+			m_maxPendingReaders = attribute.MaxPendingReaders;
+			m_maxPendingWriters = attribute.MaxPendingWriters;
+			m_pendingReadersOverflowStrategy = attribute.PendingReadersOverflowStrategy;
+			m_pendingWritersOverflowStrategy = attribute.PendingWritersOverflowStrategy;
 		}
 
 		/// <summary>

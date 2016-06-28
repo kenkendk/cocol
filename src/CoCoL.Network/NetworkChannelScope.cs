@@ -28,7 +28,7 @@ namespace CoCoL.Network
 					return true;
 
 				// Only create those with the right prefix
-				return !string.IsNullOrWhiteSpace(name) && name.StartsWith(prefix);					
+				return !string.IsNullOrWhiteSpace(name) && name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
 			};
 
 		}
@@ -48,29 +48,22 @@ namespace CoCoL.Network
 		/// Creates the channel by calling the ChannelManager.
 		/// </summary>
 		/// <returns>The channel with the given name.</returns>
-		/// <param name="name">The name of the channel to create.</param>
-		/// <param name="buffersize">The size of the channel buffer.</param>
-		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
-		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
-		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
-		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
+		/// <param name="attribute">The attribute describing the channel to create.</param>
 		/// <typeparam name="T">The type of data in the channel.</typeparam>
-		protected override IChannel<T> DoCreateChannel<T>(string name, int buffersize, int maxPendingReaders, int maxPendingWriters, QueueOverflowStrategy pendingReadersOverflowStrategy, QueueOverflowStrategy pendingWritersOverflowStrategy)
-		{			
-			if (m_selector(name))
+		protected override IChannel<T> DoCreateChannel<T>(ChannelNameAttribute attribute)
+		{
+			if (m_selector(attribute.Name))
 			{
 				// We do not support annoymous channels, so we assign a random ID
-				if (string.IsNullOrWhiteSpace(name))
-					name = Guid.NewGuid().ToString("N");
-				
+				if (string.IsNullOrWhiteSpace(attribute.Name))
+					attribute.Name = Guid.NewGuid().ToString("N");
+
 				// Transmit the desired channel properties to the channel server
-				var ca = new ChannelNameAttribute(name, buffersize, ChannelNameScope.Local, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
-				NetworkConfig.TransmitRequestAsync(new PendingNetworkRequest(name, typeof(T), NetworkMessageType.CreateChannelRequest, ca));				
-				return new NetworkChannel<T>(ca);
+				NetworkConfig.TransmitRequestAsync(new PendingNetworkRequest(attribute.Name, typeof(T), NetworkMessageType.CreateChannelRequest, attribute));
+				return new NetworkChannel<T>(attribute);
 			}
 
-			return base.DoCreateChannel<T>(name, buffersize, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingReadersOverflowStrategy);
-
+			return base.DoCreateChannel<T>(attribute);
 		}
 	}
 }

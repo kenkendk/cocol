@@ -115,7 +115,7 @@ namespace CoCoL.Network
 				if (req.RequestType == NetworkMessageType.CreateChannelRequest)
 				{
 					var chancfg = req.Value as ChannelNameAttribute;
-					sc.GetOrCreate(req.ChannelID, req.ChannelDataType, chancfg.BufferSize, chancfg.MaxPendingReaders, chancfg.MaxPendingWriters, chancfg.PendingReadersOverflowStrategy, chancfg.PendingWritersOverflowStrategy);
+					sc.GetOrCreate(chancfg, req.ChannelDataType);
 					continue;
 				}
 

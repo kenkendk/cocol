@@ -107,14 +107,9 @@ namespace CoCoL
 		/// Creates a channel for use in a scope
 		/// </summary>
 		/// <returns>The channel.</returns>
-		/// <param name="name">The name of the channel, or null.</param>
-		/// <param name="buffersize">The number of buffers in the channel.</param>
-		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
-		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
-		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
-		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
+		/// <param name="attribute">The attribute describing the channel.</param>
 		/// <typeparam name="T">The channel type.</typeparam>
-		internal static IChannel<T> CreateChannelForScope<T>(string name, int buffersize, int maxPendingReaders, int maxPendingWriters, QueueOverflowStrategy pendingReadersOverflowStrategy, QueueOverflowStrategy pendingWritersOverflowStrategy)
+		internal static IChannel<T> CreateChannelForScope<T>(ChannelNameAttribute attribute)
 		{
 			return new Channel<T>(name, buffersize, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy); 
 		}

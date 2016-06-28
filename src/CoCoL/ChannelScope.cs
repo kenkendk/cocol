@@ -101,8 +101,21 @@ namespace CoCoL
 		/// Gets or creates a channel
 		/// </summary>
 		/// <returns>The or create.</returns>
-		/// <param name="name">The name of the channel to create.</param>
+		/// <param name="attribute">The attribute describing the channel to create.</param>
 		/// <param name="datatype">The type of data communicated through the channel.</param>
+		public IRetireAbleChannel GetOrCreate(ChannelNameAttribute attribute, Type datatype)
+		{
+			return (IRetireAbleChannel)typeof(ChannelScope).GetMethod("GetOrCreate", new Type[] { typeof(ChannelNameAttribute) })
+			   .MakeGenericMethod(datatype)
+               .Invoke(this, new object[] { attribute });
+		}
+
+ 		/// <summary>
+ 		/// Gets or creates a channel
+ 		/// </summary>
+ 		/// <returns>The or create.</returns>
+		/// <param name="name">The name of the channel to create.</param>
+ 		/// <param name="datatype">The type of data communicated through the channel.</param>
 		/// <param name="buffersize">The size of the channel buffer.</param>
 		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
 		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
@@ -110,10 +123,12 @@ namespace CoCoL
 		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
 		public IRetireAbleChannel GetOrCreate(string name, Type datatype, int buffersize = 0, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject)
 		{
-			return (IRetireAbleChannel)typeof(ChannelScope).GetMethod("GetOrCreate", new Type[] { typeof(string), typeof(int), typeof(int), typeof(int), typeof(QueueOverflowStrategy), typeof(QueueOverflowStrategy) })
-				.MakeGenericMethod(datatype)
-				.Invoke(this, new object[] {name, buffersize, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy});
+			return GetOrCreate(
+				new ChannelNameAttribute(name, buffersize, ChannelNameScope.Local, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy), 
+				datatype
+			);
 		}
+
 
 		/// <summary>
 		/// Gets or creates a channel
@@ -123,7 +138,7 @@ namespace CoCoL
 		/// <typeparam name="T">The type of data in the channel.</typeparam>
 		public IChannel<T> GetOrCreate<T>(ChannelNameMarker marker)
 		{
-			return this.GetOrCreate<T>(marker.Name, marker.Attribute.BufferSize);
+			return this.GetOrCreate<T>(marker.Attribute);
 		}
 
 		/// <summary>
@@ -134,7 +149,33 @@ namespace CoCoL
 		/// <typeparam name="T">The type of data in the channel.</typeparam>
 		public IChannel<T> GetOrCreate<T>(ChannelMarkerWrapper<T> marker)
 		{
-			return this.GetOrCreate<T>(marker.Name, marker.BufferSize);
+			return this.GetOrCreate<T>(marker.Attribute);
+		}
+
+		/// <summary>
+		/// Gets or creates a channel
+		/// </summary>
+		/// <returns>The channel with the given name.</returns>
+		/// <param name="attribute">The attribute describing the channel.</param>
+		/// <typeparam name="T">The type of data in the channel.</typeparam>
+		public IChannel<T> GetOrCreate<T>(ChannelNameAttribute attribute)
+		{
+			if (attribute == null)
+				throw new ArgumentNullException("attribute");
+
+			lock (__lock)
+			{
+				var res = RecursiveLookup(attribute.Name);
+				if (res != null)
+					return (IChannel<T>)res;
+				else
+				{
+					var chan = DoCreateChannel<T>(attribute);
+					if (!string.IsNullOrWhiteSpace(attribute.Name))
+						m_lookup.Add(attribute.Name, chan);
+					return chan;
+				}
+			}
 		}
 
 		/// <summary>
@@ -150,35 +191,18 @@ namespace CoCoL
 		/// <typeparam name="T">The type of data in the channel.</typeparam>
 		public IChannel<T> GetOrCreate<T>(string name, int buffersize = 0, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject)
 		{
-			lock (__lock)
-			{
-				var res = RecursiveLookup(name);
-				if (res != null)
-					return (IChannel<T>)res;
-				else
-				{
-					var chan = DoCreateChannel<T>(name, buffersize, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
-					if (!string.IsNullOrWhiteSpace(name))
-						m_lookup.Add(name, chan);
-					return chan;
-				}
-			}
+			return GetOrCreate<T>(new ChannelNameAttribute(name, buffersize, ChannelNameScope.Local, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy));
 		}
 
 		/// <summary>
 		/// Creates the channel by calling the ChannelManager.
 		/// </summary>
 		/// <returns>The channel with the given name.</returns>
-		/// <param name="name">The name of the channel to create.</param>
-		/// <param name="buffersize">The size of the channel buffer.</param>
-		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
-		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
-		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
-		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
+		/// <param name="attribute">The attribute describing the channel to create.</param>
 		/// <typeparam name="T">The type of data in the channel.</typeparam>
-		protected virtual IChannel<T> DoCreateChannel<T>(string name, int buffersize, int maxPendingReaders, int maxPendingWriters, QueueOverflowStrategy pendingReadersOverflowStrategy, QueueOverflowStrategy pendingWritersOverflowStrategy)
+		protected virtual IChannel<T> DoCreateChannel<T>(ChannelNameAttribute attribute)
 		{
-			return ChannelManager.CreateChannelForScope<T>(name, buffersize, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
+			return ChannelManager.CreateChannelForScope<T>(attribute);
 		}
 
 		/// <summary>
