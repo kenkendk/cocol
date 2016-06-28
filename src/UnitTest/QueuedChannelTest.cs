@@ -44,7 +44,6 @@ namespace UnitTest
 		}
 
 		[Test]
-		[ExpectedException(typeof(RetiredException))]
 		public void TestImmediateRetire()
 		{
 			var c = ChannelManager.CreateChannel<int>(buffersize: 2);
@@ -54,7 +53,7 @@ namespace UnitTest
 
 			c.Retire(true);
 
-			c.Read();
+			Assert.Throws<RetiredException>(() => c.Read());
 		}
 	}
 }

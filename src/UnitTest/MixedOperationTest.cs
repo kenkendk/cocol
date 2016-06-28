@@ -10,20 +10,22 @@ namespace UnitTest
 	public class MixedOperationTest
 	{
 		[Test]
-		[ExpectedException(typeof(InvalidOperationException))]
 		public void TestInvalidMultiAccessOperation()
 		{
-			try
+			Assert.Throws<InvalidOperationException>(() =>
 			{
-				var c1 = ChannelManager.CreateChannel<int>();
-				MultiChannelAccess.ReadOrWriteAnyAsync(MultisetRequest.Read(c1), MultisetRequest.Write(1, c1)).WaitForTask().Wait();
-			}
-			catch(AggregateException aex)
-			{
-				if (aex.InnerExceptions.Count == 1)
-					throw aex.InnerExceptions.First();
-				throw;
-			}
+				try
+				{
+					var c1 = ChannelManager.CreateChannel<int>();
+					MultiChannelAccess.ReadOrWriteAnyAsync(MultisetRequest.Read(c1), MultisetRequest.Write(1, c1)).WaitForTask().Wait();
+				}
+				catch (AggregateException aex)
+				{
+					if (aex.InnerExceptions.Count == 1)
+						throw aex.InnerExceptions.First();
+					throw;
+				}
+			});
 		}
 
 		[Test]
