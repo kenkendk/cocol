@@ -64,6 +64,7 @@
     <Compile Include="ExecutionScope.cs" />
     <Compile Include="SingleThreadedWorker.cs" />
     <Compile Include="AsyncLock.cs" />
+    <Compile Include="BroadcastingChannel.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

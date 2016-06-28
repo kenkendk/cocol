@@ -111,7 +111,10 @@ namespace CoCoL
 		/// <typeparam name="T">The channel type.</typeparam>
 		internal static IChannel<T> CreateChannelForScope<T>(ChannelNameAttribute attribute)
 		{
-			return new Channel<T>(name, buffersize, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy); 
+			if (attribute is BroadcastChannelNameAttribute)
+				return new BroadcastingChannel<T>(attribute);
+			else
+				return new Channel<T>(attribute); 
 		}
 	}
 }

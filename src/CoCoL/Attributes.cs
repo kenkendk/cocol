@@ -105,6 +105,41 @@ namespace CoCoL
 		}
 	}
 
+	/// <summary>
+	/// Attribute for naming a channel in automatic wireup
+	/// </summary>
+	[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+	public class BroadcastChannelNameAttribute : ChannelNameAttribute
+	{
+		/// <summary>
+		/// The minimum number of readers required for a broadcast to be performed
+		/// </summary>
+		public int InitialBarrierSize;
+		/// <summary>
+		/// The minimum number of readers required for the first broadcast to be performed
+		/// </summary>
+		public int MinimumReaders;
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="CoCoL.BroadcastChannelNameAttribute"/> class.
+		/// </summary>
+		/// <param name="name">The name of the channel.</param>
+		/// <param name="buffersize">The size of the buffer on the created channel</param>
+		/// <param name="targetScope">The scope where the channel is created</param>
+		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
+		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
+		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
+		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
+		/// <param name="minimumReaders">The minimum number of readers required on the channel, before a broadcast can be performed</param>
+		/// <param name="initialBarrierSize">The number of readers required on the channel before sending the first broadcast</param>
+		public BroadcastChannelNameAttribute(string name, int buffersize = 0, ChannelNameScope targetScope = ChannelNameScope.Local, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject, int initialBarrierSize = -1, int minimumReaders = -1)
+			: base(name, buffersize, targetScope, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy)
+		{
+			InitialBarrierSize = initialBarrierSize;
+			MinimumReaders = minimumReaders;
+		}
+	}
+
 
 }
 
