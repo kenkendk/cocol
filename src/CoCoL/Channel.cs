@@ -14,12 +14,12 @@ namespace CoCoL
 		/// <summary>
 		/// The minium value for the cleanup threshold
 		/// </summary>
-		private const int MIN_QUEUE_CLEANUP_THRESHOLD = 100;
+		protected const int MIN_QUEUE_CLEANUP_THRESHOLD = 100;
 
 		/// <summary>
 		/// Interface for an offer
 		/// </summary>
-		private interface IOfferItem
+		protected interface IEntry
 		{
 			/// <summary>
 			/// The two-phase offer instance
@@ -35,7 +35,7 @@ namespace CoCoL
 		/// <summary>
 		/// Structure for keeping a read request
 		/// </summary>
-		private struct ReaderEntry : IOfferItem
+		protected struct ReaderEntry : IEntry
 		{
 			/// <summary>
 			/// The offer handler for the request
@@ -66,17 +66,17 @@ namespace CoCoL
 			/// <summary>
 			/// The offer handler for the request
 			/// </summary>
-			ITwoPhaseOffer IOfferItem.Offer { get { return Offer; } }
+			ITwoPhaseOffer IEntry.Offer { get { return Offer; } }
 			/// <summary>
 			/// Tries to set the source to Cancelled
 			/// </summary>
-			void IOfferItem.TrySetCancelled() { Source.TrySetCanceled(); }
+			void IEntry.TrySetCancelled() { Source.TrySetCanceled(); }
 		}
 
 		/// <summary>
 		/// Structure for keeping a write request
 		/// </summary>
-		private struct WriterEntry : IOfferItem
+		protected struct WriterEntry : IEntry
 		{
 			/// <summary>
 			/// The offer handler for the request
@@ -113,32 +113,36 @@ namespace CoCoL
 			/// <summary>
 			/// The offer handler for the request
 			/// </summary>
-			ITwoPhaseOffer IOfferItem.Offer { get { return Offer; } }
+			ITwoPhaseOffer IEntry.Offer { get { return Offer; } }
 			/// <summary>
 			/// Tries to set the source to Cancelled
 			/// </summary>
-			void IOfferItem.TrySetCancelled() { if (Source != null) Source.TrySetCanceled(); }
+			void IEntry.TrySetCancelled() 
+			{ 
+				if (Source != null) 
+					Source.TrySetCanceled(); 
+			}
 		}
 
 		/// <summary>
 		/// The queue with pending readers
 		/// </summary>
-		private List<ReaderEntry> m_readerQueue = new List<ReaderEntry>(1);
+		protected List<ReaderEntry> m_readerQueue = new List<ReaderEntry>(1);
 
 		/// <summary>
 		/// The queue with pending writers
 		/// </summary>
-		private List<WriterEntry> m_writerQueue = new List<WriterEntry>(1);
+		protected List<WriterEntry> m_writerQueue = new List<WriterEntry>(1);
 
 		/// <summary>
 		/// The maximal size of the queue
 		/// </summary>
-		private readonly int m_bufferSize;
+		protected readonly int m_bufferSize;
 
 		/// <summary>
 		/// The lock object protecting access to the queues
 		/// </summary>
-		private readonly AsyncLock m_asynclock = new AsyncLock();
+		protected readonly AsyncLock m_asynclock = new AsyncLock();
 
 		/// <summary>
 		/// Gets or sets the name of the channel
@@ -155,58 +159,58 @@ namespace CoCoL
 		/// <summary>
 		/// Gets a value indicating whether this instance is retired.
 		/// </summary>
-		private bool m_isRetired;
+		protected bool m_isRetired;
 
 		/// <summary>
 		/// The number of messages to process before marking the channel as retired
 		/// </summary>
-		private int m_retireCount = -1;
+		protected int m_retireCount = -1;
 
 		/// <summary>
 		/// The number of reader processes having joined the channel
 		/// </summary>
-		private int m_joinedReaderCount = 0;
+		protected int m_joinedReaderCount = 0;
 
 		/// <summary>
 		/// The number of writer processes having joined the channel
 		/// </summary>
-		private int m_joinedWriterCount = 0;
+		protected int m_joinedWriterCount = 0;
 
 		/// <summary>
 		/// The threshold for performing writer queue cleanup
 		/// </summary>
-		private int m_writerQueueCleanup = MIN_QUEUE_CLEANUP_THRESHOLD;
+		protected int m_writerQueueCleanup = MIN_QUEUE_CLEANUP_THRESHOLD;
 
 		/// <summary>
 		/// The threshold for performing reader queue cleanup
 		/// </summary>
-		private int m_readerQueueCleanup = MIN_QUEUE_CLEANUP_THRESHOLD;
+		protected int m_readerQueueCleanup = MIN_QUEUE_CLEANUP_THRESHOLD;
 
 		/// <summary>
 		/// The maximum number of pending readers to allow
 		/// </summary>
-		private readonly int m_maxPendingReaders;
+		protected readonly int m_maxPendingReaders;
 
 		/// <summary>
 		/// The strategy for selecting pending readers to discard on overflow
 		/// </summary>
-		private readonly QueueOverflowStrategy m_pendingReadersOverflowStrategy;
+		protected readonly QueueOverflowStrategy m_pendingReadersOverflowStrategy;
 
 		/// <summary>
 		/// The maximum number of pending writers to allow
 		/// </summary>
-		private readonly int m_maxPendingWriters;
+		protected readonly int m_maxPendingWriters;
 
 		/// <summary>
 		/// The strategy for selecting pending writers to discard on overflow
 		/// </summary>
-		private readonly QueueOverflowStrategy m_pendingWritersOverflowStrategy;
+		protected readonly QueueOverflowStrategy m_pendingWritersOverflowStrategy;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.Channel&lt;T&gt;"/> class.
 		/// </summary>
-		/// <param name="buffersize">The size of the write buffer</param>
 		/// <param name="name">The name of the channel</param>
+		/// <param name="buffersize">The size of the write buffer</param>
 		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
 		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
 		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
@@ -229,12 +233,183 @@ namespace CoCoL
 		/// Helper method for accessor to get the retired state
 		/// </summary>
 		/// <returns>The is retired async.</returns>
-		private async Task<bool> GetIsRetiredAsync()
+		protected async Task<bool> GetIsRetiredAsync()
 		{
 			using (await m_asynclock.LockAsync())
 				return m_isRetired;
 		}
-		
+
+		/// <summary>
+		/// Offers a transaction to the write end
+		/// </summary>
+		/// <param name="wr">The writer entry.</param>
+		protected async Task<bool> Offer(WriterEntry wr)
+		{
+			Exception tex = null;
+			bool accept = false;
+
+			System.Diagnostics.Debug.Assert(wr.Source == m_writerQueue[0].Source);
+
+			try
+			{
+				accept = (wr.Source == null || wr.Source.Task.Status == TaskStatus.WaitingForActivation) && (wr.Offer == null || await wr.Offer.OfferAsync(this));
+			}
+			catch (Exception ex)
+			{
+				tex = ex; // Workaround to support C# 5.0, with no await in catch clause
+			}
+
+			if (tex != null)
+			{
+				wr.Source.TrySetException(tex);
+				m_writerQueue.RemoveAt(0);
+
+				return false;
+			}
+
+			if (!accept)
+			{
+				if (wr.Source != null)
+					wr.Source.TrySetCanceled();
+				m_writerQueue.RemoveAt(0);
+
+				return false;
+			}
+
+			return true;
+		}
+
+		/// <summary>
+		/// Offersa transaction to the read end
+		/// </summary>
+		/// <param name="rd">The reader entry.</param>
+		protected async Task<bool> Offer(ReaderEntry rd)
+		{
+			Exception tex = null;
+			bool accept = false;
+
+			System.Diagnostics.Debug.Assert(rd.Source == m_readerQueue[0].Source);
+
+			try
+			{
+				accept = (rd.Source == null || rd.Source.Task.Status == TaskStatus.WaitingForActivation) && (rd.Offer == null || await rd.Offer.OfferAsync(this));
+			}
+			catch (Exception ex)
+			{
+				tex = ex; // Workaround to support C# 5.0, with no await in catch clause
+			}
+
+			if (tex != null)
+			{
+				rd.Source.TrySetException(tex);
+				m_readerQueue.RemoveAt(0);
+
+				return false;
+			}
+
+			if (!accept)
+			{
+				if (rd.Source != null)
+					rd.Source.TrySetCanceled();
+				m_readerQueue.RemoveAt(0);
+
+				return false;
+			}
+
+			return true;
+		}
+
+		/// <summary>
+		/// Method that examines the queues and matches readers with writers
+		/// </summary>
+		/// <returns>An awaitable that signals if the caller has been accepted or rejected.</returns>
+		/// <param name="asReader"><c>True</c> if the caller method is a reader, <c>false</c> otherwise.</param>
+		/// <param name="caller">The caller task.</param>
+		protected virtual async Task<bool> MatchReadersAndWriters(bool asReader, Task caller)
+		{
+			var processed = false;
+
+			while (m_writerQueue != null && m_readerQueue != null && m_writerQueue.Count > 0 && m_readerQueue.Count > 0)
+			{
+				var wr = m_writerQueue[0];
+				var rd = m_readerQueue[0];
+
+				bool offerWriter;
+				bool offerReader;
+
+				// If the caller is a reader, we assume that the 
+				// read call will always proceed, and start emptying
+				// the write queue, and vice versa if the caller
+				// is a writer
+				if (asReader)
+				{
+					if (!(offerWriter = await Offer(wr)))
+						continue;
+					
+					offerReader = await Offer(rd);
+				}
+				else
+				{
+					if (!(offerReader = await Offer(rd)))
+						continue;
+					
+					offerWriter = await Offer(wr);
+				}
+
+				// We flip the first entry, so we do not repeatedly
+				// offer the side that agrees, and then discover
+				// that the other side denies
+				asReader = !asReader;
+
+				// If the ends disagree, the declining end
+				// has been removed from the queue, so we just
+				// withdraw the offer from the other end
+				if (!(offerReader && offerWriter))
+				{
+					if (wr.Offer != null && offerWriter)
+						await wr.Offer.WithdrawAsync(this);
+
+					if (rd.Offer != null && offerReader)
+						await rd.Offer.WithdrawAsync(this);
+				}
+				else
+				{
+					// transaction complete
+					m_writerQueue.RemoveAt(0);
+					m_readerQueue.RemoveAt(0);
+
+					if (wr.Offer != null)
+						await wr.Offer.CommitAsync(this);
+					if (rd.Offer != null)
+						await rd.Offer.CommitAsync(this);
+
+					if (caller == rd.Source.Task || (wr.Source != null && caller == wr.Source.Task))
+						processed = true;
+
+					ThreadPool.QueueItem(() => rd.Source.SetResult(wr.Value));
+					if (wr.Source != null)
+						ThreadPool.QueueItem(() => wr.Source.SetResult(true));
+
+					// Release items if there is space in the buffer
+					await ProcessWriteQueueBufferAfterReadAsync(true);
+
+					// Adjust the cleanup threshold
+					if (m_writerQueue.Count <= m_writerQueueCleanup - MIN_QUEUE_CLEANUP_THRESHOLD)
+						m_writerQueueCleanup = Math.Max(MIN_QUEUE_CLEANUP_THRESHOLD, m_writerQueue.Count + MIN_QUEUE_CLEANUP_THRESHOLD);
+
+					// Adjust the cleanup threshold
+					if (m_readerQueue.Count <= m_readerQueueCleanup - MIN_QUEUE_CLEANUP_THRESHOLD)
+						m_readerQueueCleanup = Math.Max(MIN_QUEUE_CLEANUP_THRESHOLD, m_readerQueue.Count + MIN_QUEUE_CLEANUP_THRESHOLD);
+
+					// If this was the last item before the retirement, 
+					// flush all following and set the retired flag
+					await EmptyQueueIfRetiredAsync(true);
+				}
+			}
+
+			return processed || caller.Status != TaskStatus.WaitingForActivation;
+		}
+
 		/// <summary>
 		/// Registers a desire to read from the channel
 		/// </summary>
@@ -242,166 +417,74 @@ namespace CoCoL
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
 		public async Task<T> ReadAsync(TimeSpan timeout, ITwoPhaseOffer offer = null)
 		{				
-			// Store entry time in case we need it and the offer dance takes some time
-			var entry = DateTime.Now;
-			var result = new TaskCompletionSource<T>();
+			var rd = new ReaderEntry(offer, new TaskCompletionSource<T>(), timeout.Ticks <= 0 ? Timeout.InfiniteDateTime : DateTime.Now + timeout);
 
 			using (await m_asynclock.LockAsync())
 			{
 				if (m_isRetired)
 				{
-					ThreadPool.QueueItem(() => result.SetException(new RetiredException()));
-					return await result.Task;
+					ThreadPool.QueueItem(() => rd.Source.SetException(new RetiredException()));
+					return await rd.Source.Task;
 				}
 
-				while (m_writerQueue.Count > 0)
+				m_readerQueue.Add(rd);
+				if (!await MatchReadersAndWriters(true, rd.Source.Task))
 				{
-					var kp = m_writerQueue[0];
+					System.Diagnostics.Debug.Assert(m_readerQueue[m_readerQueue.Count - 1].Source == rd.Source);
 
-					var offerWriter = kp.Offer == null;
-					var offerReader = offer == null;
-
-					if (!offerWriter)
+					// If this was a probe call, return a timeout now
+					if (timeout.Ticks >= 0 && rd.Expires < DateTime.Now)
 					{
-						Exception tex = null;
-						try
-						{
-							offerWriter = (kp.Source == null || kp.Source.Task.Status == TaskStatus.WaitingForActivation) && await kp.Offer.OfferAsync(this);
-						}
-						catch (Exception ex)
-						{
-							tex = ex;
-						}
-
-						if (tex != null)
-						{
-							result.TrySetException(tex);
-							return await result.Task;
-						}
-					}
-
-					if (!offerReader)
-					{
-						Exception tex = null;
-						try
-						{						
-							offerReader = result.Task.Status == TaskStatus.WaitingForActivation && await offer.OfferAsync(this); 
-						}
-						catch (Exception ex)
-						{ 
-							tex = ex;
-						}
-
-						if (tex != null)
-						{
-							if (offerWriter && kp.Offer != null)
-								await kp.Offer.WithdrawAsync(this);
-
-							result.TrySetException(tex);
-							return await result.Task;
-						}
-					}
-
-
-					if (!(offerReader && offerWriter))
-					{
-						if (kp.Offer != null && offerWriter)
-							await kp.Offer.WithdrawAsync(this);
-
-						if (offer != null && offerReader)
-							await offer.WithdrawAsync(this);
-
-						// if the writer bailed, remove it from the queue
-						if (!offerWriter)
-						{
-							if (kp.Source != null)
-								kp.Source.TrySetCanceled();
-							m_writerQueue.RemoveAt(0);
-						}
-
-						// if the reader bailed, the queue is intact but we offer no more
-						if (!offerReader)
-						{
-							result.TrySetCanceled();
-							return await result.Task;
-						}
+						m_readerQueue.RemoveAt(m_readerQueue.Count - 1);
+						ThreadPool.QueueItem(() => rd.Source.TrySetException(new TimeoutException()));
 					}
 					else
 					{
-						// transaction complete
-						m_writerQueue.RemoveAt(0);
-
-						if (kp.Offer != null)
-							await kp.Offer.CommitAsync(this);
-						if (offer != null)
-							await offer.CommitAsync(this);
-
-						ThreadPool.QueueItem(() => result.SetResult(kp.Value));
-						if (kp.Source != null)
-							ThreadPool.QueueItem(() => kp.Source.SetResult(true));
-
-						// Release items if there is space in the buffer
-						await ProcessWriteQueueBufferAfterReadAsync(true);
-
-						// Adjust the cleanup threshold
-						if (m_writerQueue.Count <= m_writerQueueCleanup - MIN_QUEUE_CLEANUP_THRESHOLD)
-							m_writerQueueCleanup = Math.Max(MIN_QUEUE_CLEANUP_THRESHOLD, m_writerQueue.Count + MIN_QUEUE_CLEANUP_THRESHOLD);
-
-						// If this was the last item before the retirement, 
-						// flush all following and set the retired flag
-						await EmptyQueueIfRetiredAsync(true);
-
-						return await result.Task;
-					}
-				}
-
-				var expires = timeout.Ticks <= 0 ? Timeout.InfiniteDateTime : entry + timeout;
-
-				// If this was a probe call, return a timeout now
-				if (timeout.Ticks >= 0 && expires < DateTime.Now)
-				{
-					ThreadPool.QueueItem(() => result.TrySetException(new TimeoutException()));
-				}
-				else
-				{
-					// Make room if we have too many
-					if (m_maxPendingReaders > 0 && m_readerQueue.Count >= m_maxPendingReaders)
-					{
-						switch (m_pendingReadersOverflowStrategy)
+						// Make room if we have too many
+						if (m_maxPendingReaders > 0 && (m_readerQueue.Count - 1) >= m_maxPendingReaders)
 						{
+							switch (m_pendingReadersOverflowStrategy)
+							{
 							case QueueOverflowStrategy.FIFO:
 								{
 									var exp = m_readerQueue[0].Source;
 									m_readerQueue.RemoveAt(0);
 									ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException()));
 								}
+
 								break;
 							case QueueOverflowStrategy.LIFO:
+								{
+									var exp = m_readerQueue[m_readerQueue.Count - 2].Source;
+									m_readerQueue.RemoveAt(m_readerQueue.Count - 2);
+									ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException()));
+								}
+
+								break;
+							case QueueOverflowStrategy.Reject:
+							default:
 								{
 									var exp = m_readerQueue[m_readerQueue.Count - 1].Source;
 									m_readerQueue.RemoveAt(m_readerQueue.Count - 1);
 									ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException()));
+
+									await rd.Source.Task;
 								}
-								break;
-							case QueueOverflowStrategy.Reject:
-							default:
-								ThreadPool.QueueItem(() => result.TrySetException(new ChannelOverflowException()));
-								return await result.Task;
-						}							
+
+								return await rd.Source.Task;
+							}
+						}
+
+						// If we have expanded the queue with a new batch, see if we can purge old entries
+						m_readerQueueCleanup = await PerformQueueCleanupAsync(m_readerQueue, true, m_readerQueueCleanup);
+
+						if (rd.Expires != Timeout.InfiniteDateTime)
+							ExpirationManager.AddExpirationCallback(rd.Expires, () => ExpireItemsAsync().FireAndForget());
 					}
-
-					// Register the pending reader
-					m_readerQueue.Add(new ReaderEntry(offer, result, expires));
-
-					// If we have expanded the queue with a new batch, see if we can purge old entries
-					m_readerQueueCleanup = await PerformQueueCleanupAsync(m_readerQueue, true, m_readerQueueCleanup);
-
-					if (expires != Timeout.InfiniteDateTime)
-						ExpirationManager.AddExpirationCallback(expires, () => ExpireItemsAsync());
 				}
 			}
 
-			return await result.Task;
+			return await rd.Source.Task;
 		}
 			
 		/// <summary>
@@ -412,190 +495,96 @@ namespace CoCoL
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
 		public async Task WriteAsync(T value, TimeSpan timeout, ITwoPhaseOffer offer = null)
 		{
-			// Store entry time in case we need it and the offer dance takes some time
-			var entry = DateTime.Now;
-			var result = new TaskCompletionSource<bool>();
+			var wr = new WriterEntry(offer, new TaskCompletionSource<bool>(), timeout.Ticks <= 0 ? Timeout.InfiniteDateTime : DateTime.Now + timeout, value);
 
 			using (await m_asynclock.LockAsync())
 			{
 				if (m_isRetired)
 				{
-					ThreadPool.QueueItem(() => result.SetException(new RetiredException()));
-					await result.Task;
+					ThreadPool.QueueItem(() => wr.Source.SetException(new RetiredException()));
+					await wr.Source.Task;
 					return;
 				}
 
-				while (m_readerQueue.Count > 0)
+				m_writerQueue.Add(wr);
+				if (!await MatchReadersAndWriters(false, wr.Source.Task))
 				{
-					var kp = m_readerQueue[0];
+					System.Diagnostics.Debug.Assert(m_writerQueue[m_writerQueue.Count - 1].Source == wr.Source);
 
-					var offerWriter = offer == null; 
-					var offerReader = kp.Offer == null;
-
-					if (!offerReader)
+					// If we have a buffer slot to use
+					if (m_writerQueue.Count <= m_bufferSize && m_retireCount < 0)
 					{
-						Exception tex = null;
-
-						try
+						if (offer == null || await offer.OfferAsync(this))
 						{
-							offerReader = kp.Source.Task.Status == TaskStatus.WaitingForActivation && await kp.Offer.OfferAsync(this);
+							if (offer != null)
+								await offer.CommitAsync(this);
+
+							m_writerQueue[m_writerQueue.Count - 1] = new WriterEntry(null, null, Timeout.InfiniteDateTime, value);
+							wr.Source.TrySetResult(true);
 						}
-						catch (Exception ex)
+						else
 						{
-							tex = ex;
-						}
-
-						if (tex != null)
-						{
-							result.TrySetException(tex);
-							await result.Task;
-							return;
-						}
-					}
-
-					if (!offerWriter)
-					{
-						Exception tex = null;
-						try
-						{ 
-							offerWriter = result.Task.Status == TaskStatus.WaitingForActivation && await offer.OfferAsync(this); 
-						}
-						catch (Exception ex)
-						{
-							tex = ex;
-						}
-
-						if (tex != null)
-						{
-							if (offerReader && kp.Offer != null)
-								await kp.Offer.WithdrawAsync(this);
-							result.TrySetException(tex);
-
-							await result.Task;
-							return;
-						}
-					}
-
-
-					// If the reader accepts ...
-					if (!(offerReader && offerWriter))
-					{
-						if (kp.Offer != null && offerReader)
-							await kp.Offer.WithdrawAsync(this);
-
-						if (offer != null && offerWriter)
-							await offer.WithdrawAsync(this);
-
-						// If the reader bailed, remove it from the queue
-						if (!offerReader)
-						{
-							kp.Source.TrySetCanceled();
-							m_readerQueue.RemoveAt(0);
-						}
-
-						// if the writer bailed, the queue is intact, but we stop offering
-						if (!offerWriter)
-						{
-							result.TrySetCanceled();
-							await result.Task;
-							return;
+							wr.Source.TrySetCanceled();
 						}
 					}
 					else
 					{
-						// Transaction complete
-						m_readerQueue.RemoveAt(0);
-
-						if (kp.Offer != null)
-							await kp.Offer.CommitAsync(this);
-						if (offer != null)
-							await offer.CommitAsync(this);
-
-						ThreadPool.QueueItem(() => result.SetResult(true));
-						ThreadPool.QueueItem(() => kp.Source.SetResult(value));
-
-						// Adjust the cleanup threshold
-						if (m_readerQueue.Count <= m_readerQueueCleanup - MIN_QUEUE_CLEANUP_THRESHOLD)
-							m_readerQueueCleanup = Math.Max(MIN_QUEUE_CLEANUP_THRESHOLD, m_readerQueue.Count + MIN_QUEUE_CLEANUP_THRESHOLD);
-
-						// If this was the last item before the retirement, 
-						// flush all following and set the retired flag
-						await EmptyQueueIfRetiredAsync(true);
-
-						await result.Task;
-						return;
-					}
-				}
-
-				// If we have a buffer slot to use
-				if (m_writerQueue.Count < m_bufferSize && m_retireCount < 0)
-				{
-					if (offer == null || await offer.OfferAsync(this))
-					{
-						if (offer != null)
-							await offer.CommitAsync(this);
-
-						m_writerQueue.Add(new WriterEntry(null, null, Timeout.InfiniteDateTime, value));
-						result.TrySetResult(true);
-					}
-					else
-					{
-						result.TrySetCanceled();
-					}
-				}
-				else
-				{
-					var expires = timeout.Ticks <= 0 ? Timeout.InfiniteDateTime : entry + timeout;
-
-					// If this was a probe call, return a timeout now
-					if (timeout.Ticks >= 0 && expires < DateTime.Now)
-					{
-						ThreadPool.QueueItem(() => result.SetException(new TimeoutException()));
-					}
-					else
-					{
-						// Make room if we have too many
-						if (m_maxPendingWriters > 0 && (m_writerQueue.Count - m_bufferSize) >= m_maxPendingWriters)
+						// If this was a probe call, return a timeout now
+						if (timeout.Ticks >= 0 && wr.Expires < DateTime.Now)
 						{
-							switch (m_pendingWritersOverflowStrategy)
+							m_writerQueue.RemoveAt(m_writerQueue.Count - 1);
+							ThreadPool.QueueItem(() => wr.Source.SetException(new TimeoutException()));
+						}
+						else
+						{
+							// Make room if we have too many
+							if (m_maxPendingWriters > 0 && (m_writerQueue.Count - m_bufferSize - 1) >= m_maxPendingWriters)
 							{
-								case QueueOverflowStrategy.FIFO:
-									{
-										var exp = m_writerQueue[m_bufferSize].Source;
-										m_writerQueue.RemoveAt(m_bufferSize);
-										if (exp != null)
-											ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException()));
-									}
-									break;
-								case QueueOverflowStrategy.LIFO:
-									{
-										var exp = m_writerQueue[m_writerQueue.Count - 1].Source;
-										m_writerQueue.RemoveAt(m_writerQueue.Count - 1);
-										if (exp != null)
-											ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException()));
-									}
-									break;
-								case QueueOverflowStrategy.Reject:
-								default:
-									ThreadPool.QueueItem(() => result.TrySetException(new ChannelOverflowException()));
-									await result.Task;
-									return;
-							}							
+								switch (m_pendingWritersOverflowStrategy)
+								{
+									case QueueOverflowStrategy.FIFO:
+										{
+											var exp = m_writerQueue[m_bufferSize].Source;
+											m_writerQueue.RemoveAt(m_bufferSize);
+											if (exp != null)
+												ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException()));
+										}
+
+										break;
+									case QueueOverflowStrategy.LIFO:
+										{
+											var exp = m_writerQueue[m_writerQueue.Count - 2].Source;
+											m_writerQueue.RemoveAt(m_writerQueue.Count - 2);
+											if (exp != null)
+												ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException()));
+										}
+
+										break;
+									case QueueOverflowStrategy.Reject:
+									default:
+										{
+											var exp = m_writerQueue[m_writerQueue.Count - 1].Source;
+											m_writerQueue.RemoveAt(m_writerQueue.Count - 1);
+											if (exp != null)
+												ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException()));
+											await wr.Source.Task;
+										}
+
+										return;
+								}
+							}
+
+							// If we have expanded the queue with a new batch, see if we can purge old entries
+							m_writerQueueCleanup = await PerformQueueCleanupAsync(m_writerQueue, true, m_writerQueueCleanup);
+
+							if (wr.Expires != Timeout.InfiniteDateTime)
+								ExpirationManager.AddExpirationCallback(wr.Expires, () => ExpireItemsAsync());
 						}
-
-						// Register the pending writer
-						m_writerQueue.Add(new WriterEntry(offer, result, expires, value));
-
-						// If we have expanded the queue with a new batch, see if we can purge old entries
-						m_writerQueueCleanup = await PerformQueueCleanupAsync(m_writerQueue, true, m_writerQueueCleanup);
-
-						if (expires != Timeout.InfiniteDateTime)
-							ExpirationManager.AddExpirationCallback(expires, () => ExpireItemsAsync());
 					}
 				}
 			}
 
-			await result.Task;
+			await wr.Source.Task;
 			return;
 		}
 
@@ -607,7 +596,7 @@ namespace CoCoL
 		/// <param name="isLocked"><c>True</c> if we are already holding the lock, <c>false</c> otherwise</param>
 		/// <typeparam name="Tx">The type of list data.</typeparam>
 		private async Task<int> PerformQueueCleanupAsync<Tx>(List<Tx> queue, bool isLocked, int queueCleanup)
-			where Tx : IOfferItem
+			where Tx : IEntry
 		{
 			using(isLocked ? default(AsyncLock.Releaser) : await m_asynclock.LockAsync())
 			{
