@@ -53,6 +53,11 @@ namespace StressedAlt
 		/// </summary>
 		private long m_tracked_reads = 0;
 
+		/// <summary>
+		/// A value indicating if errors were detected
+		/// </summary>
+		private bool m_has_errors = false;
+
 		public Reader(IEnumerable<IReadChannel<long>> channels, int writes_pr_channel)
 		{
 			m_set = new MultiChannelSetRead<long>(channels, MultiChannelPriority.Fair);
@@ -80,6 +85,9 @@ namespace StressedAlt
 				for (var i = 0; i < WARMUP_ROUNDS; i++)
 					for (var j = 0; j < readcount; j++)
 						UpdateTracking((await m_set.ReadFromAnyAsync()).Value);
+
+				if (m_has_errors)
+					throw new Exception("Errors detected during warmup, quitting...");
 
 				var expected = ((DateTime.Now - startWarmup).Ticks / WARMUP_ROUNDS) * MEASURE_ROUNDS * TOTAL_ROUNDS;
 
@@ -123,7 +131,10 @@ namespace StressedAlt
 			{
 				var counts = m_tracking.OrderBy(x => x.Value);
 				if (Math.Abs(counts.Last().Value - counts.First().Value) > 1)
+				{
+					m_has_errors = true;
 					Console.WriteLine("Error in fair alternation, diff: {0}", counts.Last().Value - counts.First().Value);
+				}
 			}
 		}
 	}
@@ -260,7 +271,7 @@ namespace StressedAlt
 					for (var j = 0; j < Config.Writers; j++)
 						RunWriterAsync(i, AsBufferedWrite(allchannels[i]));
 
-				new Reader(allchannels.Select(x => AsBufferedRead(x)), Config.Writers).Run();
+				new Reader(allchannels.Select(x => AsBufferedRead(x)).ToArray(), Config.Writers).Run();
 			}
 
 			servertoken.Cancel();
