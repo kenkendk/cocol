@@ -6,3 +6,18 @@ install:
 script:
   - xbuild /p:Configuration=Release src/CoCoL.sln
   - mono ./testrunner/NUnit.ConsoleRunner.3.4.0/tools/nunit3-console.exe ./src/UnitTest/bin/Release/UnitTest.exe
+
+env:
+  global:
+   # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+   #   via the "travis encrypt" command using the project repo's public key
+   - secure: "TThs+3CpcKIl0Pn/xWIT/00bNObUoCJFb/8DuOFpqNvmPQMe9S9RUcah3OrYgm7EjY8sEiMnOKu2WR1p3/V5w4MDSSGIj8wthE/iU+/gAYa4Ubb9vuV0tmr+zTzEtKupA0AitUhkZ+M0cf6mTVKk4MsAc3IkFo733HMHNQc9uEJBGrTxcEay/8uClU5f6AFclU9zkpcxY0WQ6Bp+RHJGPogj/diXaxKF0Bib0qUPxNtImj4fzOBcRLKFRoCUx0HTeuwLPDfJH5nM4Yow9znKJj0O9xcycnWrpTu2zb0WYGWTmz1eNskUE9vCwLFx0tcQKdNuKT2moz09fTflpYiiRzNsQnyrroWLlBqsd9PjVt8hPqyKGUc8O1iTDFf62ssd0kpNeBsrLJX7x43V2MaX1E8MWorOvcWwE2dJRK2sGQWw19AB1zbd/LHJwfX8x1YjifoHuF61QHNXO0TdN0Kc+aTaXCQVeZfsnjmP33iSCiqNNHpVm8YCQC08Y790Po7eO2qMnCNz/5gOyu2sLmkRR2j5JSlVbxgIhUHpjKp1NGgoX3P+LVBgS+2Ey/v2LnmHzvBhEhcyoK8QQkMnKkPN+nVNJIzSmEp5Ta2fOFhd7qACxCm7zUYaumcEIIadClx9ocwrCmqWBIAWNjKlk4CsoaU9d+iBr8BWflP6Id796hA="
+
+addons:
+  coverity_scan:
+    project:
+      name: "kenkendk/cocol"
+      description: "Build submitted via Travis CI"
+    build_command_prepend: "msbuild /t:Clean"
+    build_command:   "msbuild /t:Rebuild"
+    branch_pattern: coverity_scan
