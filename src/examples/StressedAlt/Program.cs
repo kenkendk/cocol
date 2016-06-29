@@ -115,8 +115,13 @@ namespace StressedAlt
 					Console.WriteLine("Communication time is {0} microseconds", (elapsed.TotalMilliseconds * 1000) / (MEASURE_ROUNDS * readcount));
 				}
 			}
-			catch(RetiredException)
-			{				
+			catch(Exception ex)
+			{
+				if (!ex.IsRetiredException())
+				{
+					Console.WriteLine("Unexpected exception: {0}", ex);
+					throw;
+				}
 			}
 			finally
 			{
@@ -245,7 +250,7 @@ namespace StressedAlt
 		/// </summary>
 		/// <param name="id">The id to write into the channel.</param>
 		/// <param name="channel">The channel to write into.</param>
-		private static async void RunWriterAsync(long id, IWriteChannel<long> channel)
+		private static async Task RunWriterAsync(long id, IWriteChannel<long> channel)
 		{
 			var c = System.Threading.Interlocked.Increment(ref WriterCount);
 			Console.WriteLine("Starting writer {0}, {1} live", id, c);
@@ -291,12 +296,16 @@ namespace StressedAlt
 				var allchannels = (from n in Enumerable.Range(0, Config.Channels)
 				                  select ChannelManager.CreateChannel<long>()).ToArray();
 
+				var tasks = new List<Task>();
 				for (var i = 0; i < allchannels.Length; i++)
 					for (var j = 0; j < Config.Writers; j++)
-						RunWriterAsync(i, AsBufferedWrite(allchannels[i]));
+						tasks.Add(RunWriterAsync(i, AsBufferedWrite(allchannels[i])));
 
-				new Reader(allchannels.Select(x => AsBufferedRead(x)).ToArray(), Config.Writers).Run();
-				Console.WriteLine("Reader completed");
+				tasks.Add(new Reader(allchannels.Select(x => AsBufferedRead(x)).ToArray(), Config.Writers).RunAsync());
+
+				Task.WhenAll(tasks).WaitForTaskOrThrow();
+
+				Console.WriteLine("All tasks completed");
 			}
 
 			servertoken.Cancel();
