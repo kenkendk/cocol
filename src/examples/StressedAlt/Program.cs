@@ -75,11 +75,6 @@ namespace StressedAlt
 		{
 			try
 			{
-				// Make sure all writers are in place
-				await Task.Delay(TimeSpan.FromSeconds(1));
-
-				Console.WriteLine("Found {0} writers", MainClass.WriterCount);
-
 				Console.WriteLine("Running {0} warmup rounds ...", WARMUP_ROUNDS);
 
 				var readcount = m_writes_pr_channel * m_channelCount;
@@ -125,9 +120,7 @@ namespace StressedAlt
 			}
 			finally
 			{
-				Console.WriteLine("Reader is quitting");
 				m_set.Retire();
-				Console.WriteLine("Reader is done");
 			}
 		}
 
@@ -243,6 +236,9 @@ namespace StressedAlt
 			return input;
 		}
 
+		/// <summary>
+		/// Debug counter to check for hanging writers
+		/// </summary>
 		internal static int WriterCount = 0;
 
 		/// <summary>
@@ -252,8 +248,7 @@ namespace StressedAlt
 		/// <param name="channel">The channel to write into.</param>
 		private static async Task RunWriterAsync(long id, IWriteChannel<long> channel)
 		{
-			var c = System.Threading.Interlocked.Increment(ref WriterCount);
-			Console.WriteLine("Starting writer {0}, {1} live", id, c);
+			Interlocked.Increment(ref WriterCount);
 			try
 			{
 				while (true)
@@ -269,9 +264,8 @@ namespace StressedAlt
 			}
 			finally
 			{
-				var d = System.Threading.Interlocked.Decrement(ref WriterCount);
+				Interlocked.Decrement(ref WriterCount);
 				channel.Retire();
-				Console.WriteLine("Writer {0} is done, {1} remaining", id, d);
 			}
 		}
 
@@ -312,11 +306,8 @@ namespace StressedAlt
 			if (server != null)
 				server.WaitForTaskOrThrow();
 
-			Console.WriteLine("Terminating, with {0} writers active", WriterCount);
-			Thread.Sleep(5000);
-
-			Console.WriteLine("Exit with {0} writers active", WriterCount);
-			Environment.Exit(2);
+			if (WriterCount != 0)
+				Console.WriteLine("Terminating, with {0} writers active", WriterCount);
 		}
 	}
 }
