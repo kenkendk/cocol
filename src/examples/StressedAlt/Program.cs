@@ -75,6 +75,9 @@ namespace StressedAlt
 		{
 			try
 			{
+				// Make sure all writers are in place
+				await Task.Delay(TimeSpan.FromSeconds(1));
+
 				Console.WriteLine("Running {0} warmup rounds ...", WARMUP_ROUNDS);
 
 				var readcount = m_writes_pr_channel * m_channelCount;
@@ -115,7 +118,9 @@ namespace StressedAlt
 			}
 			finally
 			{
+				Console.WriteLine("Reader is quitting");
 				m_set.Retire();
+				Console.WriteLine("Reader is done");
 			}
 		}
 
@@ -243,9 +248,13 @@ namespace StressedAlt
 				while (true)
 					await channel.WriteAsync(id);
 			}
-			catch(RetiredException)
+			catch (RetiredException)
 			{
 				channel.Retire();
+			}
+			finally
+			{
+				Console.WriteLine("Writer is done");
 			}
 		}
 
@@ -274,9 +283,8 @@ namespace StressedAlt
 					for (var j = 0; j < Config.Writers; j++)
 						RunWriterAsync(i, AsBufferedWrite(allchannels[i]));
 
-				Thread.Sleep(1000);
-
 				new Reader(allchannels.Select(x => AsBufferedRead(x)).ToArray(), Config.Writers).Run();
+				Console.WriteLine("Reader completed");
 			}
 
 			servertoken.Cancel();
