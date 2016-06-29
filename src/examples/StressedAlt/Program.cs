@@ -78,6 +78,8 @@ namespace StressedAlt
 				// Make sure all writers are in place
 				await Task.Delay(TimeSpan.FromSeconds(1));
 
+				Console.WriteLine("Found {0} writers", MainClass.WriterCount);
+
 				Console.WriteLine("Running {0} warmup rounds ...", WARMUP_ROUNDS);
 
 				var readcount = m_writes_pr_channel * m_channelCount;
@@ -236,7 +238,7 @@ namespace StressedAlt
 			return input;
 		}
 
-		private static int WriterCount = 0;
+		internal static int WriterCount = 0;
 
 		/// <summary>
 		/// Runs the writer process
@@ -245,7 +247,8 @@ namespace StressedAlt
 		/// <param name="channel">The channel to write into.</param>
 		private static async void RunWriterAsync(long id, IWriteChannel<long> channel)
 		{
-			System.Threading.Interlocked.Increment(ref WriterCount);
+			var c = System.Threading.Interlocked.Increment(ref WriterCount);
+			Console.WriteLine("Starting writer {0}, {1} live", id, c);
 			try
 			{
 				while (true)
@@ -263,7 +266,7 @@ namespace StressedAlt
 			{
 				System.Threading.Interlocked.Decrement(ref WriterCount);
 				channel.Retire();
-				Console.WriteLine("Writer is done");
+				Console.WriteLine("Writer {0} is done");
 			}
 		}
 
