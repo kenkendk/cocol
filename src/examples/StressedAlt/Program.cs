@@ -236,6 +236,8 @@ namespace StressedAlt
 			return input;
 		}
 
+		private static int WriterCount = 0;
+
 		/// <summary>
 		/// Runs the writer process
 		/// </summary>
@@ -243,17 +245,24 @@ namespace StressedAlt
 		/// <param name="channel">The channel to write into.</param>
 		private static async void RunWriterAsync(long id, IWriteChannel<long> channel)
 		{
+			System.Threading.Interlocked.Increment(ref WriterCount);
 			try
 			{
 				while (true)
 					await channel.WriteAsync(id);
 			}
-			catch (RetiredException)
+			catch (Exception ex)
 			{
-				channel.Retire();
+				if (!ex.IsRetiredException())
+				{
+					Console.WriteLine("Unexpected exception: {0}", ex);
+					throw;
+				}
 			}
 			finally
 			{
+				System.Threading.Interlocked.Decrement(ref WriterCount);
+				channel.Retire();
 				Console.WriteLine("Writer is done");
 			}
 		}
@@ -290,6 +299,8 @@ namespace StressedAlt
 			servertoken.Cancel();
 			if (server != null)
 				server.WaitForTaskOrThrow();
+
+			Console.WriteLine("Terminating, with {0} writers active", WriterCount);
 		}
 	}
 }
