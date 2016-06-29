@@ -32,6 +32,11 @@ namespace CoCoL
 				m_initialBarrierSize = ((BroadcastChannelNameAttribute)attr).InitialBarrierSize;
 				m_minimumReaders = ((BroadcastChannelNameAttribute)attr).MinimumReaders;
 			}
+
+			if (m_minimumReaders > 0 && m_maxPendingReaders < m_minimumReaders)
+				throw new ArgumentOutOfRangeException(string.Format("The setup requires {0} readers waiting, but the channel only allows {1} waiting readers", m_minimumReaders, m_maxPendingReaders));
+			if (m_initialBarrierSize > 0 && m_maxPendingReaders < m_initialBarrierSize)
+				throw new ArgumentOutOfRangeException(string.Format("The setup requires {0} readers waiting, but the channel only allows {1} waiting readers", m_initialBarrierSize, m_maxPendingReaders));
 		}
 
 		/// <summary>
@@ -178,6 +183,9 @@ namespace CoCoL
 			using (await m_asynclock.LockAsync())
 				if (m_minimumReaders != value)
 				{
+					if (m_minimumReaders > 0 && m_maxPendingReaders < m_minimumReaders)
+						throw new ArgumentOutOfRangeException(string.Format("The value requests {0} readers waiting, but the channel only allows {1} waiting readers", m_minimumReaders, m_maxPendingReaders));
+				
 					m_minimumReaders = value;
 					await MatchReadersAndWriters(true, null);
 				}
@@ -198,6 +206,9 @@ namespace CoCoL
 			using (await m_asynclock.LockAsync())
 				if (m_initialBarrierSize != value)
 				{
+					if (m_initialBarrierSize > 0 && m_maxPendingReaders < m_initialBarrierSize)
+						throw new ArgumentOutOfRangeException(string.Format("The value requests {0} readers waiting, but the channel only allows {1} waiting readers", m_initialBarrierSize, m_maxPendingReaders));
+				
 					m_initialBarrierSize = value;
 					await MatchReadersAndWriters(true, null);
 				}
