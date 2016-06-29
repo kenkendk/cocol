@@ -264,9 +264,9 @@ namespace StressedAlt
 			}
 			finally
 			{
-				System.Threading.Interlocked.Decrement(ref WriterCount);
+				var d = System.Threading.Interlocked.Decrement(ref WriterCount);
 				channel.Retire();
-				Console.WriteLine("Writer {0} is done");
+				Console.WriteLine("Writer {0} is done, {1} remaining", id, d);
 			}
 		}
 
@@ -304,6 +304,7 @@ namespace StressedAlt
 				server.WaitForTaskOrThrow();
 
 			Console.WriteLine("Terminating, with {0} writers active", WriterCount);
+			Thread.Sleep(1000);
 		}
 	}
 }
