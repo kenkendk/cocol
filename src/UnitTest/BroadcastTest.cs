@@ -129,7 +129,7 @@ namespace UnitTest
 			using (new IsolatedChannelScope())
 			{
 				var writer = AutomationExtensions.RunTask(
-					new { chan = ChannelMarker.ForWrite<int>(new BroadcastChannelNameAttribute(name, initialBarrierSize: readercount)) },
+					new { chan = ChannelMarker.ForWrite<int>(name, broadcast: true, initialBroadcastBarrier: readercount) },
 					async self =>
 					{
 						foreach (var v in values)

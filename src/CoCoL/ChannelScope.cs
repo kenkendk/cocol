@@ -110,21 +110,32 @@ namespace CoCoL
                .Invoke(this, new object[] { attribute });
 		}
 
- 		/// <summary>
- 		/// Gets or creates a channel
- 		/// </summary>
- 		/// <returns>The or create.</returns>
+		/// <summary>
+		/// Gets or creates a channel
+		/// </summary>
+		/// <returns>The or create.</returns>
 		/// <param name="name">The name of the channel to create.</param>
- 		/// <param name="datatype">The type of data communicated through the channel.</param>
+		/// <param name="datatype">The type of data communicated through the channel.</param>
 		/// <param name="buffersize">The size of the channel buffer.</param>
 		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
 		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
 		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
 		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
-		public IRetireAbleChannel GetOrCreate(string name, Type datatype, int buffersize = 0, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject)
+		/// <param name="broadcast"><c>True</c> will create the channel as a broadcast channel, the default <c>false</c> will create a normal channel</param>
+		/// <param name="initialBroadcastBarrier">The number of readers required on the channel before sending the first broadcast, can only be used with broadcast channels</param>
+		/// <param name="broadcastMinimum">The minimum number of readers required on the channel, before a broadcast can be performed, can only be used with broadcast channels</param>
+		public IRetireAbleChannel GetOrCreate(string name, Type datatype, int buffersize = 0, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject, bool broadcast = false, int initialBroadcastBarrier = -1, int broadcastMinimum = -1)
 		{
+			if (!broadcast && (initialBroadcastBarrier >= 0 || broadcastMinimum >= 0))
+				throw new ArgumentException(string.Format("Cannot set \"{0}\" or \"{1}\" unless the channel is a broadcast channel", "initialBroadcastBarrier", "broadcastMinimum"));
+
+			var attr = 
+				broadcast
+				? new BroadcastChannelNameAttribute(name, buffersize, ChannelNameScope.Local, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy, initialBroadcastBarrier, broadcastMinimum)
+				: new ChannelNameAttribute(name, buffersize, ChannelNameScope.Local, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
+
 			return GetOrCreate(
-				new ChannelNameAttribute(name, buffersize, ChannelNameScope.Local, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy), 
+				attr, 
 				datatype
 			);
 		}
@@ -188,10 +199,21 @@ namespace CoCoL
 		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
 		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
 		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
+		/// <param name="broadcast"><c>True</c> will create the channel as a broadcast channel, the default <c>false</c> will create a normal channel</param>
+		/// <param name="initialBroadcastBarrier">The number of readers required on the channel before sending the first broadcast, can only be used with broadcast channels</param>
+		/// <param name="broadcastMinimum">The minimum number of readers required on the channel, before a broadcast can be performed, can only be used with broadcast channels</param>
 		/// <typeparam name="T">The type of data in the channel.</typeparam>
-		public IChannel<T> GetOrCreate<T>(string name, int buffersize = 0, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject)
+		public IChannel<T> GetOrCreate<T>(string name, int buffersize = 0, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject, bool broadcast = false, int initialBroadcastBarrier = -1, int broadcastMinimum = -1)
 		{
-			return GetOrCreate<T>(new ChannelNameAttribute(name, buffersize, ChannelNameScope.Local, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy));
+			if (!broadcast && (initialBroadcastBarrier >= 0 || broadcastMinimum >= 0))
+				throw new ArgumentException(string.Format("Cannot set \"{0}\" or \"{1}\" unless the channel is a broadcast channel", "initialBroadcastBarrier", "broadcastMinimum"));
+
+			var attr =
+				broadcast
+				? new BroadcastChannelNameAttribute(name, buffersize, ChannelNameScope.Local, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy, initialBroadcastBarrier, broadcastMinimum)
+				: new ChannelNameAttribute(name, buffersize, ChannelNameScope.Local, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
+
+			return GetOrCreate<T>(attr);
 		}
 
 		/// <summary>

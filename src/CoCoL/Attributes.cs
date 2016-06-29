@@ -130,8 +130,8 @@ namespace CoCoL
 		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
 		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
 		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
-		/// <param name="minimumReaders">The minimum number of readers required on the channel, before a broadcast can be performed</param>
 		/// <param name="initialBarrierSize">The number of readers required on the channel before sending the first broadcast</param>
+		/// <param name="minimumReaders">The minimum number of readers required on the channel, before a broadcast can be performed</param>
 		public BroadcastChannelNameAttribute(string name, int buffersize = 0, ChannelNameScope targetScope = ChannelNameScope.Local, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject, int initialBarrierSize = -1, int minimumReaders = -1)
 			: base(name, buffersize, targetScope, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy)
 		{

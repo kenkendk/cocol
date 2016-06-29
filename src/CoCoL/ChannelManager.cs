@@ -19,10 +19,33 @@ namespace CoCoL
 		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
 		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
 		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
+		/// <param name="broadcast"><c>True</c> will create the channel as a broadcast channel, the default <c>false</c> will create a normal channel</param>
+		/// <param name="initialBroadcastBarrier">The number of readers required on the channel before sending the first broadcast, can only be used with broadcast channels</param>
+		/// <param name="broadcastMinimum">The minimum number of readers required on the channel, before a broadcast can be performed, can only be used with broadcast channels</param>
 		/// <typeparam name="T">The channel type.</typeparam>
-		public static IChannel<T> GetChannel<T>(string name, int buffersize = 0, ChannelScope scope = null, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject) 
-		{ 
-			return (scope ?? ChannelScope.Current).GetOrCreate<T>(name, buffersize, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
+		public static IChannel<T> GetChannel<T>(string name, int buffersize = 0, ChannelScope scope = null, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject, bool broadcast = false, int initialBroadcastBarrier = -1, int broadcastMinimum = -1) 
+		{
+			if (!broadcast && (initialBroadcastBarrier >= 0 || broadcastMinimum >= 0))
+				throw new ArgumentException(string.Format("Cannot set \"{0}\" or \"{1}\" unless the channel is a broadcast channel", "initialBroadcastBarrier", "broadcastMinimum"));
+
+			var attr =
+				broadcast
+				? new BroadcastChannelNameAttribute(name, buffersize, ChannelNameScope.Local, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy, initialBroadcastBarrier, broadcastMinimum)
+				: new ChannelNameAttribute(name, buffersize, ChannelNameScope.Local, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
+			
+			return GetChannel<T>(attr, scope);
+		}
+
+		/// <summary>
+		/// Gets or creates a named channel.
+		/// </summary>
+		/// <returns>The named channel.</returns>
+		/// <param name="attr">The attribute describing the channel.</param>
+		/// <param name="scope">The scope to create a named channel in, defaults to null which means the current scope</param>
+		/// <typeparam name="T">The channel type.</typeparam>
+		public static IChannel<T> GetChannel<T>(ChannelNameAttribute attr, ChannelScope scope = null)
+		{
+			return (scope ?? ChannelScope.Current).GetOrCreate<T>(attr);
 		}
 
 		/// <summary>
@@ -39,7 +62,7 @@ namespace CoCoL
 			else if (marker.TargetScope == ChannelNameScope.Global)
 				scope = ChannelScope.Root;
 
-			return GetChannel<T>(marker.Name, marker.BufferSize, scope);
+			return GetChannel<T>(marker.Attribute, scope);
 		}
 
 		/// <summary>
@@ -60,7 +83,7 @@ namespace CoCoL
 			else if (rt.Attribute.TargetScope == ChannelNameScope.Global)
 				scope = ChannelScope.Root;
 			
-			return GetChannel<T>(rt.Attribute.Name, rt.Attribute.BufferSize, scope).AsWriteOnly();
+			return GetChannel<T>(rt.Attribute, scope).AsWriteOnly();
 		}
 
 		/// <summary>
@@ -81,7 +104,7 @@ namespace CoCoL
 			else if (rt.Attribute.TargetScope == ChannelNameScope.Global)
 				scope = ChannelScope.Root;
 
-			return GetChannel<T>(rt.Attribute.Name, rt.Attribute.BufferSize, scope).AsReadOnly();
+			return GetChannel<T>(rt.Attribute, scope).AsReadOnly();
 		}
 
 		/// <summary>
@@ -97,10 +120,27 @@ namespace CoCoL
 		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
 		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
 		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
+		/// <param name="broadcast"><c>True</c> will create the channel as a broadcast channel, the default <c>false</c> will create a normal channel</param>
+		/// <param name="initialBroadcastBarrier">The number of readers required on the channel before sending the first broadcast, can only be used with broadcast channels</param>
+		/// <param name="broadcastMinimum">The minimum number of readers required on the channel, before a broadcast can be performed, can only be used with broadcast channels</param>
 		/// <typeparam name="T">The channel type.</typeparam>
-		public static IChannel<T> CreateChannel<T>(string name = null, int buffersize = 0, ChannelScope scope = null, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject)
+		public static IChannel<T> CreateChannel<T>(string name = null, int buffersize = 0, ChannelScope scope = null, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject, bool broadcast = false, int initialBroadcastBarrier = -1, int broadcastMinimum = -1)
 		{
-			return GetChannel<T>(name, buffersize, scope, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy);
+			return GetChannel<T>(name, buffersize, scope, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy, broadcast, initialBroadcastBarrier, broadcastMinimum);
+		}
+
+		/// <summary>
+		/// Creates a channel, possibly unnamed.
+		/// If a channel name is provided, the channel is created in the supplied scope.
+		/// If a channel with the given name is already found in the supplied scope, the named channel is returned.
+		/// </summary>
+		/// <returns>The named channel.</returns>
+		/// <param name="attr">The attribute describing the channel.</param>
+		/// <param name="scope">The scope to create a named channel in, defaults to null which means the current scope</param>
+		/// <typeparam name="T">The channel type.</typeparam>
+		public static IChannel<T> CreateChannel<T>(ChannelNameAttribute attr, ChannelScope scope = null)
+		{
+			return GetChannel<T>(attr, scope);
 		}
 
 		/// <summary>
