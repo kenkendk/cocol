@@ -313,7 +313,10 @@ namespace StressedAlt
 				server.WaitForTaskOrThrow();
 
 			Console.WriteLine("Terminating, with {0} writers active", WriterCount);
-			Thread.Sleep(1000);
+			Thread.Sleep(5000);
+
+			Console.WriteLine("Exit with {0} writers active", WriterCount);
+			Environment.Exit(2);
 		}
 	}
 }
