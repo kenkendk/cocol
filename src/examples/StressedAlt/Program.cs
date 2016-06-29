@@ -68,7 +68,7 @@ namespace StressedAlt
 
 		public void Run()
 		{
-			RunAsync().Wait();
+			RunAsync().WaitForTaskOrThrow();
 		}
 
 		public async Task RunAsync()
@@ -87,7 +87,10 @@ namespace StressedAlt
 						UpdateTracking((await m_set.ReadFromAnyAsync()).Value);
 
 				if (m_has_errors)
-					throw new Exception("Errors detected during warmup, quitting...");
+				{
+					Console.WriteLine("Errors detected during warmup, quitting...");
+					throw new Exception("Errors detected");
+				}
 
 				var expected = ((DateTime.Now - startWarmup).Ticks / WARMUP_ROUNDS) * MEASURE_ROUNDS * TOTAL_ROUNDS;
 
@@ -270,6 +273,8 @@ namespace StressedAlt
 				for (var i = 0; i < allchannels.Length; i++)
 					for (var j = 0; j < Config.Writers; j++)
 						RunWriterAsync(i, AsBufferedWrite(allchannels[i]));
+
+				Thread.Sleep(1000);
 
 				new Reader(allchannels.Select(x => AsBufferedRead(x)).ToArray(), Config.Writers).Run();
 			}
