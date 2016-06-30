@@ -18,7 +18,7 @@ namespace UnitTest
 			Mandelbrot.MainClass.Main(new string[] { "64", "64", "10" });
 		}
 
-		[Test]
+		//[Test]
 		public void StressedAltTest()
 		{
 			StressedAlt.MainClass.Main(new string[] { "--writers=10", "--channels=10" });
