@@ -575,7 +575,7 @@ namespace CoCoL
 							m_writerQueueCleanup = await PerformQueueCleanupAsync(m_writerQueue, true, m_writerQueueCleanup);
 
 							if (wr.Expires != Timeout.InfiniteDateTime)
-								ExpirationManager.AddExpirationCallback(wr.Expires, () => ExpireItemsAsync());
+								ExpirationManager.AddExpirationCallback(wr.Expires, () => ExpireItemsAsync().FireAndForget());
 						}
 					}
 				}
