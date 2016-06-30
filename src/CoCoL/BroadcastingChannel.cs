@@ -33,9 +33,9 @@ namespace CoCoL
 				m_minimumReaders = ((BroadcastChannelNameAttribute)attr).MinimumReaders;
 			}
 
-			if (m_minimumReaders > 0 && m_maxPendingReaders < m_minimumReaders)
+			if (m_minimumReaders > 0 && m_maxPendingReaders > 0 && m_maxPendingReaders < m_minimumReaders)
 				throw new ArgumentOutOfRangeException(string.Format("The setup requires {0} readers waiting, but the channel only allows {1} waiting readers", m_minimumReaders, m_maxPendingReaders));
-			if (m_initialBarrierSize > 0 && m_maxPendingReaders < m_initialBarrierSize)
+			if (m_initialBarrierSize > 0 && m_maxPendingReaders > 0 && m_maxPendingReaders < m_initialBarrierSize)
 				throw new ArgumentOutOfRangeException(string.Format("The setup requires {0} readers waiting, but the channel only allows {1} waiting readers", m_initialBarrierSize, m_maxPendingReaders));
 		}
 

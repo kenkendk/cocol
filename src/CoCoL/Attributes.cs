@@ -114,11 +114,11 @@ namespace CoCoL
 		/// <summary>
 		/// The minimum number of readers required for a broadcast to be performed
 		/// </summary>
-		public int InitialBarrierSize;
+		public int InitialBarrierSize = -1;
 		/// <summary>
 		/// The minimum number of readers required for the first broadcast to be performed
 		/// </summary>
-		public int MinimumReaders;
+		public int MinimumReaders = -1;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.BroadcastChannelNameAttribute"/> class.
