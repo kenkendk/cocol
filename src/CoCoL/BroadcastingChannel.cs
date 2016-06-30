@@ -24,7 +24,7 @@ namespace CoCoL
 		/// Initializes a new instance of the <see cref="T:CoCoL.BroadcastingChannel&lt;1&gt;"/> class.
 		/// </summary>
 		/// <param name="attr">The channel name attributes.</param>
-		public BroadcastingChannel(ChannelNameAttribute attr)
+		internal BroadcastingChannel(ChannelNameAttribute attr)
 			: base(attr)
 		{
 			if (attr is BroadcastChannelNameAttribute)
@@ -37,22 +37,6 @@ namespace CoCoL
 				throw new ArgumentOutOfRangeException(string.Format("The setup requires {0} readers waiting, but the channel only allows {1} waiting readers", m_minimumReaders, m_maxPendingReaders));
 			if (m_initialBarrierSize > 0 && m_maxPendingReaders > 0 && m_maxPendingReaders < m_initialBarrierSize)
 				throw new ArgumentOutOfRangeException(string.Format("The setup requires {0} readers waiting, but the channel only allows {1} waiting readers", m_initialBarrierSize, m_maxPendingReaders));
-		}
-
-		/// <summary>
-		/// Initializes a new instance of the <see cref="T:CoCoL.BroadcastingChannel&lt;1&gt;"/> class.
-		/// </summary>
-		/// <param name="name">The name of the channel</param>
-		/// <param name="buffersize">The size of the write buffer</param>
-		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
-		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
-		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
-		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
-		/// <param name="minimumReaders">The minimum number of readers required on the channel, before a broadcast can be performed</param>
-		/// <param name="initialBarrierSize">The number of readers required on the channel before sending the first broadcast</param>
-		public BroadcastingChannel(string name = null, int buffersize = 0, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject, int initialBarrierSize = -1, int minimumReaders = -1)
-			: this(new BroadcastChannelNameAttribute(name, buffersize, ChannelNameScope.Local, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy, initialBarrierSize, minimumReaders))
-		{
 		}
 
 		/// <summary>

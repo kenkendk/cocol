@@ -59,7 +59,7 @@ namespace UnitTest
 		public void TestSimple()
 		{
 			var values = new[] { 0, 1, 2, 3, 4 };
-			var c = new BroadcastingChannel<int>();
+			var c = ChannelManager.CreateChannel<int>(broadcast: true); ;
 			var counter = new CounterShim();
 			var readercount = 10;
 
@@ -79,7 +79,7 @@ namespace UnitTest
 			var counter = new CounterShim();
 			var readercount = 10;
 
-			var c = new BroadcastingChannel<int>(initialBarrierSize: readercount);
+			var c = ChannelManager.CreateChannel<int>(broadcast: true, initialBroadcastBarrier: readercount);
 
 			var writer1 = RunWriter(c, values);
 			var writer2 = RunWriter(c, values);
@@ -96,11 +96,11 @@ namespace UnitTest
 		{
 			var values = new[] { 0, 1, 2, 3, 4 };
 			var readervalues = new[] { 0, 0, 1, 1, 2, 2, 3, 3, 4, 4 };
-			var c = new BroadcastingChannel<int>();
+			var c = ChannelManager.CreateChannel<int>(broadcast: true);
 			var counter = new CounterShim();
 			var readercount = 10;
 
-			c.Join(true);
+			((IJoinAbleChannel)c).Join(true);
 
 			var writer1 = RunWriter(c, values);
 			var writer2 = RunWriter(c, values);
@@ -111,7 +111,7 @@ namespace UnitTest
 			if (counter.Count != 0)
 				throw new Exception("Broadcast has progressed even when there are not enough readers");
 
-			c.Leave(true);
+			((IJoinAbleChannel)c).Leave(true);
 
 			Task.WhenAll(readers.Union(new[] { writer1, writer2 })).WaitForTaskOrThrow();
 			if (counter.Count != readercount * readervalues.Length)
