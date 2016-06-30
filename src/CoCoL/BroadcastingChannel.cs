@@ -162,7 +162,7 @@ namespace CoCoL
 		/// </summary>
 		/// <returns>The awaitable task.</returns>
 		/// <param name="value">The minimum number of readers.</param>
-		public async Task SetMinimumReaders(int value)
+		public async Task SetMinimumReadersAsync(int value)
 		{
 			using (await m_asynclock.LockAsync())
 				if (m_minimumReaders != value)
@@ -185,7 +185,7 @@ namespace CoCoL
 		/// </summary>
 		/// <returns>The awaitable task.</returns>
 		/// <param name="value">The minimum number of processes reqquired before the next broadcast.</param>
-		public async Task SetNextBarrierCount(int value)
+		public async Task SetNextBarrierCountAsync(int value)
 		{
 			using (await m_asynclock.LockAsync())
 				if (m_initialBarrierSize != value)
