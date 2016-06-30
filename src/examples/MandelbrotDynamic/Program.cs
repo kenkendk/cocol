@@ -89,16 +89,18 @@ namespace MandelbrotDynamic
 
 			// Set up an image buffer
 			var pixels = m_width * m_height;
-			using(var img = new Bitmap(m_width, m_height))
+			using(var img = Config.DisableImages ? null : new Bitmap(m_width, m_height))
 			{
 				// Collect all pixels
 				for(var i = 0; i < pixels; i++)
 				{
 					var px = await result_channel.ReadAsync();
-					img.SetPixel(px.Item1 - m_left, px.Item2 - m_top, ColorMap(px.Item3, m_iterations));
+					if (img != null)
+						img.SetPixel(px.Item1 - m_left, px.Item2 - m_top, ColorMap(px.Item3, m_iterations));
 				}
 
-				img.Save(string.Format("{0}-{1}x{2}-{3}.png", DateTime.Now.Ticks, m_width, m_height, m_iterations), ImageFormat.Png);
+				if (img != null)
+					img.Save(string.Format("{0}-{1}x{2}-{3}.png", DateTime.Now.Ticks, m_width, m_height, m_iterations), ImageFormat.Png);
 			}
 
 			Console.WriteLine("Rendered a {0}x{1}:{2} image in {3}", m_width, m_height, m_iterations, DateTime.Now - starttime);
@@ -220,6 +222,12 @@ namespace MandelbrotDynamic
 		/// </summary>
 		[CommandlineOption("Indicates if the process hosts a server itself", longname: "selfhost")]
 		public static bool ChannelServerSelfHost = true;
+
+		/// <summary>
+		/// Disables all image operations
+		/// </summary>
+		[CommandlineOption("Disable writing images, prevents loading GDK+", longname: "noimages")]
+		public static bool DisableImages = false;
 
 		/// <summary>
 		/// Parses the commandline args

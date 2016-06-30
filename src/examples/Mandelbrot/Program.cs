@@ -2,6 +2,9 @@
 using CoCoL;
 using System.Drawing;
 using System.Drawing.Imaging;
+using CoCoL.Network;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Mandelbrot
 {
@@ -130,16 +133,19 @@ namespace Mandelbrot
 
 					// Set up an image buffer
 					var pixels = task.width * task.height;
-					using(var img = new Bitmap(task.width, task.height))
+					using(var img = Config.DisableImages ? null : new Bitmap(task.width, task.height))
 					{
 						// Collect all pixels
 						for(var i = 0; i < pixels; i++)
 						{
 							var px = await worker_channel.ReadAsync();
-							img.SetPixel(px.x - task.left, px.y - task.top, ColorMap(px.value, task.iterations));
+							if (img != null)
+								img.SetPixel(px.x - task.left, px.y - task.top, ColorMap(px.value, task.iterations));
 						}
 
-						img.Save(string.Format("{0}-{1}x{2}-{3}.png", DateTime.Now.Ticks, task.width, task.height, task.iterations), ImageFormat.Png);
+						if (img != null)
+							img.Save(string.Format("{0}-{1}x{2}-{3}.png", DateTime.Now.Ticks, task.width, task.height, task.iterations), ImageFormat.Png);
+						
 						Console.WriteLine("Rendered a {0}x{1}:{2} image in {3}", task.width, task.height, task.iterations, DateTime.Now - starttime);
 					}
 				}
@@ -221,23 +227,81 @@ namespace Mandelbrot
 		}
 	}
 
+	public class Config
+	{
+		/// <summary>
+		/// The width of the image
+		/// </summary>
+		[CommandlineOption("The width of the image", "width", "w", "500")]
+		public static int Width = -1;
+
+		/// <summary>
+		/// The height of the image
+		/// </summary>
+		[CommandlineOption("The height of the image", "height", "h")]
+		public static int Height = 500;
+
+		/// <summary>
+		/// The number of iterations on each pixel
+		/// </summary>
+		[CommandlineOption("The number of iterations on each pixel", "iterations", "i")]
+		public static int Iterations = 100;
+
+		/// <summary>
+		/// The number of iterations on each pixel
+		/// </summary>
+		[CommandlineOption("The number of repeated runs", "repeats", "r")]
+		public static int Repeats = 1;
+
+		/// <summary>
+		/// Disables all image operations
+		/// </summary>
+		[CommandlineOption("Disable writing images, prevents loading GDK+", longname: "noimages")]
+		public static bool DisableImages = false;
+
+		/// <summary>
+		/// Parses the commandline args
+		/// </summary>
+		/// <param name="args">The commandline arguments.</param>
+		public static bool Parse(List<string> args)
+		{
+			return SettingsHelper.Parse<Config>(args, null);
+		}
+
+		/// <summary>
+		/// Returns the config object as a human readable string
+		/// </summary>
+		/// <returns>The string.</returns>
+		public static string AsString()
+		{
+			return string.Join(", ", typeof(Config).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static).Select(x => string.Format("{0}={1}", x.Name, x.GetValue(null))));
+		}
+	}
+
 	/// <summary>
 	/// The main class provides the driver for starting jobs
 	/// </summary>
 	public class MainClass
 	{
-		public static void Main(string[] args)
+		public static void Main(string[] _args)
 		{
+			var args = new List<string>(_args);
+			// Send jobs into the network
+			if (!Config.Parse(args))
+				return;
+
+			Console.WriteLine("Config is: {0}", Config.AsString());
+
 			var farmer_channel = ChannelManager.GetChannel<RenderTask>(Farmer.FARMER_CHANNEL).AsWrite();
 			var shutdown_channel = ChannelManager.GetChannel<bool>(Harvester.SHUTDOWN_CHANNEL).AsRead();
 
 			// Auto-start all defined processes in this assembly
 			CoCoL.Loader.StartFromAssembly(typeof(MainClass).Assembly);
 
-			if (args.Length == 3)
+			if (Config.Width != -1)
 			{
-				for (var i = 0; i < 11; i++)
-					farmer_channel.Write(new RenderTask(int.Parse(args[0]), int.Parse(args[1]), int.Parse(args[2])));
+				for (var i = 0; i < Config.Repeats; i++)
+					farmer_channel.Write(new RenderTask(Config.Width, Config.Height, Config.Iterations));
 			}
 			else
 			{

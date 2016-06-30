@@ -15,16 +15,16 @@ namespace UnitTest
 		[Test]
 		public void MandelbrotTest()
 		{
-			Mandelbrot.MainClass.Main(new string[] { "64", "64", "10" });
+			Mandelbrot.MainClass.Main(new string[] { "--width=64", "--height=64", "--iterations=10", "--repeats=10", "--noimages" });
 		}
 
-		//[Test]
+		[Test]
 		public void StressedAltTest()
 		{
 			StressedAlt.MainClass.Main(new string[] { "--writers=10", "--channels=10" });
 		}
 
-		//[Test]
+		[Test]
 		public void MonteCarloPiTest()
 		{
 			MonteCarloPi.MainClass.Main(new string[] { "1000", "10" });
