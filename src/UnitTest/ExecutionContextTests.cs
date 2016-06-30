@@ -103,7 +103,7 @@ namespace UnitTest
 
 				Console.WriteLine("Threads at shutdown: {0}", concurrent);
 
-				ExecutionScope.Current.EnsureFinished();
+				ExecutionScope.Current.EnsureFinished(TimeSpan.FromSeconds(5));
 				Console.WriteLine("Max concurrent threads: {0}, should be {1}", max_concurrent, poolsize <= 0 ? "unlimited" : poolsize.ToString());
 			}
 
