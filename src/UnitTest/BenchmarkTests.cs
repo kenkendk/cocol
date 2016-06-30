@@ -24,7 +24,7 @@ namespace UnitTest
 			StressedAlt.MainClass.Main(new string[] { "--writers=10", "--channels=10" });
 		}
 
-		[Test]
+		//[Test]
 		public void MonteCarloPiTest()
 		{
 			MonteCarloPi.MainClass.Main(new string[] { "1000", "10" });
