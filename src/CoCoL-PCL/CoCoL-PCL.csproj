@@ -113,6 +113,9 @@
     <Compile Include="..\CoCoL\BroadcastingChannel.cs">
       <Link>BroadcastingChannel.cs</Link>
     </Compile>
+    <Compile Include="..\CoCoL\Skeletons.cs">
+      <Link>Skeletons.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
 </Project>
