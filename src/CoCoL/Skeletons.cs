@@ -13,24 +13,10 @@ namespace CoCoL
 		/// <summary>
 		/// Method that transforms the input and returns the output
 		/// </summary>
+		/// <returns>An awaitable task</returns>
 		/// <param name="handler">The method used to transform the input to the output.</param>
 		/// <param name="input">The input channel.</param>
 		/// <param name="output">The output channel.</param>
-		/// <returns>An awaitable task</returns>
-		/// <typeparam name="TInput">The input data type parameter.</typeparam>
-		/// <typeparam name="TOutput">The output data type parameter.</typeparam>
-		public static Task WrapperAsync<TInput, TOutput>(Func<TInput, TOutput> handler, IReadChannel<TInput> input, IWriteChannel<TOutput> output)
-		{
-			return WrapperAsync((arg) => Task.FromResult(handler(arg)), input, output);
-		}
-
-		/// <summary>
-		/// Method that transforms the input and returns the output
-		/// </summary>
-		/// <param name="handler">The method used to transform the input to the output.</param>
-		/// <param name="input">The input channel.</param>
-		/// <param name="output">The output channel.</param>
-		/// <returns>An awaitable task</returns>
 		/// <typeparam name="TInput">The input data type parameter.</typeparam>
 		/// <typeparam name="TOutput">The output data type parameter.</typeparam>
 		public static Task WrapperAsync<TInput, TOutput>(Func<TInput, Task<TOutput>> handler, IReadChannel<TInput> input, IWriteChannel<TOutput> output)
@@ -49,11 +35,60 @@ namespace CoCoL
 		}
 
 		/// <summary>
+		/// Wraps an enumerator as a generator
+		/// </summary>
+		/// <returns>An awaitable task</returns>
+		/// <param name="data">The data to emit.</param>
+		/// <param name="output">The channel to write to.</param>
+		/// <typeparam name="T">The data type parameter.</typeparam>
+		public static Task GeneratorAsync<T>(IEnumerable<T> data, IWriteChannel<T> output)
+		{
+			if (data == null)
+				throw new ArgumentNullException(nameof(data));
+			if (output == null)
+				throw new ArgumentNullException(nameof(output));
+
+			return AutomationExtensions.RunTask(
+				new { output = output },
+				async (self) =>
+				{
+					foreach (var entry in data)
+						await output.WriteAsync(entry);
+				}
+			);
+		}
+
+		/// <summary>
+		/// Forwards values from the input to the output, but allows filtering the input values
+		/// </summary>
+		/// <returns>An awaitable task</returns>
+		/// <param name="predicate">The function used to determine if the value should be forwarded or not.</param>
+		/// <param name="input">The input channel.</param>
+		/// <param name="output">The output channel.</param>
+		/// <typeparam name="T">The data type parameter.</typeparam>
+		public static Task FilterAsync<TInput, TOutput>(Func<TInput, Task<KeyValuePair<bool, TOutput>>> predicate, IReadChannel<TInput> input, IWriteChannel<TOutput> output)
+		{
+			return AutomationExtensions.RunTask(
+				new { input = input, output = output },
+				async (self) => {
+					while (true)
+					{
+						var data = await self.input.ReadAsync();
+						var res = await predicate(data);
+						if (res.Key)
+							await self.output.WriteAsync(res.Value);
+					}
+				}
+			);
+		}
+
+
+		/// <summary>
 		/// Performs an asynchronous broadcast that copies the input value to all outputs
 		/// </summary>
+		/// <returns>An awaitable task</returns>
 		/// <param name="input">The input channel.</param>
 		/// <param name="outputs">The output channels.</param>
-		/// <returns>An awaitable task</returns>
 		/// <typeparam name="T">The data type parameter.</typeparam>
 		public static Task BroadcastAsync<T>(IReadChannel<T> input, IWriteChannel<T>[] outputs)
 		{
