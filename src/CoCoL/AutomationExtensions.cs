@@ -69,6 +69,29 @@ namespace CoCoL
 			return AutoWireChannelsDirect(item);
 		}
 
+		private static void JoinChannel(object item, Type definedtype)
+		{
+			var readInterface = new Type[] { definedtype }.Union(definedtype.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IReadChannel<>))).FirstOrDefault();
+			var writeInterface = new Type[] { definedtype }.Union(definedtype.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IWriteChannel<>))).FirstOrDefault();
+			var isOnlyReadOrWrite = (readInterface == null) != (writeInterface == null);
+
+			var isRetired = item is IRetireAbleChannel ? (item as IRetireAbleChannel).IsRetiredAsync.WaitForTask().Result : false;
+
+			if (item is IJoinAbleChannelEnd && !isRetired)
+				((IJoinAbleChannelEnd)item).Join();
+			else if (item is IJoinAbleChannel && !isRetired)
+			{
+				// If the type is both read and write, we cannot use join semantics
+				if (isOnlyReadOrWrite)
+				{
+					if (readInterface != null)
+						((IJoinAbleChannel)item).Join(true);
+					if (writeInterface != null)
+						((IJoinAbleChannel)item).Join(false);
+				}
+			}
+		}
+
 		/// <summary>
 		/// Wires up all named channels using the supplied scope for the given element.
 		/// Does not check if the given item is an IEnumerable
@@ -148,27 +171,24 @@ namespace CoCoL
 					else
 						((PropertyInfo)c.Key).SetValue(item, chan);
 
-					var isRetired = chan.IsRetiredAsync.WaitForTask().Result;
-
-					if (chan is IJoinAbleChannelEnd && !isRetired)
-						((IJoinAbleChannelEnd)chan).Join();
-					else if (chan is IJoinAbleChannel && !isRetired)
-					{
-						// If the type is both read and write, we cannot use join semantics
-						if (isOnlyReadOrWrite)
-						{
-							if (readInterface != null)
-								((IJoinAbleChannel)chan).Join(true);
-							if (writeInterface != null)
-								((IJoinAbleChannel)chan).Join(false);
-						}
-					}
+					JoinChannel(chan, channelType);
 				}
 				catch(Exception ex)
 				{
 					System.Diagnostics.Debug.WriteLine("Failed to set channel: {1}, message: {0}", ex, c.Key.Name);
 				}
 			}
+
+			//TODO: Support Enumerables too?
+			foreach (var c in GetAllFieldAndPropertyValuesOfType<Array>(item))
+				for (var i = 0; i < c.Value.Length; i++)
+					try
+					{
+						JoinChannel(c.Value.GetValue(i), (c.Key is FieldInfo ? ((FieldInfo)c.Key).FieldType : ((PropertyInfo)c.Key).PropertyType).GetElementType());
+					}
+					catch
+					{
+					}
 
 			return item;
 		}
@@ -218,6 +238,45 @@ namespace CoCoL
 		}
 
 		/// <summary>
+		/// Retires a channel
+		/// </summary>
+		/// <param name="value">The channel to retire.</param>
+		/// <param name="definedtype">The type obtained from the declaring field.</param>
+		private static void RetireChannel(object value, Type definedtype)
+		{
+			if (value == null)
+				return;
+			
+			if (value is IJoinAbleChannelEnd)
+				((IJoinAbleChannelEnd)value).Dispose();
+			else if (value is IJoinAbleChannel)
+			{
+				// Figure out what type of channel we expect
+				var channelType = definedtype;
+				var readInterface = new Type[] { definedtype }.Union(definedtype.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IReadChannel<>))).FirstOrDefault();
+				var writeInterface = new Type[] { definedtype }.Union(definedtype.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IWriteChannel<>))).FirstOrDefault();
+
+				// If the channel is read-write, we do not use join semantics, but just retire the channel
+				if ((readInterface == null) == (writeInterface == null))
+				{
+					if (value as IRetireAbleChannel != null)
+						((IRetireAbleChannel)value).Retire();
+				}
+
+				// Otherwise use the correct interface
+				else
+				{
+					if (readInterface != null)
+						((IJoinAbleChannel)value).Leave(true);
+					if (writeInterface != null)
+						((IJoinAbleChannel)value).Leave(false);
+				}
+			}
+			else if (value as IRetireAbleChannel != null)
+				((IRetireAbleChannel)value).Retire();		
+		}
+
+		/// <summary>
 		/// Uses reflection to find all properties and fields that are of type IRetireAbleChannel
 		/// and calls the Retire method on them
 		/// </summary>
@@ -226,38 +285,22 @@ namespace CoCoL
 		{
 			foreach (var c in GetAllFieldAndPropertyValuesOfType<IRetireAbleChannel>(item))
 				try
-			{
-				if (c.Value is IJoinAbleChannelEnd)
-					((IJoinAbleChannelEnd)c.Value).Dispose();
-				else if (c.Value is IJoinAbleChannel)
 				{
-					// Figure out what type of channel we expect
-					var channelType = c.Key is FieldInfo ? ((FieldInfo)c.Key).FieldType : ((PropertyInfo)c.Key).PropertyType;
-					var readInterface = new Type[] { channelType }.Union(channelType.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IReadChannel<>))).FirstOrDefault();
-					var writeInterface = new Type[] { channelType }.Union(channelType.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IWriteChannel<>))).FirstOrDefault();
-
-					// If the channel is read-write, we do not use join semantics, but just retire the channel
-					if ((readInterface == null) == (writeInterface == null))
-					{
-						if (c.Value != null)
-							c.Value.Retire();
-					}
-
-					// Otherwise use the correct interface
-					else
-					{
-						if (readInterface != null)
-							((IJoinAbleChannel)c.Value).Leave(true);
-						if (writeInterface != null)
-							((IJoinAbleChannel)c.Value).Leave(false);
-					}
+					RetireChannel(c.Value, c.Key is FieldInfo ? ((FieldInfo)c.Key).FieldType : ((PropertyInfo)c.Key).PropertyType);
 				}
-				else if (c.Value != null)
-					c.Value.Retire();
-			}
-			catch
-			{
-			}
+				catch
+				{
+				}
+
+			foreach (var c in GetAllFieldAndPropertyValuesOfType<Array>(item))
+				for (var i = 0; i < c.Value.Length; i++)
+					try
+					{
+						RetireChannel(c.Value.GetValue(i), (c.Key is FieldInfo ? ((FieldInfo)c.Key).FieldType : ((PropertyInfo)c.Key).PropertyType).GetElementType());
+					}
+					catch
+					{
+					}
 		}
 
 		/// <summary>
