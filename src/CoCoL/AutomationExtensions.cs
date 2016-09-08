@@ -115,9 +115,12 @@ namespace CoCoL
 						else
 							((PropertyInfo)c.Key).SetValue(item, null);
 
+
+					var autocreate = true;
+
 					// Skip if already assigned
 					if (c.Value != null && !(c.Value is ChannelNameMarker))
-						continue;
+						autocreate = false;
 
 					var attr = c.Key.GetCustomAttribute(typeof(ChannelNameAttribute), true) as ChannelNameAttribute;
 
@@ -127,51 +130,61 @@ namespace CoCoL
 
 					// Skip if the channel does not have a name
 					if (attr == null || string.IsNullOrWhiteSpace(attr.Name))
-						continue;
+						autocreate = false;
 
-					// Figure out what type of channel we expect
 					var channelType = c.Key is FieldInfo ? ((FieldInfo)c.Key).FieldType : ((PropertyInfo)c.Key).PropertyType;
-					var readInterface = new Type[] { channelType }.Union(channelType.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IReadChannel<>))).FirstOrDefault();
-					var writeInterface = new Type[] { channelType }.Union(channelType.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IWriteChannel<>))).FirstOrDefault();
 
-					if (readInterface == null && writeInterface == null)
-						throw new Exception(string.Format("Item {0} had a channelname attribute but is not of the channel type", c.Key.Name));
-
-					var isOnlyReadOrWrite = (readInterface == null) != (writeInterface == null);
-
-					// Extract the channel data type
-					Type dataType = (readInterface ?? writeInterface).GenericTypeArguments[0];
-
-					// Honor scope requirements
-					var curscope = scope;
-					if (attr.TargetScope == ChannelNameScope.Parent)
-						curscope = scope.ParentScope ?? curscope;
-					else if (attr.TargetScope == ChannelNameScope.Global)
-						curscope = ChannelScope.Root;
-
-					// Instantiate or fetch the channel
-					var chan = curscope.GetOrCreate(attr, dataType);
-
-					if (isOnlyReadOrWrite)
+					if (autocreate)
 					{
-						if (readInterface != null && channelType.IsAssignableFrom(typeof(IReadChannelEnd<>).MakeGenericType(dataType)))
-						{
-							chan = (IRetireAbleChannel)typeof(ChannelExtensions).GetMethod("AsReadOnly").MakeGenericMethod(dataType).Invoke(null, new object[] { chan });
-						}
-						else if (writeInterface != null && channelType.IsAssignableFrom(typeof(IWriteChannelEnd<>).MakeGenericType(dataType)))
-						{
-							chan = (IRetireAbleChannel)typeof(ChannelExtensions).GetMethod("AsWriteOnly").MakeGenericMethod(dataType).Invoke(null, new object[] { chan });
-						}
-					}
-						
-					// Assign the channel to the field or property
-						
-					if (c.Key is FieldInfo)
-						((FieldInfo)c.Key).SetValue(item, chan);
-					else
-						((PropertyInfo)c.Key).SetValue(item, chan);
+						// Figure out what type of channel we expect
+						var readInterface = new Type[] { channelType }.Union(channelType.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IReadChannel<>))).FirstOrDefault();
+						var writeInterface = new Type[] { channelType }.Union(channelType.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IWriteChannel<>))).FirstOrDefault();
 
-					JoinChannel(chan, channelType);
+						if (readInterface == null && writeInterface == null)
+							throw new Exception(string.Format("Item {0} had a channelname attribute but is not of the channel type", c.Key.Name));
+
+						var isOnlyReadOrWrite = (readInterface == null) != (writeInterface == null);
+
+						// Extract the channel data type
+						Type dataType = (readInterface ?? writeInterface).GenericTypeArguments[0];
+
+						// Honor scope requirements
+						var curscope = scope;
+						if (attr.TargetScope == ChannelNameScope.Parent)
+							curscope = scope.ParentScope ?? curscope;
+						else if (attr.TargetScope == ChannelNameScope.Global)
+							curscope = ChannelScope.Root;
+
+						// Instantiate or fetch the channel
+						var chan = curscope.GetOrCreate(attr, dataType);
+
+						if (isOnlyReadOrWrite)
+						{
+							if (readInterface != null && channelType.IsAssignableFrom(typeof(IReadChannelEnd<>).MakeGenericType(dataType)))
+							{
+								chan = (IRetireAbleChannel)typeof(ChannelExtensions).GetMethod("AsReadOnly").MakeGenericMethod(dataType).Invoke(null, new object[] { chan });
+							}
+							else if (writeInterface != null && channelType.IsAssignableFrom(typeof(IWriteChannelEnd<>).MakeGenericType(dataType)))
+							{
+								chan = (IRetireAbleChannel)typeof(ChannelExtensions).GetMethod("AsWriteOnly").MakeGenericMethod(dataType).Invoke(null, new object[] { chan });
+							}
+						}
+
+						// Assign the channel to the field or property
+
+						if (c.Key is FieldInfo)
+							((FieldInfo)c.Key).SetValue(item, chan);
+						else
+							((PropertyInfo)c.Key).SetValue(item, chan);
+
+						JoinChannel(chan, channelType);
+					}
+					else
+					{
+						JoinChannel(c.Value, channelType);
+					}
+
+
 				}
 				catch(Exception ex)
 				{
