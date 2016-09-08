@@ -41,7 +41,7 @@ namespace CoCoL
 		/// <param name="data">The data to emit.</param>
 		/// <param name="output">The channel to write to.</param>
 		/// <typeparam name="T">The data type parameter.</typeparam>
-		public static Task GeneratorAsync<T>(IEnumerable<T> data, IWriteChannel<T> output)
+		public static Task DataSourceAsync<T>(IEnumerable<T> data, IWriteChannel<T> output)
 		{
 			if (data == null)
 				throw new ArgumentNullException(nameof(data));
@@ -54,6 +54,62 @@ namespace CoCoL
 				{
 					foreach (var entry in data)
 						await output.WriteAsync(entry);
+				}
+			);
+		}
+
+		/// <summary>
+		/// Returns an enumerator from a channel
+		/// </summary>
+		/// <returns>The enumerator.</returns>
+		/// <param name="input">The data to read from.</param>
+		/// <typeparam name="T">The data type parameter.</typeparam>
+		public static IEnumerable<T> ChannelEnumerator<T>(IReadChannel<T> input)
+		{
+			while (true)
+				yield return input.Read();
+		}
+
+		/// <summary>
+		/// Wraps an input as an enumerator
+		/// </summary>
+		/// <returns>An awaitable task</returns>
+		/// <param name="handler">The handler function operating on the data.</param>
+		/// <param name="input">The channel to read from.</param>
+		/// <typeparam name="T">The data type parameter.</typeparam>
+		public static Task DataSinkAsync<T>(Func<IEnumerable<T>, Task> handler, IReadChannel<T> input)
+		{
+			if (handler == null)
+				throw new ArgumentNullException(nameof(handler));
+			if (input == null)
+				throw new ArgumentNullException(nameof(input));
+
+			return AutomationExtensions.RunTask(
+				new { input = input },
+				(self) => handler(ChannelEnumerator(self.input))
+			);
+		}
+
+		/// <summary>
+		/// Wraps an input to a method
+		/// </summary>
+		/// <returns>An awaitable task</returns>
+		/// <param name="handler">The data to emit.</param>
+		/// <param name="input">The channel to read from.</param>
+		/// <typeparam name="T">The data type parameter.</typeparam>
+		public static Task DataSinkAsync<T>(Func<T, Task> handler, IReadChannel<T> input)
+		{
+			if (handler == null)
+				throw new ArgumentNullException(nameof(handler));
+			if (input == null)
+				throw new ArgumentNullException(nameof(input));
+
+			return AutomationExtensions.RunTask(
+				new { input = input },
+				async (self) =>
+				{
+					while (true)
+						await handler(await self.input.ReadAsync());
 				}
 			);
 		}
@@ -355,9 +411,107 @@ namespace CoCoL
 				throw new ArgumentNullException(nameof(inputs));
 			if (handler == null)
 				throw new ArgumentNullException(nameof(handler));
+
+			return ParallelAsync(Enumerable.Range(0, inputs.Length).Select(x => handler).ToArray(), inputs, outputs);
+		}
+
+		/// <summary>
+		/// Performs a parallel transformation of all inputs to their outputs
+		/// </summary>
+		/// <returns>An awaitable task</returns>
+		/// <param name="handlers">The handler functions, transforming input to output.</param>
+		/// <param name="inputs">The input channels.</param>
+		/// <param name="outputs">The output channels.</param>
+		/// <typeparam name="TInput">The input type parameter.</typeparam>
+		/// <typeparam name="TOutput">The output type parameter.</typeparam>
+		public static Task ParallelAsync<TInput, TOutput>(Func<IReadChannel<TInput>, IWriteChannel<TOutput>, Task>[] handlers, IReadChannel<TInput>[] inputs, IWriteChannel<TOutput>[] outputs)
+		{
+			if (inputs == null)
+				throw new ArgumentNullException(nameof(inputs));
+			if (handlers == null)
+				throw new ArgumentNullException(nameof(handlers));
 			if (outputs == null)
 				throw new ArgumentNullException(nameof(outputs));
 			
+			if (inputs.Length != outputs.Length || handlers.Length != inputs.Length)
+				throw new ArgumentOutOfRangeException(nameof(inputs), $"The {nameof(inputs)} and {nameof(outputs)} arrays must be of the same length");
+
+			return Task.WhenAll(
+				Enumerable.Range(0, inputs.Length).Select(
+					x => AutomationExtensions.RunTask(
+						new { input = inputs[x], output = outputs[x] },
+						async (self) =>
+						{
+							while(true)
+								await handlers[x](self.input, self.output);
+						}
+					)
+				)
+			);
+		}
+
+		/// <summary>
+		/// Performs a parallel transformation of all inputs to their outputs
+		/// </summary>
+		/// <returns>An awaitable task</returns>
+		/// <param name="handler">The handler function, transforming input to output.</param>
+		/// <param name="inputs">The input channels.</param>
+		/// <param name="outputs">The output channels.</param>
+		/// <typeparam name="TInput">The input type parameter.</typeparam>
+		/// <typeparam name="TOutput">The output type parameter.</typeparam>
+		public static Task ParallelAsync<TInput, TOutput>(Func<TInput, Task<TOutput>> handler, IReadChannel<TInput>[] inputs, IWriteChannel<TOutput>[] outputs)
+		{
+			if (inputs == null)
+				throw new ArgumentNullException(nameof(inputs));
+			if (handler == null)
+				throw new ArgumentNullException(nameof(handler));
+
+			return ParallelAsync(Enumerable.Range(0, inputs.Length).Select(x => handler).ToArray(), inputs, outputs);
+		}
+
+		/// <summary>
+		/// Performs a parallel transformation of all inputs to their outputs
+		/// </summary>
+		/// <returns>An awaitable task</returns>
+		/// <param name="handler">The handler function, transforming input to output.</param>
+		/// <param name="inputs">The input channels.</param>
+		/// <param name="output">The output channels.</param>
+		/// <typeparam name="TInput">The input type parameter.</typeparam>
+		/// <typeparam name="TOutput">The output type parameter.</typeparam>
+		public static Task ParallelAsync<TInput, TOutput>(Func<TInput, Task<TOutput>> handler, IReadChannel<TInput>[] inputs, Func<IReadChannel<TOutput>[], Task> output)
+		{
+			if (inputs == null)
+				throw new ArgumentNullException(nameof(inputs));
+			if (handler == null)
+				throw new ArgumentNullException(nameof(handler));
+
+			var chans = inputs.Select(x => ChannelManager.CreateChannel<TOutput>()).ToArray();
+
+			return Task.WhenAll(
+				output(chans),
+				ParallelAsync(handler, inputs, chans)
+	       );
+		}
+
+
+		/// <summary>
+		/// Performs a parallel transformation of all inputs to their outputs
+		/// </summary>
+		/// <returns>An awaitable task</returns>
+		/// <param name="handlers">The handler functions, transforming input to output.</param>
+		/// <param name="inputs">The input channels.</param>
+		/// <param name="outputs">The output channels.</param>
+		/// <typeparam name="TInput">The input type parameter.</typeparam>
+		/// <typeparam name="TOutput">The output type parameter.</typeparam>
+		public static Task ParallelAsync<TInput, TOutput>(Func<TInput, Task<TOutput>>[] handlers, IReadChannel<TInput>[] inputs, IWriteChannel<TOutput>[] outputs)
+		{
+			if (inputs == null)
+				throw new ArgumentNullException(nameof(inputs));
+			if (handlers == null)
+				throw new ArgumentNullException(nameof(handlers));
+			if (outputs == null)
+				throw new ArgumentNullException(nameof(outputs));
+
 			if (inputs.Length != outputs.Length)
 				throw new ArgumentOutOfRangeException(nameof(inputs), $"The {nameof(inputs)} and {nameof(outputs)} arrays must be of the same length");
 
@@ -365,7 +519,70 @@ namespace CoCoL
 				Enumerable.Range(0, inputs.Length).Select(
 					x => AutomationExtensions.RunTask(
 						new { input = inputs[x], output = outputs[x] },
-						(self) => handler(self.input, self.output)
+						async (self) =>
+						{
+							while(true)
+								await self.output.WriteAsync(await handlers[x](await self.input.ReadAsync()));
+						}
+					)
+				)
+			);
+		}
+
+
+		/// <summary>
+		/// Performs a parallel transformation of all inputs to their outputs
+		/// </summary>
+		/// <returns>An awaitable task</returns>
+		/// <param name="handler">The handler function, transforming input to output.</param>
+		/// <param name="inputs">The input channels.</param>
+		/// <param name="outputs">The output channels.</param>
+		/// <typeparam name="TInput">The input type parameter.</typeparam>
+		/// <typeparam name="TOutput">The output type parameter.</typeparam>
+		public static Task ParallelAsync<TInput, TOutput>(Func<TInput, Task<KeyValuePair<bool, TOutput>>> handler, IReadChannel<TInput>[] inputs, IWriteChannel<TOutput>[] outputs)
+		{
+			if (inputs == null)
+				throw new ArgumentNullException(nameof(inputs));
+			if (handler == null)
+				throw new ArgumentNullException(nameof(handler));
+
+			return ParallelAsync(Enumerable.Range(0, inputs.Length).Select(x => handler).ToArray(), inputs, outputs);
+		}
+
+		/// <summary>
+		/// Performs a parallel transformation of all inputs to their outputs
+		/// </summary>
+		/// <returns>An awaitable task</returns>
+		/// <param name="handlers">The handler functions, transforming input to output.</param>
+		/// <param name="inputs">The input channels.</param>
+		/// <param name="outputs">The output channels.</param>
+		/// <typeparam name="TInput">The input type parameter.</typeparam>
+		/// <typeparam name="TOutput">The output type parameter.</typeparam>
+		public static Task ParallelAsync<TInput, TOutput>(Func<TInput, Task<KeyValuePair<bool, TOutput>>>[] handlers, IReadChannel<TInput>[] inputs, IWriteChannel<TOutput>[] outputs)
+		{
+			if (inputs == null)
+				throw new ArgumentNullException(nameof(inputs));
+			if (handlers == null)
+				throw new ArgumentNullException(nameof(handlers));
+			if (outputs == null)
+				throw new ArgumentNullException(nameof(outputs));
+
+			if (inputs.Length != outputs.Length)
+				throw new ArgumentOutOfRangeException(nameof(inputs), $"The {nameof(inputs)} and {nameof(outputs)} arrays must be of the same length");
+
+			return Task.WhenAll(
+				Enumerable.Range(0, inputs.Length).Select(
+					x => AutomationExtensions.RunTask(
+						new { input = inputs[x], output = outputs[x] },
+						async (self) =>
+						{
+							while (true)
+							{
+								var res = await handlers[x](await self.input.ReadAsync());
+								if (res.Key)
+									await self.output.WriteAsync(res.Value);
+							}
+						}
 					)
 				)
 			);

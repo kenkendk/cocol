@@ -66,6 +66,8 @@
     <Compile Include="AsyncLock.cs" />
     <Compile Include="BroadcastingChannel.cs" />
     <Compile Include="Skeletons.cs" />
+    <Compile Include="SkeletonCallbacks.cs" />
+    <Compile Include="SkeletonReturn.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
