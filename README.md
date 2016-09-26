@@ -1,5 +1,12 @@
 # CoCoL - Concurrent Communications Library
 
+[![Build Status on Travis-CI](https://travis-ci.org/kenkendk/cocol.svg?branch=master)](https://travis-ci.org/kenkendk/cocol)
+[![Build status on AppVeyor](https://ci.appveyor.com/api/projects/status/v72maima8o12vsn6/branch/master?svg=true)](https://ci.appveyor.com/project/kenkendk/cocol/branch/master)
+[![Nuget count](https://img.shields.io/nuget/v/CoCoL.svg)](https://www.nuget.org/packages/CoCoL/)
+[![License](https://img.shields.io/github/license/kenkendk/cocol.svg)](https://github.com/kenkendk/cocol/blob/master/LICENSE)
+[![Issues open](https://img.shields.io/github/issues-raw/kenkendk/cocol.svg)](https://github.com/kenkendk/cocol/issues/)
+[![Coverage Status](https://coveralls.io/repos/github/kenkendk/cocol/badge.svg?branch=HEAD)](https://coveralls.io/github/kenkendk/cocol?branch=HEAD)
+
 CoCoL is a fresh multi-programming approach, leveraging the C# `await` keyword to produce sequential and easily understandable multithreading code. With a shared-nothing approach and explicit communication, programs written with CoCoL are automatically free from race conditions and other threading hazards.
 
 If you are familiar with the [Go Language](https://golang.org/), you can think of CoCoL as providing the Go programming model inside the CLR.
