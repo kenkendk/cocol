@@ -388,7 +388,7 @@ namespace Concordance
 
 			return Task.WhenAll(
 				// Wire up input data
-				Skeletons.DataSourceAsync(Tokenize(Config.Filename), wordstreamsource),
+				Skeletons.EmitAsync(Tokenize(Config.Filename), wordstreamsource),
 
 				// Send to each n-word generator
 				Skeletons.BroadcastAsync(wordstreamsource, wordstreamtargets),
@@ -402,6 +402,8 @@ namespace Concordance
 				// Join the results
 				Skeletons.GatherAllAsync(wordmapsources, wordmaptarget),
 
+				Skeletons.PipelineAsync(Combiner, Sorter, wordmaptarget, sortedlist),
+
 				// Combine all maps into a single map
 				Skeletons.WrapperAsync(Combiner, wordmaptarget, unsortedlist),
 
@@ -409,7 +411,7 @@ namespace Concordance
 				Skeletons.WrapperAsync(Sorter, unsortedlist, sortedlist),
 
 				// Write the list to a file
-				Skeletons.DataSinkAsync(DumpToOutput, sortedlist)
+				Skeletons.CollectAsync(DumpToOutput, sortedlist)
 
 			);
 		}
@@ -424,7 +426,7 @@ namespace Concordance
 			var counteremitters = Enumerable.Range(0, Config.MaxLength).Select(x => (Func<WordEntry, Task<KeyValuePair<bool, Dictionary<string, List<WordLocation>>>>>)new Counter().RunAsync).ToArray();
 
 			return Task.WhenAll(
-				SkeletonCallbacks.DataSourceAsync(
+				SkeletonCallbacks.EmitAsync(
 					Tokenize(Config.Filename),
 					a => SkeletonCallbacks.BroadcastAsync(
 						a,
@@ -437,16 +439,12 @@ namespace Concordance
 								cx,
 								d => SkeletonCallbacks.GatherAllAsync(
 									d,
-									e => SkeletonCallbacks.WrapperAsync(
-										Combiner,
+									e => SkeletonCallbacks.PipelineAsync(
+										Combiner, Sorter,
 										e,
-										f => SkeletonCallbacks.WrapperAsync(
-											Sorter,
-											f,
-											g => Skeletons.DataSinkAsync(
-												DumpToOutput,
-												g
-											)
+										g => Skeletons.CollectAsync(
+											DumpToOutput,
+											g
 										)
 									)
 								)
@@ -463,18 +461,16 @@ namespace Concordance
 			var counteremitters = Enumerable.Range(0, Config.MaxLength).Select(x => (Func<WordEntry, Task<KeyValuePair<bool, Dictionary<string, List<WordLocation>>>>>)new Counter().RunAsync).ToArray();
 
 			return
-				Skeletons.DataSinkAsync(DumpToOutput,
-						SkeletonReturn.WrapperAsync(Sorter,
-							SkeletonReturn.WrapperAsync(Combiner,
-								SkeletonReturn.GatherAllAsync(
-									SkeletonReturn.ParallelAsync(counteremitters,
-										 SkeletonReturn.ParallelAsync(sentenceemitters,
-											SkeletonReturn.BroadcastAsync(Config.MaxLength,
-											  SkeletonReturn.DataSourceAsync(Tokenize(Config.Filename))
-											 )
-										)
+				Skeletons.CollectAsync(DumpToOutput,
+                       SkeletonReturn.PipelineAsync(Combiner, Sorter,
+							SkeletonReturn.GatherAllAsync(
+								SkeletonReturn.ParallelAsync(counteremitters,
+									 SkeletonReturn.ParallelAsync(sentenceemitters,
+										SkeletonReturn.BroadcastAsync(Config.MaxLength,
+										  SkeletonReturn.EmitAsync(Tokenize(Config.Filename))
+										 )
 									)
-							   )
+								)
 						   )
 					   )
 			   );

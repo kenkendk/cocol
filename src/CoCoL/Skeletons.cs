@@ -41,7 +41,7 @@ namespace CoCoL
 		/// <param name="data">The data to emit.</param>
 		/// <param name="output">The channel to write to.</param>
 		/// <typeparam name="T">The data type parameter.</typeparam>
-		public static Task DataSourceAsync<T>(IEnumerable<T> data, IWriteChannel<T> output)
+		public static Task EmitAsync<T>(IEnumerable<T> data, IWriteChannel<T> output)
 		{
 			if (data == null)
 				throw new ArgumentNullException(nameof(data));
@@ -77,7 +77,7 @@ namespace CoCoL
 		/// <param name="handler">The handler function operating on the data.</param>
 		/// <param name="input">The channel to read from.</param>
 		/// <typeparam name="T">The data type parameter.</typeparam>
-		public static Task DataSinkAsync<T>(Func<IEnumerable<T>, Task> handler, IReadChannel<T> input)
+		public static Task CollectAsync<T>(Func<IEnumerable<T>, Task> handler, IReadChannel<T> input)
 		{
 			if (handler == null)
 				throw new ArgumentNullException(nameof(handler));
@@ -97,7 +97,7 @@ namespace CoCoL
 		/// <param name="handler">The data to emit.</param>
 		/// <param name="input">The channel to read from.</param>
 		/// <typeparam name="T">The data type parameter.</typeparam>
-		public static Task DataSinkAsync<T>(Func<T, Task> handler, IReadChannel<T> input)
+		public static Task CollectAsync<T>(Func<T, Task> handler, IReadChannel<T> input)
 		{
 			if (handler == null)
 				throw new ArgumentNullException(nameof(handler));
@@ -588,31 +588,400 @@ namespace CoCoL
 			);
 		}
 
+
 		/// <summary>
 		/// Performs a pipeline operation by reading the input and passing it through all the handler functions in turn
 		/// </summary>
 		/// <returns>An awaitable task</returns>
-		/// <param name="handlers">The handler functions, transforming input to output.</param>
+		/// <param name="handler">The handler function, transforming input to output.</param>
 		/// <param name="input">The input channel.</param>
 		/// <param name="output">The output channel.</param>
-		/// <typeparam name="T">The data type parameter.</typeparam>
-		public static Task PipelineAsync<T>(Func<IReadChannel<T>, IWriteChannel<T>, Task>[] handlers, IReadChannel<T> input, IWriteChannel<T> output)
+		/// <typeparam name="TInput">The input data type parameter.</typeparam>
+		/// <typeparam name="TOutput">The output data type parameter.</typeparam>
+		public static Task PipelineAsync<TInput, TOutput>(Func<TInput, Task<TOutput>> handler, IReadChannel<TInput> input, IWriteChannel<TOutput> output)
 		{
 			if (input == null)
 				throw new ArgumentNullException(nameof(input));
-			if (handlers == null)
-				throw new ArgumentNullException(nameof(handlers));
+			if (handler == null)
+				throw new ArgumentNullException(nameof(handler));
 			if (output == null)
 				throw new ArgumentNullException(nameof(output));
-			
-			var channels = Enumerable.Range(0, handlers.Length - 1).Select(x => ChannelManager.CreateChannel<T>()).ToArray();
+
+			return WrapperAsync(handler, input, output);
+		}
+
+		/// <summary>
+		/// Performs a pipeline operation by reading the input and passing it through all the handler functions in turn
+		/// </summary>
+		/// <returns>An awaitable task</returns>
+		/// <param name="handler1">The first handler function.</param>
+		/// <param name="handler2">The second handler function.</param>
+		/// <param name="input">The input channel.</param>
+		/// <param name="output">The output channel.</param>
+		/// <typeparam name="TInput">The input data type parameter.</typeparam>
+		/// <typeparam name="TIntermediate1">The data type between the handlers.</typeparam>
+		/// <typeparam name="TOutput">The output data type parameter.</typeparam>
+		public static Task PipelineAsync<TInput, TIntermediate1, TOutput>(
+			Func<TInput, Task<TIntermediate1>> handler1,
+			Func<TIntermediate1, Task<TOutput>> handler2,
+			IReadChannel<TInput> input, IWriteChannel<TOutput> output)
+		{
+			if (input == null)
+				throw new ArgumentNullException(nameof(input));
+			if (handler1 == null)
+				throw new ArgumentNullException(nameof(handler1));
+			if (output == null)
+				throw new ArgumentNullException(nameof(output));
+
+			var chan1 = ChannelManager.CreateChannel<TIntermediate1>();
+
 			return Task.WhenAll(
-				handlers[0](input, channels[0]),
-				Task.WhenAll(
-					Enumerable.Range(1, channels.Length - 1)
-					.Select(x => handlers[x](channels[x - 1], channels[x]))
-			    ),
-				handlers.Last()(channels.Last(), output)
+				WrapperAsync(handler1, input, chan1),
+				WrapperAsync(handler2, chan1, output)
+			);
+		}
+
+		/// <summary>
+		/// Performs a pipeline operation by reading the input and passing it through all the handler functions in turn
+		/// </summary>
+		/// <returns>An awaitable task</returns>
+		/// <param name="handler1">The first handler function.</param>
+		/// <param name="handler2">The second handler function.</param>
+		/// <param name="handler3">The third handler function.</param>
+		/// <param name="input">The input channel.</param>
+		/// <param name="output">The output channel.</param>
+		/// <typeparam name="TInput">The input data type parameter.</typeparam>
+		/// <typeparam name="TIntermediate1">The data type between the first and second handlers.</typeparam>
+		/// <typeparam name="TIntermediate2">The data type between the second and final handlers.</typeparam>
+		/// <typeparam name="TOutput">The output data type parameter.</typeparam>
+		public static Task PipelineAsync<TInput, TIntermediate1, TIntermediate2, TOutput>(
+			Func<TInput, Task<TIntermediate1>> handler1,
+			Func<TIntermediate1, Task<TIntermediate2>> handler2,
+			Func<TIntermediate2, Task<TOutput>> handler3,
+			IReadChannel<TInput> input, IWriteChannel<TOutput> output)
+		{
+			if (input == null)
+				throw new ArgumentNullException(nameof(input));
+			if (handler1 == null)
+				throw new ArgumentNullException(nameof(handler1));
+			if (handler2 == null)
+				throw new ArgumentNullException(nameof(handler2));
+			if (handler3 == null)
+				throw new ArgumentNullException(nameof(handler3));
+			if (output == null)
+				throw new ArgumentNullException(nameof(output));
+
+			var chan1 = ChannelManager.CreateChannel<TIntermediate1>();
+			var chan2 = ChannelManager.CreateChannel<TIntermediate2>();
+
+			return Task.WhenAll(
+				WrapperAsync(handler1, input, chan1),
+				WrapperAsync(handler2, chan1, chan2),
+				WrapperAsync(handler3, chan2, output)
+			);
+		}
+		/// <summary>
+		/// Performs a pipeline operation by reading the input and passing it through all the handler functions in turn
+		/// </summary>
+		/// <returns>An awaitable task</returns>
+		/// <param name="handler1">The first handler function.</param>
+		/// <param name="handler2">The second handler function.</param>
+		/// <param name="handler3">The third handler function.</param>
+		/// <param name="handler4">The fourth handler function.</param>
+		/// <param name="input">The input channel.</param>
+		/// <param name="output">The output channel.</param>
+		/// <typeparam name="TInput">The input data type parameter.</typeparam>
+		/// <typeparam name="TIntermediate1">The data type between the first and second handlers.</typeparam>
+		/// <typeparam name="TIntermediate2">The data type between the second and third handlers.</typeparam>
+		/// <typeparam name="TIntermediate3">The data type between the third and final handlers.</typeparam>
+		/// <typeparam name="TOutput">The output data type parameter.</typeparam>
+		public static Task PipelineAsync<TInput, TIntermediate1, TIntermediate2, TIntermediate3, TOutput>(
+			Func<TInput, Task<TIntermediate1>> handler1,
+			Func<TIntermediate1, Task<TIntermediate2>> handler2,
+			Func<TIntermediate2, Task<TIntermediate3>> handler3,
+			Func<TIntermediate3, Task<TOutput>> handler4,
+			IReadChannel<TInput> input, IWriteChannel<TOutput> output)
+		{
+			if (input == null)
+				throw new ArgumentNullException(nameof(input));
+			if (handler1 == null)
+				throw new ArgumentNullException(nameof(handler1));
+			if (handler2 == null)
+				throw new ArgumentNullException(nameof(handler2));
+			if (handler3 == null)
+				throw new ArgumentNullException(nameof(handler3));
+			if (handler4 == null)
+				throw new ArgumentNullException(nameof(handler4));
+			if (output == null)
+				throw new ArgumentNullException(nameof(output));
+
+			var chan1 = ChannelManager.CreateChannel<TIntermediate1>();
+			var chan2 = ChannelManager.CreateChannel<TIntermediate2>();
+			var chan3 = ChannelManager.CreateChannel<TIntermediate3>();
+
+			return Task.WhenAll(
+				WrapperAsync(handler1, input, chan1),
+				WrapperAsync(handler2, chan1, chan2),
+				WrapperAsync(handler3, chan2, chan3),
+				WrapperAsync(handler4, chan3, output)
+			);
+		}
+
+		/// <summary>
+		/// Performs a pipeline operation by reading the input and passing it through all the handler functions in turn
+		/// </summary>
+		/// <returns>An awaitable task</returns>
+		/// <param name="handler1">The first handler function.</param>
+		/// <param name="handler2">The second handler function.</param>
+		/// <param name="handler3">The third handler function.</param>
+		/// <param name="handler4">The fourth handler function.</param>
+		/// <param name="handler5">The fifth handler function.</param>
+		/// <param name="input">The input channel.</param>
+		/// <param name="output">The output channel.</param>
+		/// <typeparam name="TInput">The input data type parameter.</typeparam>
+		/// <typeparam name="TIntermediate1">The data type between the first and second handlers.</typeparam>
+		/// <typeparam name="TIntermediate2">The data type between the second and third handlers.</typeparam>
+		/// <typeparam name="TIntermediate3">The data type between the third and fourth handlers.</typeparam>
+		/// <typeparam name="TIntermediate4">The data type between the fourth and final handlers.</typeparam>
+		/// <typeparam name="TOutput">The output data type parameter.</typeparam>
+		public static Task PipelineAsync<TInput, TIntermediate1, TIntermediate2, TIntermediate3, TIntermediate4, TOutput>(
+			Func<TInput, Task<TIntermediate1>> handler1,
+			Func<TIntermediate1, Task<TIntermediate2>> handler2,
+			Func<TIntermediate2, Task<TIntermediate3>> handler3,
+			Func<TIntermediate3, Task<TIntermediate4>> handler4,
+			Func<TIntermediate4, Task<TOutput>> handler5,
+			IReadChannel<TInput> input, IWriteChannel<TOutput> output)
+		{
+			if (input == null)
+				throw new ArgumentNullException(nameof(input));
+			if (handler1 == null)
+				throw new ArgumentNullException(nameof(handler1));
+			if (handler2 == null)
+				throw new ArgumentNullException(nameof(handler2));
+			if (handler3 == null)
+				throw new ArgumentNullException(nameof(handler3));
+			if (handler4 == null)
+				throw new ArgumentNullException(nameof(handler4));
+			if (handler5 == null)
+				throw new ArgumentNullException(nameof(handler5));
+			if (output == null)
+				throw new ArgumentNullException(nameof(output));
+
+			var chan1 = ChannelManager.CreateChannel<TIntermediate1>();
+			var chan2 = ChannelManager.CreateChannel<TIntermediate2>();
+			var chan3 = ChannelManager.CreateChannel<TIntermediate3>();
+			var chan4 = ChannelManager.CreateChannel<TIntermediate4>();
+
+			return Task.WhenAll(
+				WrapperAsync(handler1, input, chan1),
+				WrapperAsync(handler2, chan1, chan2),
+				WrapperAsync(handler3, chan2, chan3),
+				WrapperAsync(handler4, chan3, chan4),
+				WrapperAsync(handler5, chan4, output)
+			);
+		}
+
+		/// <summary>
+		/// Performs a pipeline operation by reading the input and passing it through all the handler functions in turn
+		/// </summary>
+		/// <returns>An awaitable task</returns>
+		/// <param name="handler1">The first handler function.</param>
+		/// <param name="handler2">The second handler function.</param>
+		/// <param name="handler3">The third handler function.</param>
+		/// <param name="handler4">The fourth handler function.</param>
+		/// <param name="handler5">The fifth handler function.</param>
+		/// <param name="handler6">The sixth handler function.</param>
+		/// <param name="input">The input channel.</param>
+		/// <param name="output">The output channel.</param>
+		/// <typeparam name="TInput">The input data type parameter.</typeparam>
+		/// <typeparam name="TIntermediate1">The data type between the first and second handlers.</typeparam>
+		/// <typeparam name="TIntermediate2">The data type between the second and third handlers.</typeparam>
+		/// <typeparam name="TIntermediate3">The data type between the third and fourth handlers.</typeparam>
+		/// <typeparam name="TIntermediate4">The data type between the fourth and fifth handlers.</typeparam>
+		/// <typeparam name="TIntermediate5">The data type between the fifth and final handlers.</typeparam>
+		/// <typeparam name="TOutput">The output data type parameter.</typeparam>
+		public static Task PipelineAsync<TInput, TIntermediate1, TIntermediate2, TIntermediate3, TIntermediate4, TIntermediate5, TOutput>(
+			Func<TInput, Task<TIntermediate1>> handler1,
+			Func<TIntermediate1, Task<TIntermediate2>> handler2,
+			Func<TIntermediate2, Task<TIntermediate3>> handler3,
+			Func<TIntermediate3, Task<TIntermediate4>> handler4,
+			Func<TIntermediate4, Task<TIntermediate5>> handler5,
+			Func<TIntermediate5, Task<TOutput>> handler6,
+			IReadChannel<TInput> input, IWriteChannel<TOutput> output)
+		{
+			if (input == null)
+				throw new ArgumentNullException(nameof(input));
+			if (handler1 == null)
+				throw new ArgumentNullException(nameof(handler1));
+			if (handler2 == null)
+				throw new ArgumentNullException(nameof(handler2));
+			if (handler3 == null)
+				throw new ArgumentNullException(nameof(handler3));
+			if (handler4 == null)
+				throw new ArgumentNullException(nameof(handler4));
+			if (handler5 == null)
+				throw new ArgumentNullException(nameof(handler5));
+			if (handler6 == null)
+				throw new ArgumentNullException(nameof(handler6));
+			if (output == null)
+				throw new ArgumentNullException(nameof(output));
+
+			var chan1 = ChannelManager.CreateChannel<TIntermediate1>();
+			var chan2 = ChannelManager.CreateChannel<TIntermediate2>();
+			var chan3 = ChannelManager.CreateChannel<TIntermediate3>();
+			var chan4 = ChannelManager.CreateChannel<TIntermediate4>();
+			var chan5 = ChannelManager.CreateChannel<TIntermediate5>();
+
+			return Task.WhenAll(
+				WrapperAsync(handler1, input, chan1),
+				WrapperAsync(handler2, chan1, chan2),
+				WrapperAsync(handler3, chan2, chan3),
+				WrapperAsync(handler4, chan3, chan4),
+				WrapperAsync(handler5, chan4, chan5),
+				WrapperAsync(handler6, chan5, output)
+			);
+		}
+
+		/// <summary>
+		/// Performs a pipeline operation by reading the input and passing it through all the handler functions in turn
+		/// </summary>
+		/// <returns>An awaitable task</returns>
+		/// <param name="handler1">The first handler function.</param>
+		/// <param name="handler2">The second handler function.</param>
+		/// <param name="handler3">The third handler function.</param>
+		/// <param name="handler4">The fourth handler function.</param>
+		/// <param name="handler5">The fifth handler function.</param>
+		/// <param name="handler6">The sixth handler function.</param>
+		/// <param name="handler7">The seventh handler function.</param>
+		/// <param name="input">The input channel.</param>
+		/// <param name="output">The output channel.</param>
+		/// <typeparam name="TInput">The input data type parameter.</typeparam>
+		/// <typeparam name="TIntermediate1">The data type between the first and second handlers.</typeparam>
+		/// <typeparam name="TIntermediate2">The data type between the second and third handlers.</typeparam>
+		/// <typeparam name="TIntermediate3">The data type between the third and fourth handlers.</typeparam>
+		/// <typeparam name="TIntermediate4">The data type between the fourth and fifth handlers.</typeparam>
+		/// <typeparam name="TIntermediate5">The data type between the fifth and sixth handlers.</typeparam>
+		/// <typeparam name="TIntermediate6">The data type between the sixth and final handlers.</typeparam>
+		/// <typeparam name="TOutput">The output data type parameter.</typeparam>
+		public static Task PipelineAsync<TInput, TIntermediate1, TIntermediate2, TIntermediate3, TIntermediate4, TIntermediate5, TIntermediate6, TOutput>(
+			Func<TInput, Task<TIntermediate1>> handler1,
+			Func<TIntermediate1, Task<TIntermediate2>> handler2,
+			Func<TIntermediate2, Task<TIntermediate3>> handler3,
+			Func<TIntermediate3, Task<TIntermediate4>> handler4,
+			Func<TIntermediate4, Task<TIntermediate5>> handler5,
+			Func<TIntermediate5, Task<TIntermediate6>> handler6,
+			Func<TIntermediate6, Task<TOutput>> handler7,
+			IReadChannel<TInput> input, IWriteChannel<TOutput> output)
+		{
+			if (input == null)
+				throw new ArgumentNullException(nameof(input));
+			if (handler1 == null)
+				throw new ArgumentNullException(nameof(handler1));
+			if (handler2 == null)
+				throw new ArgumentNullException(nameof(handler2));
+			if (handler3 == null)
+				throw new ArgumentNullException(nameof(handler3));
+			if (handler4 == null)
+				throw new ArgumentNullException(nameof(handler4));
+			if (handler5 == null)
+				throw new ArgumentNullException(nameof(handler5));
+			if (handler6 == null)
+				throw new ArgumentNullException(nameof(handler6));
+			if (handler7 == null)
+				throw new ArgumentNullException(nameof(handler7));
+			if (output == null)
+				throw new ArgumentNullException(nameof(output));
+
+			var chan1 = ChannelManager.CreateChannel<TIntermediate1>();
+			var chan2 = ChannelManager.CreateChannel<TIntermediate2>();
+			var chan3 = ChannelManager.CreateChannel<TIntermediate3>();
+			var chan4 = ChannelManager.CreateChannel<TIntermediate4>();
+			var chan5 = ChannelManager.CreateChannel<TIntermediate5>();
+			var chan6 = ChannelManager.CreateChannel<TIntermediate6>();
+
+			return Task.WhenAll(
+				WrapperAsync(handler1, input, chan1),
+				WrapperAsync(handler2, chan1, chan2),
+				WrapperAsync(handler3, chan2, chan3),
+				WrapperAsync(handler4, chan3, chan4),
+				WrapperAsync(handler5, chan4, chan5),
+				WrapperAsync(handler6, chan5, chan6),
+				WrapperAsync(handler7, chan6, output)
+			);
+		}
+
+		/// <summary>
+		/// Performs a pipeline operation by reading the input and passing it through all the handler functions in turn
+		/// </summary>
+		/// <returns>An awaitable task</returns>
+		/// <param name="handler1">The first handler function.</param>
+		/// <param name="handler2">The second handler function.</param>
+		/// <param name="handler3">The third handler function.</param>
+		/// <param name="handler4">The fourth handler function.</param>
+		/// <param name="handler5">The fifth handler function.</param>
+		/// <param name="handler6">The sixth handler function.</param>
+		/// <param name="handler7">The seventh handler function.</param>
+		/// <param name="handler8">The eight handler function.</param>
+		/// <param name="input">The input channel.</param>
+		/// <param name="output">The output channel.</param>
+		/// <typeparam name="TInput">The input data type parameter.</typeparam>
+		/// <typeparam name="TIntermediate1">The data type between the first and second handlers.</typeparam>
+		/// <typeparam name="TIntermediate2">The data type between the second and third handlers.</typeparam>
+		/// <typeparam name="TIntermediate3">The data type between the third and fourth handlers.</typeparam>
+		/// <typeparam name="TIntermediate4">The data type between the fourth and fifth handlers.</typeparam>
+		/// <typeparam name="TIntermediate5">The data type between the fifth and sixth handlers.</typeparam>
+		/// <typeparam name="TIntermediate6">The data type between the sixth and seventh handlers.</typeparam>
+		/// <typeparam name="TIntermediate7">The data type between the seventh and final handlers.</typeparam>
+		/// <typeparam name="TOutput">The output data type parameter.</typeparam>
+		public static Task PipelineAsync<TInput, TIntermediate1, TIntermediate2, TIntermediate3, TIntermediate4, TIntermediate5, TIntermediate6, TIntermediate7, TOutput>(
+			Func<TInput, Task<TIntermediate1>> handler1,
+			Func<TIntermediate1, Task<TIntermediate2>> handler2,
+			Func<TIntermediate2, Task<TIntermediate3>> handler3,
+			Func<TIntermediate3, Task<TIntermediate4>> handler4,
+			Func<TIntermediate4, Task<TIntermediate5>> handler5,
+			Func<TIntermediate5, Task<TIntermediate6>> handler6,
+			Func<TIntermediate6, Task<TIntermediate7>> handler7,
+			Func<TIntermediate7, Task<TOutput>> handler8,
+			IReadChannel<TInput> input, IWriteChannel<TOutput> output)
+		{
+			if (input == null)
+				throw new ArgumentNullException(nameof(input));
+			if (handler1 == null)
+				throw new ArgumentNullException(nameof(handler1));
+			if (handler2 == null)
+				throw new ArgumentNullException(nameof(handler2));
+			if (handler3 == null)
+				throw new ArgumentNullException(nameof(handler3));
+			if (handler4 == null)
+				throw new ArgumentNullException(nameof(handler4));
+			if (handler5 == null)
+				throw new ArgumentNullException(nameof(handler5));
+			if (handler6 == null)
+				throw new ArgumentNullException(nameof(handler6));
+			if (handler7 == null)
+				throw new ArgumentNullException(nameof(handler7));
+			if (handler8 == null)
+				throw new ArgumentNullException(nameof(handler8));
+			if (output == null)
+				throw new ArgumentNullException(nameof(output));
+
+			var chan1 = ChannelManager.CreateChannel<TIntermediate1>();
+			var chan2 = ChannelManager.CreateChannel<TIntermediate2>();
+			var chan3 = ChannelManager.CreateChannel<TIntermediate3>();
+			var chan4 = ChannelManager.CreateChannel<TIntermediate4>();
+			var chan5 = ChannelManager.CreateChannel<TIntermediate5>();
+			var chan6 = ChannelManager.CreateChannel<TIntermediate6>();
+			var chan7 = ChannelManager.CreateChannel<TIntermediate7>();
+
+			return Task.WhenAll(
+				WrapperAsync(handler1, input, chan1),
+				WrapperAsync(handler2, chan1, chan2),
+				WrapperAsync(handler3, chan2, chan3),
+				WrapperAsync(handler4, chan3, chan4),
+				WrapperAsync(handler5, chan4, chan5),
+				WrapperAsync(handler6, chan5, chan6),
+				WrapperAsync(handler7, chan6, chan7),
+				WrapperAsync(handler8, chan7, output)
 			);
 		}
 
