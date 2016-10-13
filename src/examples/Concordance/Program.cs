@@ -402,10 +402,8 @@ namespace Concordance
 				// Join the results
 				Skeletons.GatherAllAsync(wordmapsources, wordmaptarget),
 
+				// Combine and sort the maps
 				Skeletons.PipelineAsync(Combiner, Sorter, wordmaptarget, sortedlist),
-
-				// Combine all maps into a single map
-				Skeletons.WrapperAsync(Combiner, wordmaptarget, unsortedlist),
 
 				// Sort the list based on usage
 				Skeletons.WrapperAsync(Sorter, unsortedlist, sortedlist),
