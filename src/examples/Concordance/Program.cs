@@ -237,7 +237,7 @@ namespace Concordance
 			/// <summary>
 			/// The current collected sequence of words
 			/// </summary>
-			private readonly List<WordEntry> buffer = new List<WordEntry>();
+			private readonly List<WordEntry> m_buffer = new List<WordEntry>();
 
 			/// <summary>
 			/// The word sequence length
@@ -265,12 +265,12 @@ namespace Concordance
 				// If sentence ends, reset buffer state
 				if (data.Word == SENTENCE_TERMINATOR)
 				{
-					buffer.Clear();
+					m_buffer.Clear();
 				}
 				// If stream ends, send terminator
 				else if (data.Word == STREAM_TERMINATOR)
 				{
-					buffer.Clear();
+					m_buffer.Clear();
 					res = new KeyValuePair<bool, WordEntry>(true, new WordEntry()
 					{
 						Line = data.Line,
@@ -281,20 +281,20 @@ namespace Concordance
 				else
 				{
 					// First word copies data
-					buffer.Add(data);
+					m_buffer.Add(data);
 
 					// Check to see if we have enough to emit a sentence
-					if (buffer.Count == m_wordlength)
+					if (m_buffer.Count == m_wordlength)
 					{
 						res = new KeyValuePair<bool, WordEntry>(true, new WordEntry()
 						{
-							Line = buffer.First().Line,
-							Pos = buffer.First().Pos,
-							Word = string.Join(" ", buffer.Select(x => x.Word))
+							Line = m_buffer.First().Line,
+							Pos = m_buffer.First().Pos,
+							Word = string.Join(" ", m_buffer.Select(x => x.Word))
 						});
 
 						// Prepare for next word
-						buffer.RemoveAt(0);
+						m_buffer.RemoveAt(0);
 					}
 				}
 
