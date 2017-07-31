@@ -69,9 +69,10 @@ namespace CoCoL
 		/// </summary>
 		public Task RetireAsync()
 		{
-			if (m_target == null)
+            var tg = m_target;
+			if (tg == null)
 				throw new ObjectDisposedException(this.GetType().FullName);
-			return m_target.RetireAsync();
+			return tg.RetireAsync();
 		}
 		/// <summary>
 		/// Stops this channel from processing messages
@@ -79,9 +80,10 @@ namespace CoCoL
 		/// <param name="immediate">Retires the channel without processing the queue, which may cause lost messages</param>
 		public Task RetireAsync(bool immediate)
 		{
-			if (m_target == null)
+            var tg = m_target;
+			if (tg == null)
 				throw new ObjectDisposedException(this.GetType().FullName);
-			return m_target.RetireAsync(immediate);
+			return tg.RetireAsync(immediate);
 		}
 		/// <summary>
 		/// Gets a value indicating whether this instance is retired.
@@ -90,10 +92,11 @@ namespace CoCoL
 		public Task<bool> IsRetiredAsync
 		{ 
 			get 
-			{ 
-				if (m_target == null)
+			{
+                var tg = m_target;
+				if (tg == null)
 					throw new ObjectDisposedException(this.GetType().FullName);
-				return m_target.IsRetiredAsync; 
+				return tg.IsRetiredAsync; 
 			} 
 		}
 		#endregion
@@ -104,13 +107,14 @@ namespace CoCoL
 		/// </summary>
 		public async Task JoinAsync()
 		{
-			if (m_target == null)
+			var tg = m_target;
+			if (tg == null)
 				throw new ObjectDisposedException(this.GetType().FullName);
 
-			if (m_target is IJoinAbleChannel && !(await m_target.IsRetiredAsync))
+			if (tg is IJoinAbleChannel && !(await tg.IsRetiredAsync))
 			{
 				if (System.Threading.Interlocked.Exchange(ref m_hasLeft, 0) == 1)
-					await ((IJoinAbleChannel)m_target).JoinAsync(m_isReader);
+					await ((IJoinAbleChannel)tg).JoinAsync(m_isReader);
 			}
 		}
 
@@ -119,13 +123,14 @@ namespace CoCoL
 		/// </summary>
 		public async Task LeaveAsync()
 		{
-			if (m_target == null)
+            var tg = m_target;
+			if (tg == null)
 				throw new ObjectDisposedException(this.GetType().FullName);
 
-			if (m_target is IJoinAbleChannel && !(await m_target.IsRetiredAsync))
+			if (tg is IJoinAbleChannel && !(await tg.IsRetiredAsync))
 			{
 				if (System.Threading.Interlocked.Exchange(ref m_hasLeft, 1) == 0)
-					await ((IJoinAbleChannel)m_target).LeaveAsync(m_isReader);
+					await ((IJoinAbleChannel)tg).LeaveAsync(m_isReader);
 			}
 		}
 		#endregion
@@ -168,9 +173,10 @@ namespace CoCoL
 		/// <returns>The async.</returns>
 		public Task<T> ReadAsync(TimeSpan timeout, ITwoPhaseOffer offer = null)
 		{
-			if (m_target == null)
+            var tg = m_target;
+			if (tg == null)
 				throw new ObjectDisposedException(this.GetType().FullName);
-			return ((IReadChannel<T>)m_target).ReadAsync(timeout, offer);
+			return ((IReadChannel<T>)tg).ReadAsync(timeout, offer);
 		}
 		#endregion
 	}
@@ -201,7 +207,10 @@ namespace CoCoL
 		/// <returns>The async.</returns>
 		public Task WriteAsync(T value, TimeSpan timeout, ITwoPhaseOffer offer = null)
 		{
-			return ((IWriteChannel<T>)m_target).WriteAsync(value, timeout, offer);
+			var tg = m_target;
+			if (tg == null)
+				throw new ObjectDisposedException(this.GetType().FullName);
+			return ((IWriteChannel<T>)tg).WriteAsync(value, timeout, offer);
 		}
 
 		#endregion
