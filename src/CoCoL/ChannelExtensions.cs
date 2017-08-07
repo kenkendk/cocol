@@ -104,10 +104,7 @@ namespace CoCoL
 				throw new TaskCanceledException();
 			else if (task.IsFaulted)
 			{
-				if (task.Exception.Flatten().InnerExceptions.Count == 1)
-					throw task.Exception.Flatten().InnerExceptions.First();
-				else
-					throw task.Exception;
+                throw task.Exception;
 			}
 
 			return task;
