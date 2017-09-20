@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>CoCoL</id>
-    <version>1.5.0</version>
+    <version>1.5.1</version>
     <title>CoCoL</title>
     <authors>Kenneth Skovhede</authors>
     <owners>Kenneth Skovhede</owners>
@@ -10,9 +10,9 @@
     <projectUrl>https://github.com/kenkendk/cocol</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Concurrent Communications Library</description>
-    <releaseNotes>Fixed an issue with storing scopes in LogicalContext. Support for using ExecutionScope directly with Tasks. Support for channel overflow limits and strategies. ExecutionScope to support limited concurrency. Improvements to the API for common patterns. Better channelscope usage.</releaseNotes>
-    <copyright>Copyright 2016, Kenneth Skovhede</copyright>
-    <tags>Multithreading Multiprocessing Concurrency CSP Go Actor</tags>
+    <releaseNotes>Added broadcast channels. Added better call stack information. Fixed some minor issues.</releaseNotes>
+    <copyright>Copyright 2017, Kenneth Skovhede</copyright>
+    <tags>Multithreading Multiprocessing Concurrency CSP Go Golang Actor</tags>
   </metadata>
   <files>
     <file src="CoCoL/bin/Release/CoCoL.dll" target="lib/net45" />
