@@ -250,7 +250,7 @@ namespace CoCoL
 					if (cur.m_lookup.TryGetValue(name, out res))
 						return res;
 
-					if (Isolated)
+                    if (cur.Isolated)
 						cur = null;
 					else
 						cur = cur.ParentScope;
