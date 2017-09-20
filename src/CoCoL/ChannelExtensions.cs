@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Runtime.ExceptionServices;
 
 namespace CoCoL
 {
@@ -104,10 +105,15 @@ namespace CoCoL
 				throw new TaskCanceledException();
 			else if (task.IsFaulted)
 			{
-				if (task.Exception.Flatten().InnerExceptions.Count == 1)
-					throw task.Exception.Flatten().InnerExceptions.First();
-				else
-					throw task.Exception;
+                var innerExceptions = task.Exception.Flatten().InnerExceptions;
+                if (innerExceptions.Count == 1)
+                {
+                    ExceptionDispatchInfo.Capture(innerExceptions.First()).Throw();
+                }
+                else
+                {
+                    throw task.Exception;
+                }                
 			}
 
 			return task;
