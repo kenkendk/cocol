@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Net.Sockets;
+using System.Linq;
 
 namespace CoCoL.Network
 {
@@ -100,8 +101,22 @@ namespace CoCoL.Network
 			}
 			catch(Exception ex)
 			{
-				LOG.Fatal("Crashed network client", ex);
-				throw;
+                try { Requests.Dispose(); }
+                catch { }
+
+                if (ex.IsRetiredException())
+                {
+                    if (m_pendingRequests.Values.Any(x => x.Count > 0))
+                    {
+                        LOG.Fatal("Network client is retired, but there were pending messages in queue");
+                        throw;
+                    }
+                }
+                else
+                {
+                    LOG.Fatal("Crashed network client", ex);
+                    throw;
+                }
 			}
 		}
 
