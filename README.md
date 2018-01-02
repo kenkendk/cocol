@@ -25,37 +25,40 @@ Hello World
 
 The most basic program with multithreading would be a producer/consumer setup, where one thread produces data, and another consumes it:
 ```C#
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 using CoCoL;
 
 class Example
 {
-  async Task Produce(IChannel<int> channel)
-  {
-    foreach(var i in Enumerable.Range(0, 5))
-      await channel.WriteAsync(i);
-    channel.Retire();
-  }
+    static async Task Produce(IChannel<int> channel)
+    {
+        foreach (var i in Enumerable.Range(0, 5))
+            await channel.WriteAsync(i);
+        channel.Retire();
+    }
 
-  async Task Consume(IChannel<int> channel)
-  {
-    try
+    static async Task Consume(IChannel<int> channel)
     {
-      while(true)
-        Console.WriteLine("Hello World: {0}", await channel.ReadAsync());
+        try
+        {
+            while (true)
+                Console.WriteLine("Hello World: {0}", await channel.ReadAsync());
+        }
+        catch (RetiredException)
+        {
+        }
     }
-    catch (RetiredException) 
+
+    static void Main()
     {
+        var channel = ChannelManager.CreateChannel<int>();
+        Task.WhenAll(
+          Produce(channel),
+          Consume(channel)
+        ).Wait();
     }
-  }
-  
-  static void Main()
-  {
-    var channel = ChannelManager.CreateChannel<int>();
-    Task.WhenAll(
-      Produce(channel),
-      Consume(channel)
-    ).Wait();
-  }
 }
 ```
 Output:
@@ -97,7 +100,7 @@ Multiple channels
 If the producers each have their own channel, the consumer can choose to read from any of the channels:
 
 ```C#
-async Task Consume(IEnumerable<IChannel<int>> channels)
+static async Task Consume(IEnumerable<IChannel<int>> channels)
 {
   while(true)
     Console.WriteLine("Hello World: {0}", await channels.ReadFromAnyAsync());
