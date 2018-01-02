@@ -154,6 +154,16 @@ namespace CoCoL
 			return ReadFromAnyAsync(null, channels.AsEnumerable(), Timeout.Infinite, MultiChannelPriority.Any);
 		}
 
+        /// <summary>
+        /// Reads from any of the specified channels
+        /// </summary>
+        /// <param name="channels">The list of channels to call.</param>
+        /// <typeparam name="T">The channel data type.</typeparam>
+        public static Task<MultisetResult<T>> ReadFromAnyAsync<T>(this IEnumerable<IReadChannel<T>> channels)
+        {
+            return ReadFromAnyAsync(null, channels, Timeout.Infinite, MultiChannelPriority.Any);
+        }
+
 		/// <summary>
 		/// Reads from any of the specified channels
 		/// </summary>
