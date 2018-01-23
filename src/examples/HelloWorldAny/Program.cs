@@ -23,7 +23,9 @@ class Example
     {
         var channels = Enumerable.Range(0, 5).Select(x => {
             var channel = ChannelManager.CreateChannel<int>();
-            Produce(channel);
+            // Using .FireAndForget() as we do not want to wait,
+            // but not consuming the task gives a compiler warning
+            Produce(channel).FireAndForget();
             return channel;
         });
 

@@ -12,17 +12,21 @@ namespace CoCoL.Blocks
 		private IReadChannel<T> m_input;
 		private IWriteChannel<T> m_output;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:CoCoL.Blocks.Identity`1"/> process.
+        /// </summary>
+        /// <param name="input">The input channel.</param>
+        /// <param name="output">The output channel.</param>
 		public Identity(IReadChannel<T> input, IWriteChannel<T> output)
 		{
-			if (input == null)
-				throw new ArgumentNullException("input");
-			if (output == null)
-				throw new ArgumentNullException("output");
-
-			m_input = input;
-			m_output = output;
+            m_input = input ?? throw new ArgumentNullException(nameof(input));
+			m_output = output ?? throw new ArgumentNullException(nameof(output));
 		}
 
+        /// <summary>
+        /// Runs the process.
+        /// </summary>
+        /// <returns>An awaitable task.</returns>
 		public async override Task RunAsync()
 		{
 			try

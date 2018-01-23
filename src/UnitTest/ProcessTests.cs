@@ -19,7 +19,7 @@ namespace UnitTest
 		private class Producer : ProcessHelper
 		{
 			[ChannelName("work")]
-			private IWriteChannelEnd<int> m_channel;
+			private IWriteChannelEnd<int> m_channel = null;
 
 			protected override async Task Start()
 			{
@@ -33,7 +33,7 @@ namespace UnitTest
 			public int Sum { get; private set; }
 			
 			[ChannelName("work")]
-			private IReadChannelEnd<int> m_channel;
+			private IReadChannelEnd<int> m_channel = null;
 
 			protected override async Task Start()
 			{

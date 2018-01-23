@@ -17,7 +17,7 @@ namespace UnitTest
 		private class Reader
 		{
 			[ChannelName("input")]
-			private IReadChannel<int> m_read;
+			private IReadChannel<int> m_read = null;
 
 			public bool HasChannel { get { return m_read != null; } }
 
@@ -27,7 +27,7 @@ namespace UnitTest
 		private class Writer
 		{
 			[ChannelName("input")]
-			private IWriteChannel<int> m_write;
+			private IWriteChannel<int> m_write = null;
 
 			public bool HasChannel { get { return m_write != null; } }
 
@@ -37,7 +37,7 @@ namespace UnitTest
 		private class ReaderEnd
 		{
 			[ChannelName("input")]
-			private IReadChannelEnd<int> m_read;
+			private IReadChannelEnd<int> m_read = null;
 
 			public bool HasChannel { get { return m_read != null; } }
 
@@ -47,7 +47,7 @@ namespace UnitTest
 		private class WriterEnd
 		{
 			[ChannelName("input")]
-			private IWriteChannelEnd<int> m_write;
+			private IWriteChannelEnd<int> m_write = null;
 
 			public bool HasChannel { get { return m_write != null; } }
 

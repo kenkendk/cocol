@@ -59,7 +59,7 @@ namespace UnitTest
 		private class Writer
 		{
 			[BroadcastChannelName("bcast", initialBarrierSize: 10)]
-			public IWriteChannel<int> chan;
+			public IWriteChannel<int> chan = null;
 		}
 
         [TEST_METHOD]

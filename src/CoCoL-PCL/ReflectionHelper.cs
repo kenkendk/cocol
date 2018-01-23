@@ -3,9 +3,8 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.Linq;
 
-/// <summary>
-/// CoCoL-PCL implementation of missing System.Reflection items
-/// </summary>
+// CoCoL-PCL implementation of missing System.Reflection items
+
 namespace System.Reflection
 {
 	internal enum BindingFlags

@@ -13,20 +13,23 @@ namespace CoCoL.Blocks
 		private IWriteChannel<T> m_outputA;
 		private IWriteChannel<T> m_outputB;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:CoCoL.Blocks.Delta`1"/> process.
+        /// </summary>
+        /// <param name="input">The input channel.</param>
+        /// <param name="outputA">Output channel A.</param>
+        /// <param name="outputB">Output channel B.</param>
 		public Delta(IReadChannel<T> input, IWriteChannel<T> outputA, IWriteChannel<T> outputB)
 		{
-			if (input == null)
-				throw new ArgumentNullException("input");
-			if (outputA == null)
-				throw new ArgumentNullException("outputA");
-			if (outputB == null)
-				throw new ArgumentNullException("outputB");
-			
-			m_input = input;
-			m_outputA = outputA;
-			m_outputB = outputB;
+            m_input = input ?? throw new ArgumentNullException(nameof(input));
+			m_outputA = outputA ?? throw new ArgumentNullException(nameof(outputA));
+			m_outputB = outputB ?? throw new ArgumentNullException(nameof(outputB));
 		}
 
+        /// <summary>
+        /// Runs the process.
+        /// </summary>
+        /// <returns>An awaitable task.</returns>
 		public async override Task RunAsync()
 		{
 
