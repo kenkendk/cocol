@@ -16,6 +16,10 @@
   </metadata>
   <files>
     <file src="CoCoL/bin/Release/CoCoL.dll" target="lib/net45" />
+    <file src="CoCoL/bin/Release/CoCoL.xml" target="lib/net45" />
     <file src="CoCoL-PCL/bin/Release/CoCoL.dll" target="lib/portable-net45+netcore45+wp8" />
+    <file src="CoCoL-PCL/bin/Release/CoCoL.xml" target="lib/portable-net45+netcore45+wp8" />
+    <file src="CoCoL-NetCore/bin/Release/netcoreapp2.0/CoCoL.dll" target="lib/netcoreapp2.0" />
+    <file src="CoCoL-NetCore/bin/Release/netcoreapp2.0/CoCoL.xml" target="lib/netcoreapp2.0" />
   </files>
 </package>
