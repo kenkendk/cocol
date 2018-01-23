@@ -7,7 +7,7 @@ install:
 script:
   - msbuild /p:Configuration=Release src/CoCoL.sln
   - mono ./testrunner/NUnit.ConsoleRunner.3.4.0/tools/nunit3-console.exe ./src/UnitTest/bin/Release/UnitTest.exe
-  - cd src/CoCoL-NetCore && dotnet test
+  - cd src/UnitTest-NetCore && dotnet test
 
 env:
   global:
