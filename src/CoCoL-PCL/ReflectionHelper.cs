@@ -8,7 +8,7 @@ using System.Linq;
 /// </summary>
 namespace System.Reflection
 {
-	public enum BindingFlags
+	internal enum BindingFlags
 	{
 		Default = 0,
 		IgnoreCase = 1,
