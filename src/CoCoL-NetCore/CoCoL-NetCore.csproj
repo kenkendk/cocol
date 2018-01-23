@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
+    <ReleaseVersion>1.5.1</ReleaseVersion>
+    <AssemblyName>CoCoL</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
