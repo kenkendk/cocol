@@ -170,6 +170,10 @@ namespace CoCoL
 		private static bool __IsFirstUsage = true;
 		private static ExecutionScope __Current = null;
 
+        /// <summary>
+        /// Gets the current execution scope.
+        /// </summary>
+        /// <value>The current scope.</value>
 		public static ExecutionScope Current
 		{
 			get

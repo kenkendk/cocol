@@ -297,6 +297,10 @@ namespace CoCoL
 		private static bool __IsFirstUsage = true;
 		private static ChannelScope __Current = null;
 
+        /// <summary>
+        /// Gets the current channel scope.
+        /// </summary>
+        /// <value>The current scope.</value>
 		public static ChannelScope Current
 		{
 			get
