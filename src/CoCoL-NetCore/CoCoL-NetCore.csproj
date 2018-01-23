@@ -2,10 +2,14 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
-    <ReleaseVersion>1.5.1</ReleaseVersion>
+    <ReleaseVersion>1.6.0</ReleaseVersion>
     <AssemblyName>CoCoL</AssemblyName>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType></DebugType>
+    <DocumentationFile>bin\Release\netcoreapp2.0\CoCoL.xml</DocumentationFile>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\CoCoL\SingleThreadedWorker.cs">
       <Link>SingleThreadedWorker.cs</Link>
