@@ -10,7 +10,7 @@ build: $(PROJECT_NAME).sln $(DEPENDS_CS)
 nupkg/CoCoL.$(VERSION).nupkg: $(PROJECT_NAME).nuspec
 	nuget pack $(PROJECT_NAME).nuspec
 
-pack: nupkg/$(PROJECT_NAME).$(VERSION).nupkg build
+pack: build nupkg/$(PROJECT_NAME).$(VERSION).nupkg
 
 deploy: pack
 	nuget push $(PROJECT_NAME).$(VERSION).nupkg
