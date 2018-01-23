@@ -127,10 +127,12 @@ namespace CoCoL
 		/// If the underlying threadpool does not support finishing, this call does nothing
 		/// </summary>
 		/// <param name="waittime">The maximum time to wait for completion.</param>
-		public void EnsureFinished(TimeSpan waittime = default(TimeSpan))
+		public Task EnsureFinishedAsync(TimeSpan waittime = default(TimeSpan))
 		{
 			if (m_threadPool is IFinishAbleThreadPool)
-				((IFinishAbleThreadPool)m_threadPool).EnsureFinished(waittime);
+				return ((IFinishAbleThreadPool)m_threadPool).EnsureFinishedAsync(waittime);
+
+            return Task.FromResult(true);
 		}
 
 

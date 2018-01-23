@@ -238,7 +238,7 @@ namespace CoCoL
 		/// Ensures that all threads are finished
 		/// </summary>
 		/// <param name="waittime">The time to wait for completion</param>
-		public void EnsureFinished(TimeSpan waittime = default(TimeSpan))
+		public async Task EnsureFinishedAsync(TimeSpan waittime = default(TimeSpan))
 		{
 			lock (m_lock)
 			{
@@ -253,11 +253,7 @@ namespace CoCoL
 			var endttime = DateTime.Now + waittime;
 			while (DateTime.Now < endttime)
 			{
-#if DISABLE_WAITCALLBACK
-				System.Threading.Tasks.Task.Delay(100).Wait();
-#else
-				System.Threading.Thread.Sleep(100);
-#endif
+                await Task.Delay(100);
 				lock (m_lock)
 					if (m_instances == 0)
 						return;

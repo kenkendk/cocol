@@ -267,7 +267,7 @@ namespace CoCoL
 		/// Ensures that the threadpool is finished or throws an exception
 		/// </summary>
 		/// <param name="waittime">The maximum time to wait for completion.</param>
-		void EnsureFinished(TimeSpan waittime = default(TimeSpan));
+		Task EnsureFinishedAsync(TimeSpan waittime = default(TimeSpan));
 	}
 }
 
