@@ -1,13 +1,20 @@
 ﻿using System;
 using CoCoL;
 using CoCoL.Network;
-using NUnit.Framework;
 using System.Threading.Tasks;
 using System.Threading;
 
+#if NETCOREAPP2_0
+using TOP_LEVEL = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
+using TEST_METHOD = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+#else
+using TOP_LEVEL = NUnit.Framework.TestFixtureAttribute;
+using TEST_METHOD = NUnit.Framework.TestAttribute;
+#endif
+
 namespace UnitTest
 {
-	[TestFixture]
+    [TOP_LEVEL]
 	public class NetworkChannelTest
 	{
 		private class SelfHoster : IDisposable
@@ -46,7 +53,7 @@ namespace UnitTest
 			#endregion
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void SimpleNetwork()
 		{
 			using (new SelfHoster())
@@ -63,7 +70,7 @@ namespace UnitTest
 			}
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void SimpleNetworkTimeout()
 		{
 			using (new SelfHoster())
@@ -86,7 +93,7 @@ namespace UnitTest
 			}
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void MixedOperationOnNetwork()
 		{
 			using (new SelfHoster())
@@ -94,7 +101,7 @@ namespace UnitTest
 				new MixedOperationTest().TestMultiTypeReadWrite();
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestMultiAccessOperationOnNetwork()
 		{
 			using (new SelfHoster())

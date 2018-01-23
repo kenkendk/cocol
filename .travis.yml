@@ -4,7 +4,7 @@ install:
   - nuget restore src/CoCoL.sln
   - nuget install NUnit.Runners -Version 3.4.0 -OutputDirectory testrunner
 script:
-  - xbuild /p:Configuration=Release src/CoCoL.sln
+  - msbuild /p:Configuration=Release src/CoCoL.sln
   - mono ./testrunner/NUnit.ConsoleRunner.3.4.0/tools/nunit3-console.exe ./src/UnitTest/bin/Release/UnitTest.exe
 
 env:

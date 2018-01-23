@@ -1,16 +1,23 @@
 ﻿using System;
-using NUnit.Framework;
 using System.Threading.Tasks;
 using CoCoL;
 using System.Collections.Generic;
 using System.Linq;
 
+#if NETCOREAPP2_0
+using TOP_LEVEL = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
+using TEST_METHOD = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+#else
+using TOP_LEVEL = NUnit.Framework.TestFixtureAttribute;
+using TEST_METHOD = NUnit.Framework.TestAttribute;
+#endif
+
 namespace UnitTest
 {
-	[TestFixture]
+    [TOP_LEVEL]
 	public class TimeoutTests
 	{
-		[Test]
+        [TEST_METHOD]
 		public void TestTimeoutSimple()
 		{
 			var c = ChannelManager.CreateChannel<int>();
@@ -32,7 +39,7 @@ namespace UnitTest
 				throw new Exception("Failed to get timeout");
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestTimeoutMultiple()
 		{
 			var c1 = ChannelManager.CreateChannel<int>();
@@ -57,7 +64,7 @@ namespace UnitTest
 
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestTimeoutMultipleTimes()
 		{
 			var c1 = ChannelManager.CreateChannel<int>();
@@ -92,7 +99,7 @@ namespace UnitTest
 			
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestTimeoutMultipleTimesSuccession()
 		{
 			var c1 = ChannelManager.CreateChannel<int>();
@@ -164,7 +171,7 @@ namespace UnitTest
 					throw new Exception("Failed to get timeout");
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestMixedTimeout()
 		{
 			var c = ChannelManager.CreateChannel<int>();
@@ -220,7 +227,7 @@ namespace UnitTest
 					throw new Exception("Failed to get timeout");
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestTimeoutWithBuffers()
 		{
 			var c = ChannelManager.CreateChannel<int>(buffersize: 1);

@@ -1,17 +1,23 @@
 ﻿using CoCoL;
-using NUnit.Framework;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+
+#if NETCOREAPP2_0
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using TOP_LEVEL = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
+using TEST_METHOD = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+#else
+using NUnit.Framework;
+using TOP_LEVEL = NUnit.Framework.TestFixtureAttribute;
+using TEST_METHOD = NUnit.Framework.TestAttribute;
+#endif
 
 namespace UnitTest
 {
-    [TestFixture]
-    class ChannelExtensionsTest
+    [TOP_LEVEL]
+    public class ChannelExtensionsTest
     {
-        [Test]
+        [TEST_METHOD]
         public void TestWaitForTaskOrThrow_propagatesStackTrace()
         {
             Task t = Task.Factory.StartNew(() => ThrowingMethod());

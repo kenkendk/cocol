@@ -1,64 +1,73 @@
 ﻿using System;
-using NUnit.Framework;
 using System.Threading.Tasks;
 using CoCoL;
 using System.Linq;
 
+#if NETCOREAPP2_0
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using TOP_LEVEL = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
+using TEST_METHOD = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+#else
+using NUnit.Framework;
+using TOP_LEVEL = NUnit.Framework.TestFixtureAttribute;
+using TEST_METHOD = NUnit.Framework.TestAttribute;
+#endif
+
 namespace UnitTest
 {
-	[TestFixture]
+    [TOP_LEVEL]
 	public class ChannelOverflowTests
 	{
-		[Test]
+        [TEST_METHOD]
 		public void TestReaderReject()
 		{
 			TestReaderOverflow(QueueOverflowStrategy.Reject);
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestReaderLIFO()
 		{
 			TestReaderOverflow(QueueOverflowStrategy.LIFO);
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestReaderFIFO()
 		{
 			TestReaderOverflow(QueueOverflowStrategy.FIFO);
 		}
 
 
-		[Test]
+        [TEST_METHOD]
 		public void TestWriterReject()
 		{
 			TestWriterOverflow(QueueOverflowStrategy.Reject);
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestWriterLIFO()
 		{
 			TestWriterOverflow(QueueOverflowStrategy.LIFO);
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestWriterFIFO()
 		{
 			TestWriterOverflow(QueueOverflowStrategy.FIFO);
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestBufferedWriterReject()
 		{
 			TestWriterOverflow(QueueOverflowStrategy.Reject, 2);
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestBufferedWriterLIFO()
 		{
 			TestWriterOverflow(QueueOverflowStrategy.LIFO, 2);
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestBufferedWriterFIFO()
 		{
 			TestWriterOverflow(QueueOverflowStrategy.FIFO, 2);
@@ -102,7 +111,7 @@ namespace UnitTest
 				}
 
 				Assert.IsTrue(readertasks[discard].IsFaulted);
-				Assert.IsInstanceOf<ChannelOverflowException>(readertasks[discard].Exception.Flatten().InnerExceptions.First());
+                TestAssert.IsInstanceOf<ChannelOverflowException>(readertasks[discard].Exception.Flatten().InnerExceptions.First());
 
 				readertasks.RemoveAt(discard);
 
@@ -146,7 +155,7 @@ namespace UnitTest
 				}
 
 				Assert.IsTrue(writertasks[discard].IsFaulted);
-				Assert.IsInstanceOf<ChannelOverflowException>(writertasks[discard].Exception.Flatten().InnerExceptions.First());
+                TestAssert.IsInstanceOf<ChannelOverflowException>(writertasks[discard].Exception.Flatten().InnerExceptions.First());
 
 				writertasks.RemoveAt(discard);
 

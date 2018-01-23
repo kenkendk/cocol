@@ -1,14 +1,21 @@
 ﻿using System;
-using NUnit.Framework;
 using System.Linq;
+
+#if NETCOREAPP2_0
+using TOP_LEVEL = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
+using TEST_METHOD = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+#else
+using TOP_LEVEL = NUnit.Framework.TestFixtureAttribute;
+using TEST_METHOD = NUnit.Framework.TestAttribute;
+#endif
 
 namespace UnitTest
 {
-	[TestFixture]
+    [TOP_LEVEL]
 	public class SortedListTest
 	{
 
-		[Test]
+        [TEST_METHOD]
 		public void TestListSimple()
 		{
 			TestAndCompare(new[] { 4, 3, 2, 1 });
@@ -21,7 +28,7 @@ namespace UnitTest
 			TestAndCompare(new[] { 1, 2, 5, 4, 3, 6, 7, 8, 9, 10 });
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestList()
 		{
 			for (var rp = 0; rp < 100; rp++)

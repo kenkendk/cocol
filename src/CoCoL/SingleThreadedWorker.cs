@@ -80,7 +80,7 @@ namespace CoCoL
 								try
 								{
 									var r = await method().ConfigureAwait(false);
-									res.SetResult(r);
+                                    Task.Run(() => res.SetResult(r)).FireAndForget();
 								}
 								catch (Exception ex)
 								{

@@ -1,39 +1,46 @@
 ﻿using System;
 using System.Linq;
-using NUnit.Framework;
 using CoCoL;
 using System.Threading.Tasks;
 
+#if NETCOREAPP2_0
+using TOP_LEVEL = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
+using TEST_METHOD = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+#else
+using TOP_LEVEL = NUnit.Framework.TestFixtureAttribute;
+using TEST_METHOD = NUnit.Framework.TestAttribute;
+#endif
+
 namespace UnitTest
 {
-	[TestFixture]
+    [TOP_LEVEL]
 	public class ExecutionContextTests
 	{
-		[Test]
+        [TEST_METHOD]
 		public void TestSingleThreadPool()
 		{
 			TestCappedPool(1, 10, 50);
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestDualThreadPool()
 		{
 			TestCappedPool(2, 20, 100);
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestQuadThreadPool()
 		{
 			TestCappedPool(4, 40, 200);
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestOctoThreadPool()
 		{
 			TestCappedPool(8, 20, 400);
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestUnlimitedThreadPool()
 		{
 			TestCappedPool(-1, 200, 800);

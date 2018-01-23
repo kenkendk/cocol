@@ -19,7 +19,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug</OutputPath>
-    <DefineConstants>DEBUG;PCL_BUILD</DefineConstants>
+    <DefineConstants>DEBUG;PCL_BUILD;DISABLE_SERIALIZATION;DISABLE_WAITCALLBACK</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <ConsolePause>false</ConsolePause>
@@ -30,7 +30,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <ConsolePause>false</ConsolePause>
-    <DefineConstants>PCL_BUILD</DefineConstants>
+    <DefineConstants>PCL_BUILD;DISABLE_SERIALIZATION;DISABLE_WAITCALLBACK</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />

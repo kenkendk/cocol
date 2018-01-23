@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
-#if PCL_BUILD
+#if DISABLE_WAITCALLBACK
 using WAITCALLBACK = System.Action<object>;
 #else
 using WAITCALLBACK = System.Threading.WaitCallback;
@@ -199,7 +199,42 @@ namespace CoCoL
 				}
 			}
 		}
+#elif NETCOREAPP2_0
 
+        /// <summary>
+        /// The scope data, using AsyncLocal
+        /// </summary>
+        private static System.Threading.AsyncLocal<string> local_state = new System.Threading.AsyncLocal<string>();
+
+        /// <summary>
+        /// Gets the current execution scope.
+        /// </summary>
+        /// <value>The current scope.</value>
+        public static ExecutionScope Current
+        {
+            get
+            {
+                lock (__lock)
+                {
+                    var cur = local_state?.Value;
+                    if (cur == null)
+                        return Current = Root;
+                    else
+                    {
+                        ExecutionScope sc;
+                        if (!__scopes.TryGetValue(cur, out sc))
+                            throw new Exception(string.Format("Unable to find scope in lookup table, this may be caused by attempting to transport call contexts between AppDomains (eg. with remoting calls)"));
+
+                        return sc;
+                    }
+                }
+            }
+            private set
+            {
+                lock (__lock)
+                    local_state.Value = value.m_instancekey;
+            }
+        }
 #else
 		/// <summary>
 		/// Gets the current execution scope.

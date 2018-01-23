@@ -3,11 +3,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CoCoL;
-using NUnit.Framework;
+
+#if NETCOREAPP2_0
+using TOP_LEVEL = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
+using TEST_METHOD = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+#else
+using TOP_LEVEL = NUnit.Framework.TestFixtureAttribute;
+using TEST_METHOD = NUnit.Framework.TestAttribute;
+#endif
 
 namespace UnitTest
 {
-	[TestFixture]
+    [TOP_LEVEL]
 	public class BroadcastTest
 	{
 		public class CounterShim
@@ -55,7 +62,7 @@ namespace UnitTest
 			public IWriteChannel<int> chan;
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestSimple()
 		{
 			var values = new[] { 0, 1, 2, 3, 4 };
@@ -71,7 +78,7 @@ namespace UnitTest
 				throw new Exception(string.Format("The counter said {0} values were read, but {1} was expected", counter.Count, readercount * values.Length));
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestMultiWriter()
 		{
 			var values = new[] { 0, 1, 2, 3, 4 };
@@ -91,7 +98,7 @@ namespace UnitTest
 				throw new Exception(string.Format("The counter said {0} values were read, but {1} was expected", counter.Count, readercount * readervalues.Length));
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestLeave()
 		{
 			var values = new[] { 0, 1, 2, 3, 4 };
@@ -118,7 +125,7 @@ namespace UnitTest
 				throw new Exception(string.Format("The counter said {0} values were read, but {1} was expected", counter.Count, readercount * readervalues.Length));
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestScope()
 		{
 			var values = new[] { 0, 1, 2, 3, 4 };
@@ -157,7 +164,7 @@ namespace UnitTest
 			}
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestAttributes()
 		{
 			var values = new[] { 0, 1, 2, 3, 4 };

@@ -1,14 +1,21 @@
 ﻿using System;
-using NUnit.Framework;
 using CoCoL;
 using System.Threading.Tasks;
 
+#if NETCOREAPP2_0
+using TOP_LEVEL = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
+using TEST_METHOD = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+#else
+using TOP_LEVEL = NUnit.Framework.TestFixtureAttribute;
+using TEST_METHOD = NUnit.Framework.TestAttribute;
+#endif
+
 namespace UnitTest
 {
-	[TestFixture]
+    [TOP_LEVEL]
 	public class JoinableTest
 	{
-		[Test]
+        [TEST_METHOD]
 		public void TestRetireWithLostItem()
 		{
 			var c = ChannelManager.CreateChannel<int>();
@@ -75,7 +82,7 @@ namespace UnitTest
 
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestRetireWithoutLoss()
 		{
 			var c = ChannelManager.CreateChannel<int>();
@@ -148,7 +155,7 @@ namespace UnitTest
 
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestRetireWithEnds()
 		{
 			var c = ChannelManager.CreateChannel<int>();

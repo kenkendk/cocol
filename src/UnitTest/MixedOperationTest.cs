@@ -1,18 +1,27 @@
 ﻿using System;
 using System.Linq;
-using NUnit.Framework;
 using CoCoL;
 using System.Threading.Tasks;
 
+#if NETCOREAPP2_0
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using TOP_LEVEL = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
+using TEST_METHOD = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+#else
+using NUnit.Framework;
+using TOP_LEVEL = NUnit.Framework.TestFixtureAttribute;
+using TEST_METHOD = NUnit.Framework.TestAttribute;
+#endif
+
 namespace UnitTest
 {
-	[TestFixture]
+    [TOP_LEVEL]
 	public class MixedOperationTest
 	{
-		[Test]
+        [TEST_METHOD]
 		public void TestInvalidMultiAccessOperation()
 		{
-			Assert.Throws<InvalidOperationException>(() =>
+            TestAssert.Throws<InvalidOperationException>(() =>
 			{
 				try
 				{
@@ -28,7 +37,7 @@ namespace UnitTest
 			});
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestMultiAccessOperation()
 		{
 			var c1 = ChannelManager.CreateChannel<int>();
@@ -83,7 +92,7 @@ namespace UnitTest
 			}
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestMultiTypeOperation()
 		{
 			var c1 = ChannelManager.CreateChannel<int>();
@@ -138,7 +147,7 @@ namespace UnitTest
 			}
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestMultiTypeReadWrite()
 		{
 			var c1 = ChannelManager.CreateChannel<int>();

@@ -31,6 +31,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelloWorld", "examples\Hell
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelloWorldAny", "examples\HelloWorldAny\HelloWorldAny.csproj", "{5F46EC67-E628-4DAB-87EA-3D3886F7E826}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoCoL-NetCore", "CoCoL-NetCore\CoCoL-NetCore.csproj", "{5394A51C-CC8D-4CCE-AA90-E4D9302F30BF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTest-NetCore", "UnitTest-NetCore\UnitTest-NetCore.csproj", "{8C61C665-8DB3-4BA0-9B03-E953C2243573}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -93,6 +97,14 @@ Global
 		{5F46EC67-E628-4DAB-87EA-3D3886F7E826}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5F46EC67-E628-4DAB-87EA-3D3886F7E826}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5F46EC67-E628-4DAB-87EA-3D3886F7E826}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5394A51C-CC8D-4CCE-AA90-E4D9302F30BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5394A51C-CC8D-4CCE-AA90-E4D9302F30BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5394A51C-CC8D-4CCE-AA90-E4D9302F30BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5394A51C-CC8D-4CCE-AA90-E4D9302F30BF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C61C665-8DB3-4BA0-9B03-E953C2243573}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C61C665-8DB3-4BA0-9B03-E953C2243573}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C61C665-8DB3-4BA0-9B03-E953C2243573}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C61C665-8DB3-4BA0-9B03-E953C2243573}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{8C22B8AB-FCA8-4630-9B77-E73FC0481DA2} = {31DFC7EB-947A-436B-9677-FF63B38A55D1}

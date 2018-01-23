@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-#if PCL_BUILD
+#if DISABLE_WAITCALLBACK
 using WAITCALLBACK = System.Action<object>;
 #else
 using WAITCALLBACK = System.Threading.WaitCallback;

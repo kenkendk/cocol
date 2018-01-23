@@ -58,6 +58,7 @@
     <Compile Include="ChannelOverflowTests.cs" />
     <Compile Include="NetworkChannelTest.cs" />
     <Compile Include="BroadcastTest.cs" />
+    <Compile Include="UnitTestCompatibility.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

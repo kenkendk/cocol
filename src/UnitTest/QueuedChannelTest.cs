@@ -1,13 +1,22 @@
 ﻿using System;
-using NUnit.Framework;
 using CoCoL;
+
+#if NETCOREAPP2_0
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using TOP_LEVEL = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
+using TEST_METHOD = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+#else
+using NUnit.Framework;
+using TOP_LEVEL = NUnit.Framework.TestFixtureAttribute;
+using TEST_METHOD = NUnit.Framework.TestAttribute;
+#endif
 
 namespace UnitTest
 {
-	[TestFixture]
+    [TOP_LEVEL]
 	public class QueuedChannelTest
 	{
-		[Test]
+        [TEST_METHOD]
 		public void TestBufferedWrite()
 		{
 			var c = ChannelManager.CreateChannel<int>(buffersize: 2);
@@ -24,7 +33,7 @@ namespace UnitTest
 				throw new Exception("Invalid data read");
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestOrderedRetire()
 		{
 			var c = ChannelManager.CreateChannel<int>(buffersize: 2);
@@ -43,7 +52,7 @@ namespace UnitTest
 				throw new Exception("Channel was not retired as expected");
 		}
 
-		[Test]
+        [TEST_METHOD]
 		public void TestImmediateRetire()
 		{
 			var c = ChannelManager.CreateChannel<int>(buffersize: 2);
@@ -53,7 +62,7 @@ namespace UnitTest
 
 			c.Retire(true);
 
-			Assert.Throws<RetiredException>(() => c.Read());
+            TestAssert.Throws<RetiredException>(() => c.Read());
 		}
 	}
 }

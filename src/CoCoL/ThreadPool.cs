@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-#if PCL_BUILD
+#if DISABLE_WAITCALLBACK
 using WAITCALLBACK = System.Action<object>;
 #else
 using WAITCALLBACK = System.Threading.WaitCallback;
@@ -61,7 +61,7 @@ namespace CoCoL
 		/// <param name="a">The work item.</param>
 		public void QueueItem(Action a) 
 		{
-#if PCL_BUILD
+#if DISABLE_WAITCALLBACK
 			System.Threading.Tasks.Task.Run(a);
 #else
 			System.Threading.ThreadPool.QueueUserWorkItem((x) => a());
@@ -75,7 +75,7 @@ namespace CoCoL
 		/// <param name="item">An optional callback parameter.</param>
 		public void QueueItem(WAITCALLBACK a, object item) 
 		{
-#if PCL_BUILD
+#if DISABLE_WAITCALLBACK
 			System.Threading.Tasks.Task.Run(() => a(item));
 #else
 			System.Threading.ThreadPool.QueueUserWorkItem(a, item);
@@ -129,7 +129,7 @@ namespace CoCoL
 		/// <summary>
 		/// The locking object
 		/// </summary>
-		private object m_lock = new object();
+		private readonly object m_lock = new object();
 
 		/// <summary>
 		/// The number of running instances
@@ -153,7 +153,7 @@ namespace CoCoL
 		public CappedThreadedThreadPool(int max_threads)
 		{
 			if (max_threads < 1)
-				throw new ArgumentOutOfRangeException("max_threads");
+				throw new ArgumentOutOfRangeException(nameof(max_threads));
 			m_maxThreads = max_threads;
 		}
 
@@ -253,7 +253,7 @@ namespace CoCoL
 			var endttime = DateTime.Now + waittime;
 			while (DateTime.Now < endttime)
 			{
-#if PCL_BUILD
+#if DISABLE_WAITCALLBACK
 				System.Threading.Tasks.Task.Delay(100).Wait();
 #else
 				System.Threading.Thread.Sleep(100);
