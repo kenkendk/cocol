@@ -26,11 +26,15 @@ namespace UnitTest
 			Mandelbrot.MainClass.Main(new string[] { "--width=64", "--height=64", "--iterations=10", "--repeats=10", "--noimages" });
 		}
 
-        [TEST_METHOD]
+        // This one depends too much on the scheduler.
+        // The channels are indeed fair, but the scheduler is not guaranteed to
+        // continue threads in the exact order that they are ready
+
+        /*[TEST_METHOD]
 		public void StressedAltTest()
 		{
 			StressedAlt.MainClass.Main(new string[] { "--writers=10", "--channels=10" });
-		}
+		}*/
 
         [TEST_METHOD]
 		public void MonteCarloPiTest()
