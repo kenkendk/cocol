@@ -247,7 +247,7 @@ namespace CoCoL.Network
 						case NetworkMessageType.RetiredResponse:
 							lock (m_lock)
 								m_pendingRequests[req.ChannelID].Remove(req.RequestID);
-							TrySetException(prq.Task, new RetiredException());
+                            TrySetException(prq.Task, new RetiredException(req.AssociatedChannel?.Name));
 							break;
 						case NetworkMessageType.TimeoutResponse:
 							lock (m_lock)

@@ -13,23 +13,31 @@ namespace CoCoL
 #endif
 	public class RetiredException : Exception
 	{
+        /// <summary>
+        /// The name of the channel that is retired
+        /// </summary>
+        public readonly string ChannelName;
+
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.RetiredException"/> class.
 		/// </summary>
-		public RetiredException() : base("The channel is retired") {}
+        /// <param name="channelname">The name of the channel</param>
+        public RetiredException(string channelname) : base($"The channel \"{channelname}\" is retired") { ChannelName = channelname; }
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.RetiredException"/> class.
 		/// </summary>
 		/// <param name="message">The error message.</param>
-		public RetiredException(string message) : base(message) {}
+        /// <param name="channelname">The name of the channel</param>
+        public RetiredException(string channelname, string message) : base(message) { ChannelName = channelname; }
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.RetiredException"/> class.
 		/// </summary>
 		/// <param name="message">The error message.</param>
 		/// <param name="ex">The inner exception.</param>
-		public RetiredException(string message, Exception ex) : base(message, ex) {}
+        /// <param name="channelname">The name of the channel</param>
+        public RetiredException(string channelname, string message, Exception ex) : base(message, ex) { ChannelName = channelname; }
 #if !DISABLE_SERIALIZATION
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.RetiredException"/> class.
@@ -48,23 +56,31 @@ namespace CoCoL
 #endif
 	public class ChannelOverflowException : Exception
 	{
+        /// <summary>
+        /// The name of the channel that is overflown
+        /// </summary>
+        public readonly string ChannelName;
+
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.ChannelOverflowException"/> class.
 		/// </summary>
-		public ChannelOverflowException() : base("The channel has too many pending operations") {}
+        /// <param name="channelname">The name of the channel</param>
+        public ChannelOverflowException(string channelname) : base($"The channel \"{channelname}\" has too many pending operations") { ChannelName = channelname; }
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.ChannelOverflowException"/> class.
 		/// </summary>
 		/// <param name="message">The error message.</param>
-		public ChannelOverflowException(string message) : base(message) {}
+        /// <param name="channelname">The name of the channel</param>
+        public ChannelOverflowException(string message, string channelname) : base(message) { ChannelName = channelname; }
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.ChannelOverflowException"/> class.
 		/// </summary>
 		/// <param name="message">The error message.</param>
 		/// <param name="ex">The inner exception.</param>
-		public ChannelOverflowException(string message, Exception ex) : base(message, ex) {}
+        /// <param name="channelname">The name of the channel</param>
+        public ChannelOverflowException(string channelname, string message, Exception ex) : base(message, ex) { ChannelName = channelname; }
 #if !DISABLE_SERIALIZATION
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.ChannelOverflowException"/> class.

@@ -420,7 +420,7 @@ namespace CoCoL
 			{
 				if (m_isRetired)
 				{
-					ThreadPool.QueueItem(() => rd.Source.SetException(new RetiredException()));
+                    ThreadPool.QueueItem(() => rd.Source.SetException(new RetiredException(this.Name)));
 					return await rd.Source.Task;
 				}
 
@@ -446,7 +446,7 @@ namespace CoCoL
 								{
 									var exp = m_readerQueue[0].Source;
 									m_readerQueue.RemoveAt(0);
-									ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException()));
+                                        ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException(this.Name)));
 								}
 
 								break;
@@ -454,7 +454,7 @@ namespace CoCoL
 								{
 									var exp = m_readerQueue[m_readerQueue.Count - 2].Source;
 									m_readerQueue.RemoveAt(m_readerQueue.Count - 2);
-									ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException()));
+                                        ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException(this.Name)));
 								}
 
 								break;
@@ -463,7 +463,7 @@ namespace CoCoL
 								{
 									var exp = m_readerQueue[m_readerQueue.Count - 1].Source;
 									m_readerQueue.RemoveAt(m_readerQueue.Count - 1);
-									ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException()));
+                                        ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException(this.Name)));
 
 									await rd.Source.Task;
 								}
@@ -498,7 +498,7 @@ namespace CoCoL
 			{
 				if (m_isRetired)
 				{
-					ThreadPool.QueueItem(() => wr.Source.SetException(new RetiredException()));
+                    ThreadPool.QueueItem(() => wr.Source.SetException(new RetiredException(this.Name)));
 					await wr.Source.Task;
 					return;
 				}
@@ -544,7 +544,7 @@ namespace CoCoL
 											var exp = m_writerQueue[m_bufferSize].Source;
 											m_writerQueue.RemoveAt(m_bufferSize);
 											if (exp != null)
-												ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException()));
+                                                ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException(this.Name)));
 										}
 
 										break;
@@ -553,7 +553,7 @@ namespace CoCoL
 											var exp = m_writerQueue[m_writerQueue.Count - 2].Source;
 											m_writerQueue.RemoveAt(m_writerQueue.Count - 2);
 											if (exp != null)
-												ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException()));
+                                                ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException(this.Name)));
 										}
 
 										break;
@@ -563,7 +563,7 @@ namespace CoCoL
 											var exp = m_writerQueue[m_writerQueue.Count - 1].Source;
 											m_writerQueue.RemoveAt(m_writerQueue.Count - 1);
 											if (exp != null)
-												ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException()));
+                                                ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException(this.Name)));
 											await wr.Source.Task;
 										}
 
@@ -692,7 +692,7 @@ namespace CoCoL
 						while (m_retireCount > 1)
 						{
 							if (m_writerQueue[0].Source != null)
-								m_writerQueue[0].Source.TrySetException(new RetiredException());
+                            m_writerQueue[0].Source.TrySetException(new RetiredException(this.Name));
 							m_writerQueue.RemoveAt(0);
 							m_retireCount--;
 						}
@@ -712,7 +712,7 @@ namespace CoCoL
 			{
 				// Do not allow anyone to join after we retire the channel
 				if (m_isRetired)
-					throw new RetiredException();
+                    throw new RetiredException(this.Name);
 
 				if (asReader)
 					m_joinedReaderCount++;
@@ -780,12 +780,12 @@ namespace CoCoL
 			{
 				if (readers != null)
 					foreach (var r in readers)
-						ThreadPool.QueueItem(() => r.Source.TrySetException(new RetiredException()));
+                        ThreadPool.QueueItem(() => r.Source.TrySetException(new RetiredException(this.Name)));
 
 				if (writers != null)
 					foreach (var w in writers)
 						if (w.Source != null)
-							ThreadPool.QueueItem(() => w.Source.TrySetException(new RetiredException()));
+                            ThreadPool.QueueItem(() => w.Source.TrySetException(new RetiredException(this.Name)));
 			}
 		}
 
