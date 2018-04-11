@@ -44,9 +44,20 @@ namespace CoCoL.Network
 		/// <value>The name of this item</value>
 		public string Name { get { return m_attribute.Name; } }
 
-		#endregion
+        #endregion
 
-		#region IWriteChannel implementation
+        #region IWriteChannel implementation
+
+        /// <summary>
+        /// Registers a desire to write to the channel
+        /// </summary>
+        /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
+        /// <param name="value">The value to write to the channel.</param>
+        /// <returns>The async.</returns>
+        public Task WriteAsync(T value, ITwoPhaseOffer offer)
+        {
+            return WriteAsync(value, Timeout.Infinite, offer);
+        }
 
 		/// <summary>
 		/// Registers a desire to write to the channel
@@ -63,9 +74,19 @@ namespace CoCoL.Network
 			await tcs.Task;
 		}
 
-		#endregion
+        #endregion
 
-		#region IReadChannel implementation
+        #region IReadChannel implementation
+
+        /// <summary>
+        /// Registers a desire to read from the channel
+        /// </summary>
+        /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
+        /// <returns>The async.</returns>
+        public Task<T> ReadAsync(ITwoPhaseOffer offer = null)
+        {
+            return ReadAsync(Timeout.Infinite, offer);
+        }
 
 		/// <summary>
 		/// Registers a desire to read from the channel

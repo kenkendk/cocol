@@ -139,6 +139,11 @@ namespace CoCoL
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
 		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
 		Task<T> ReadAsync(TimeSpan timeout, ITwoPhaseOffer offer = null);
+        /// <summary>
+        /// Registers a desire to read from the channel
+        /// </summary>
+        /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
+        Task<T> ReadAsync(ITwoPhaseOffer offer = null);
 	}
 
 	/// <summary>
@@ -146,7 +151,14 @@ namespace CoCoL
 	/// </summary>
 	public interface IWriteChannel<T> : IRetireAbleChannel
 	{
-		/// <summary>
+        /// <summary>
+        /// Registers a desire to write to the channel
+        /// </summary>
+        /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
+        /// <param name="value">The value to write to the channel.</param>
+        Task WriteAsync(T value, ITwoPhaseOffer offer = null);
+
+        /// <summary>
 		/// Registers a desire to write to the channel
 		/// </summary>
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>

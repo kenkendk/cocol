@@ -407,6 +407,15 @@ namespace CoCoL
 			return processed || caller.Status != TaskStatus.WaitingForActivation;
 		}
 
+        /// <summary>
+        /// Registers a desire to read from the channel
+        /// </summary>
+        /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
+        public Task<T> ReadAsync(ITwoPhaseOffer offer = null)
+        {
+            return ReadAsync(Timeout.Infinite, offer);
+        }
+
 		/// <summary>
 		/// Registers a desire to read from the channel
 		/// </summary>
@@ -483,7 +492,17 @@ namespace CoCoL
 
 			return await rd.Source.Task;
 		}
-			
+
+        /// <summary>
+        /// Registers a desire to write to the channel
+        /// </summary>
+        /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
+        /// <param name="value">The value to write to the channel.</param>
+        public Task WriteAsync(T value, ITwoPhaseOffer offer = null)
+        {
+            return WriteAsync(value, Timeout.Infinite, offer);
+        }
+
 		/// <summary>
 		/// Registers a desire to write to the channel
 		/// </summary>

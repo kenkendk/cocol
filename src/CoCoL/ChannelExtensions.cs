@@ -187,27 +187,6 @@ namespace CoCoL
 
 		#region Simple channel overload methods
 		/// <summary>
-		/// Reads the channel asynchronously
-		/// </summary>
-		/// <param name="self">The channel to read from</param>
-		/// <typeparam name="T">The channel data type parameter.</typeparam>
-		/// <returns>The value read from the channel</returns>
-		public static Task<T> ReadAsync<T>(this IReadChannel<T> self) 
-		{
-			return self.ReadAsync(Timeout.Infinite, null);
-		}
-		/// <summary>
-		/// Writes the channel asynchronously
-		/// </summary>
-		/// <param name="self">The channel to write to</param>
-		/// <param name="value">The value to write to the channel.</param>
-		/// <typeparam name="T">The channel data type parameter.</typeparam>
-		/// <returns>An awaitable task</returns>
-		public static Task WriteAsync<T>(this IWriteChannel<T> self, T value)
-		{
-			return self.WriteAsync(value, Timeout.Infinite, null);
-		}
-		/// <summary>
 		/// Write to the channel in a probing and asynchronous manner
 		/// </summary>
 		/// <param name="value">The value to write into the channel</param>

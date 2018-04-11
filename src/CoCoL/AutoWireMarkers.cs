@@ -193,9 +193,18 @@ namespace CoCoL
 		{
 		}
 
-		// Since this is just a marker, we do not implement any methods
+        // Since this is just a marker, we do not implement any methods
 
-		#region IReadChannel implementation
+        #region IReadChannel implementation
+        /// <summary>
+        /// Registers a desire to read from the channel
+        /// </summary>
+        /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
+        /// <returns>The async.</returns>
+        public Task<T> ReadAsync(ITwoPhaseOffer offer = null)
+        {
+            return ReadAsync(Timeout.Infinite, offer);
+        }
 		/// <summary>
 		/// Registers a desire to read from the channel
 		/// </summary>
@@ -249,9 +258,19 @@ namespace CoCoL
 		{
 		}
 
-		// Since this is just a marker, we do not implement any methods
+        // Since this is just a marker, we do not implement any methods
 
-		#region IWriteChannel implementation
+        #region IWriteChannel implementation
+        /// <summary>
+        /// Registers a desire to write to the channel
+        /// </summary>
+        /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
+        /// <param name="value">The value to write to the channel.</param>
+        /// <returns>The async.</returns>
+        public Task WriteAsync(T value, ITwoPhaseOffer offer = null)
+        {
+            return WriteAsync(value, Timeout.Infinite, offer);
+        }
 		/// <summary>
 		/// Registers a desire to write to the channel
 		/// </summary>
