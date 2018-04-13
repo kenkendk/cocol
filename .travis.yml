@@ -6,6 +6,8 @@ install:
   - dotnet restore src/CoCoL-NetCore
   - dotnet restore src/CoCoL-NetStd16
   - dotnet restore src/CoCoL-NetStd20
+  - dotnet restore src/CoCoL.Blocks
+  - dotnet restore src/CoCoL.Network
   - dotnet restore src/UnitTest-NetCore
   - nuget install NUnit.Runners -Version 3.4.0 -OutputDirectory testrunner
 script:
