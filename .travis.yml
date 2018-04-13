@@ -8,7 +8,7 @@ script:
   - dotnet restore src/UnitTest-NetCore
   - dotnet build /p:Configuration=Release src/UnitTest-NetCore
   - msbuild /p:Configuration=Release src/CoCoL.sln
-  - mono ./testrunner/NUnit.ConsoleRunner.3.4.0/tools/nunit3-console.exe ./src/UnitTest/bin/Release/UnitTest.exe
+  - mono ./testrunner/NUnit.ConsoleRunner.3.4.0/tools/nunit3-console.exe ./src/UnitTest/bin/Release/net461/UnitTest-Net461.exe
   - dotnet test src/UnitTest-NetCore
 
 env:
