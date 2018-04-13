@@ -3,13 +3,16 @@ solution: src/CoCoL.sln
 dotnet: 2.0.0
 install:
   - nuget restore src/CoCoL.sln
+  - dotnet restore src/CoCoL-NetCore
+  - dotnet restore src/CoCoL-NetStd16
+  - dotnet restore src/CoCoL-NetStd20
+  - dotnet restore src/UnitTest-NetCore
   - nuget install NUnit.Runners -Version 3.4.0 -OutputDirectory testrunner
 script:
-  - dotnet restore src/UnitTest-NetCore
-  - dotnet build /p:Configuration=Release src/UnitTest-NetCore
+  - dotnet build -c Release src/UnitTest-NetCore
   - msbuild /p:Configuration=Release src/CoCoL.sln
   - mono ./testrunner/NUnit.ConsoleRunner.3.4.0/tools/nunit3-console.exe ./src/UnitTest/bin/Release/net461/UnitTest-Net461.exe
-  - dotnet test src/UnitTest-NetCore
+  - dotnet test -c Release src/UnitTest-NetCore
 
 env:
   global:
