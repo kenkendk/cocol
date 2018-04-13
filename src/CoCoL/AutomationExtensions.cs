@@ -100,6 +100,8 @@ namespace CoCoL
 		/// <param name="scope">The current scope.</param>
 		public static T AutoWireChannelsDirect<T>(T item, ChannelScope scope = null)
 		{
+            // TODO: Throw an exception if we have no channels to wire and item != null ?
+            
 			scope = scope ?? ChannelScope.Current;
 
 			foreach (var c in GetAllFieldAndPropertyValuesOfType<IRetireAbleChannel>(item))
