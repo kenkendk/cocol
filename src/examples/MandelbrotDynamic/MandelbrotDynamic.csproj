@@ -4,12 +4,11 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{FDFE3C31-A44C-4211-B61F-D1E4198A6A10}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>MandelbrotDynamic</RootNamespace>
     <AssemblyName>MandelbrotDynamic</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <ReleaseVersion>1.0</ReleaseVersion>
     <SynchReleaseVersion>false</SynchReleaseVersion>
   </PropertyGroup>
@@ -41,13 +40,13 @@
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <ProjectReference Include="..\..\CoCoL\CoCoL.csproj">
-      <Project>{00058DF8-C13F-4DD9-BD8E-775DDF72BF87}</Project>
-      <Name>CoCoL</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\CoCoL.Network\CoCoL.Network.csproj">
       <Project>{2138966B-CB50-4F7C-B53A-A0A2F882BE07}</Project>
       <Name>CoCoL.Network</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\CoCoL-NetStd20\CoCoL-NetStd20.csproj">
+      <Project>{B8459E87-76CF-4B5B-B96A-922686A8DC3D}</Project>
+      <Name>CoCoL-NetStd20</Name>
     </ProjectReference>
   </ItemGroup>
 </Project>

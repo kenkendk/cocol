@@ -1,14 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>netstandard1.6</TargetFramework>
     <ReleaseVersion>1.6.0</ReleaseVersion>
-    <AssemblyName>CoCoL</AssemblyName>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DefineConstants>TRACE;DEBUG;NETSTANDARD1_6;DISABLE_SERIALIZATION;DISABLE_WAITCALLBACK;LIMITED_REFLECTION_SUPPORT</DefineConstants>
+  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType></DebugType>
-    <DocumentationFile>bin\Release\netcoreapp2.0\CoCoL.xml</DocumentationFile>
+    <DefineConstants>TRACE;RELEASE;NETSTANDARD1_6;DISABLE_SERIALIZATION;DISABLE_WAITCALLBACK;LIMITED_REFLECTION_SUPPORT</DefineConstants>
+    <DocumentationFile>bin\Release\netstandard1.6\CoCoL.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -97,4 +100,5 @@
       <Link>ReflectionHelper.cs</Link>
     </Compile>
   </ItemGroup>
+
 </Project>

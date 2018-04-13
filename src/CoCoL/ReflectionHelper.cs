@@ -3,11 +3,14 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.Linq;
 
+#if LIMITED_REFLECTION_SUPPORT
+
 // CoCoL-PCL implementation of missing System.Reflection items
 
+#if PCL_BUILD
 namespace System.Reflection
 {
-	internal enum BindingFlags
+    internal enum BindingFlags
 	{
 		Default = 0,
 		IgnoreCase = 1,
@@ -31,6 +34,7 @@ namespace System.Reflection
 		IgnoreReturn = 16777216
 	}
 }
+#endif
 
 namespace CoCoL
 {
@@ -146,3 +150,5 @@ namespace CoCoL
 	}
 
 }
+
+#endif

@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net461</TargetFramework>
+
+    <IsPackable>false</IsPackable>
+    <ReleaseVersion>1.6.0</ReleaseVersion>
+  </PropertyGroup>
+    
+  <ItemGroup>
+    <ProjectReference Include="..\CoCoL-NetStd20\CoCoL-NetStd20.csproj" />
+    <ProjectReference Include="..\CoCoL.Network\CoCoL.Network.csproj" />
+    <ProjectReference Include="..\examples\CommsTimeAwait\CommsTimeAwait.csproj" />
+    <ProjectReference Include="..\examples\Mandelbrot\Mandelbrot.csproj" />
+    <ProjectReference Include="..\examples\MonteCarloPi\MonteCarloPi.csproj" />
+    <ProjectReference Include="..\examples\StressedAlt\StressedAlt.csproj" />
+  </ItemGroup>
+    
+  <ItemGroup>
+    <Compile Remove="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="NUnit" Version="3.10.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\CoCoL\SortedList.cs">
+      <Link>SortedList.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

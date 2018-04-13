@@ -15,11 +15,15 @@
     <tags>Multithreading Multiprocessing Concurrency CSP Go Golang Actor</tags>
   </metadata>
   <files>
-    <file src="CoCoL/bin/Release/CoCoL.dll" target="lib/net45" />
-    <file src="CoCoL/bin/Release/CoCoL.xml" target="lib/net45" />
-    <file src="CoCoL-PCL/bin/Release/CoCoL.dll" target="lib/portable-net45+netcore45+wp8" />
-    <file src="CoCoL-PCL/bin/Release/CoCoL.xml" target="lib/portable-net45+netcore45+wp8" />
+    <file src="CoCoL-Net45/bin/Release/net45/CoCoL.dll" target="lib/net45" />
+    <file src="CoCoL-Net45/bin/Release/net45/CoCoL.xml" target="lib/net45" />
+    <file src="CoCoL-PCL/bin/Release/portable-net45/CoCoL.dll" target="lib/portable-net45+netcore45+wp8" />
+    <file src="CoCoL-PCL/bin/Release/portable-net45/CoCoL.xml" target="lib/portable-net45+netcore45+wp8" />
     <file src="CoCoL-NetCore/bin/Release/netcoreapp2.0/CoCoL.dll" target="lib/netcoreapp2.0" />
     <file src="CoCoL-NetCore/bin/Release/netcoreapp2.0/CoCoL.xml" target="lib/netcoreapp2.0" />
+    <file src="CoCoL-NetStd16/bin/Release/netstandard1.6/CoCoL.dll" target="lib/netstandard1.6" />
+    <file src="CoCoL-NetStd16/bin/Release/netstandard1.6/CoCoL.xml" target="lib/netstandard1.6" />
+    <file src="CoCoL-NetStd20/bin/Release/netstandard2.0/CoCoL.dll" target="lib/netstandard2.0" />
+    <file src="CoCoL-NetStd20/bin/Release/netstandard2.0/CoCoL.xml" target="lib/netstandard2.0" />
   </files>
 </package>

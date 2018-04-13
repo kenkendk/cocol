@@ -4,12 +4,11 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{DF30D1D1-5683-444B-A60B-CA477B3AD6E0}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>Sieve</RootNamespace>
     <AssemblyName>Sieve</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <ReleaseVersion>1.0</ReleaseVersion>
     <SynchReleaseVersion>false</SynchReleaseVersion>
   </PropertyGroup>
@@ -38,11 +37,11 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <ProjectReference Include="..\..\CoCoL\CoCoL.csproj">
-      <Project>{00058DF8-C13F-4DD9-BD8E-775DDF72BF87}</Project>
-      <Name>CoCoL</Name>
+    <ProjectReference Include="..\..\CoCoL-NetStd20\CoCoL-NetStd20.csproj">
+      <Project>{B8459E87-76CF-4B5B-B96A-922686A8DC3D}</Project>
+      <Name>CoCoL-NetStd20</Name>
     </ProjectReference>
   </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

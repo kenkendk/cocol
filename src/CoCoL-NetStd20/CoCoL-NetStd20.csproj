@@ -1,14 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <ReleaseVersion>1.6.0</ReleaseVersion>
-    <AssemblyName>CoCoL</AssemblyName>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType></DebugType>
-    <DocumentationFile>bin\Release\netcoreapp2.0\CoCoL.xml</DocumentationFile>
+    <DocumentationFile>bin\Release\netstandard2.0\CoCoL.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

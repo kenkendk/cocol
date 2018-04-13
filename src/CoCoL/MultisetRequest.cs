@@ -94,7 +94,7 @@ namespace CoCoL
 			get { return this.Value; }
 			set 
 			{ 
-#if PCL_BUILD
+#if LIMITED_REFLECTION_SUPPORT
 				if ( System.Reflection.IntrospectionExtensions.GetTypeInfo(typeof(T)).IsValueType && value == null)
 #else
 				if (typeof(T).IsValueType && value == null)

@@ -63,7 +63,7 @@ namespace CoCoL
 		public static int StartFromTypes(IEnumerable<Type> types)
 		{
 			Func<Type, bool> isClass = 
-#if PCL_BUILD
+#if LIMITED_REFLECTION_SUPPORT
 				t => t.IsClass();
 #else
 				t => t.IsClass;

@@ -11,7 +11,7 @@ namespace CoCoL
 	/// </summary>
 	internal interface IGenericTypeHelper
 	{
-#if PCL_BUILD
+#if LIMITED_REFLECTION_SUPPORT
 		/// <summary>
 		/// True if the given item is, or derives from, the type parameter T
 		/// </summary>
@@ -61,7 +61,7 @@ namespace CoCoL
 	/// </summary>
 	internal struct GenericTypeHelper<T> : IGenericTypeHelper
 	{
-#if PCL_BUILD
+#if LIMITED_REFLECTION_SUPPORT
 		/// <summary>
 		/// True if the given item is, or derives from, the type parameter T
 		/// </summary>
@@ -198,7 +198,7 @@ namespace CoCoL
 			{
 				var spec = @interface.MakeGenericType(t);
 
-#if PCL_BUILD
+#if LIMITED_REFLECTION_SUPPORT
 				if (spec.GetTypeInfo().IsAssignableFrom(item.GetType().GetTypeInfo()))
 #else
 				if (spec.IsAssignableFrom(item.GetType()))
@@ -221,7 +221,7 @@ namespace CoCoL
 			if (item == null)
 				throw new ArgumentNullException("item");
 
-#if PCL_BUILD
+#if LIMITED_REFLECTION_SUPPORT
 			var implementedinterface = item.GetType().GetTypeInfo().ImplementedInterfaces.Where(x => x.GetTypeInfo().IsGenericType && !x.GetTypeInfo().IsGenericTypeDefinition).Where(x => x.GetGenericTypeDefinition() == @interface).FirstOrDefault();
 #else
 			var implementedinterface = item.GetType().GetInterfaces().Where(x => x.IsGenericType && !x.IsGenericTypeDefinition).Where(x => x.GetGenericTypeDefinition() == @interface).FirstOrDefault();

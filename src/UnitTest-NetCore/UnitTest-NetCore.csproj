@@ -14,11 +14,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CoCoL-NetCore\CoCoL-NetCore.csproj">
-    </ProjectReference>
+    <ProjectReference Include="..\CoCoL-NetStd20\CoCoL-NetStd20.csproj" />
   </ItemGroup>
-
   <ItemGroup>
+    <Compile Include="..\CoCoL\SortedList.cs">
+      <Link>SortedList.cs</Link>
+    </Compile>
     <Compile Include="..\UnitTest\AutoWireTests.cs">
       <Link>AutoWireTests.cs</Link>
     </Compile>
@@ -58,14 +59,11 @@
     <Compile Include="..\UnitTest\TimeoutTests.cs">
       <Link>TimeoutTests.cs</Link>
     </Compile>
-    <Compile Include="..\UnitTest\UntypedTests.cs">
-      <Link>UntypedTests.cs</Link>
-    </Compile>
-    <Compile Include="..\CoCoL\SortedList.cs">
-      <Link>SortedList.cs</Link>
-    </Compile>
     <Compile Include="..\UnitTest\UnitTestCompatibility.cs">
       <Link>UnitTestCompatibility.cs</Link>
+    </Compile>
+    <Compile Include="..\UnitTest\UntypedTests.cs">
+      <Link>UntypedTests.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>

@@ -330,7 +330,7 @@ namespace CoCoL
 				}
 			}
 		}
-#elif NETCOREAPP2_0
+#elif NETCOREAPP2_0 || NETSTANDARD2_0 || NETSTANDARD1_6
 
         /// <summary>
         /// The scope data, using AsyncLocal

@@ -11,15 +11,14 @@
     <TargetFrameworkProfile>Profile78</TargetFrameworkProfile>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
     <ReleaseVersion>1.6.0</ReleaseVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug</OutputPath>
-    <DefineConstants>DEBUG;PCL_BUILD;DISABLE_SERIALIZATION;DISABLE_WAITCALLBACK</DefineConstants>
+    <OutputPath>bin\Debug\portable-net45</OutputPath>
+    <DefineConstants>DEBUG;PCL_BUILD;LIMITED_REFLECTION_SUPPORT;DISABLE_SERIALIZATION;DISABLE_WAITCALLBACK</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Debug\CoCoL.xml</DocumentationFile>
@@ -27,12 +26,12 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release</OutputPath>
+    <OutputPath>bin\Release\portable-net45</OutputPath>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\CoCoL.xml</DocumentationFile>
+    <DocumentationFile>bin\Release\portable-net45\CoCoL.xml</DocumentationFile>
     <ConsolePause>false</ConsolePause>
-    <DefineConstants>PCL_BUILD;DISABLE_SERIALIZATION;DISABLE_WAITCALLBACK</DefineConstants>
+    <DefineConstants>PCL_BUILD;LIMITED_REFLECTION_SUPPORT;DISABLE_SERIALIZATION;DISABLE_WAITCALLBACK</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -87,7 +86,9 @@
     <Compile Include="..\CoCoL\ProcessHelper.cs">
       <Link>ProcessHelper.cs</Link>
     </Compile>
-    <Compile Include="ReflectionHelper.cs" />
+    <Compile Include="..\CoCoL\ReflectionHelper.cs">
+      <Link>ReflectionHelper.cs</Link>
+    </Compile>    
     <Compile Include="..\CoCoL\Loader.cs">
       <Link>Loader.cs</Link>
     </Compile>
