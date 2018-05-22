@@ -127,7 +127,7 @@ namespace CoCoL
 		public IRetireAbleChannel GetOrCreate(string name, Type datatype, int buffersize = 0, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject, bool broadcast = false, int initialBroadcastBarrier = -1, int broadcastMinimum = -1)
 		{
 			if (!broadcast && (initialBroadcastBarrier >= 0 || broadcastMinimum >= 0))
-				throw new ArgumentException(string.Format("Cannot set \"{0}\" or \"{1}\" unless the channel is a broadcast channel", "initialBroadcastBarrier", "broadcastMinimum"));
+                throw new ArgumentException(string.Format("Cannot set \"{0}\" or \"{1}\" unless the channel is a broadcast channel", "initialBroadcastBarrier", "broadcastMinimum"), nameof(broadcast));
 
 			var attr = 
 				broadcast
@@ -172,7 +172,7 @@ namespace CoCoL
 		public IChannel<T> GetOrCreate<T>(ChannelNameAttribute attribute)
 		{
 			if (attribute == null)
-				throw new ArgumentNullException("attribute");
+				throw new ArgumentNullException(nameof(attribute));
 
 			lock (__lock)
 			{
