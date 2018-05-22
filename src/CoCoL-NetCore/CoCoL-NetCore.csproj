@@ -96,5 +96,8 @@
     <Compile Include="..\CoCoL\ReflectionHelper.cs">
       <Link>ReflectionHelper.cs</Link>
     </Compile>
+    <Compile Include="..\CoCoL\TaskPool.cs">
+      <Link>TaskPool.cs</Link>
+    </Compile>
   </ItemGroup>
 </Project>

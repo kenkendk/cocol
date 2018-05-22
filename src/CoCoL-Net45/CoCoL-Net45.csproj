@@ -65,6 +65,7 @@
     <Compile Include="..\CoCoL\SingleThreadedWorker.cs" />
     <Compile Include="..\CoCoL\AsyncLock.cs" />
     <Compile Include="..\CoCoL\BroadcastingChannel.cs" />
+    <Compile Include="..\CoCoL\TaskPool.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
