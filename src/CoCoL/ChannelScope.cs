@@ -61,6 +61,16 @@ namespace CoCoL
 		/// </summary>
 		protected Dictionary<string, IRetireAbleChannel> m_lookup = new Dictionary<string, IRetireAbleChannel>();
 
+        /// <summary>
+        /// Lookup table for create helpers that trigger on specific channel names
+        /// </summary>
+        protected readonly Dictionary<string, Func<ChannelScope, ChannelNameAttribute, IRetireAbleChannel>> m_namedCreateHelpers = new Dictionary<string, Func<ChannelScope, ChannelNameAttribute, IRetireAbleChannel>>();
+
+        /// <summary>
+        /// Method that performs the channel creation
+        /// </summary>
+        protected readonly List<Func<ChannelScope, ChannelNameAttribute, IRetireAbleChannel>> m_createOverrides = new List<Func<ChannelScope, ChannelNameAttribute, IRetireAbleChannel>>();
+
 		/// <summary>
 		/// The key used to assign the current scope into the current call-context
 		/// </summary>
@@ -96,6 +106,64 @@ namespace CoCoL
 			lock (__lock)
 				__scopes[m_instancekey] = this;
 		}
+
+        /// <summary>
+        /// Registers a method that can override custom channel creation
+        /// </summary>
+        /// <param name="method">The method to add to the list.</param>
+        public void AddCreateOverride(Func<ChannelScope, ChannelNameAttribute, IRetireAbleChannel> method)
+        {
+            if (method == null)
+                throw new ArgumentNullException(nameof(method));
+
+            lock (__lock)
+                m_createOverrides.Add(method);
+        }
+
+        /// <summary>
+        /// Registers a method that can override custom channel creation
+        /// </summary>
+        /// <param name="name">The name of the channel to handle</param>
+        /// <param name="method">The method to add to the list.</param>
+        public void AddCreateOverride(string name, Func<ChannelScope, ChannelNameAttribute, IRetireAbleChannel> method)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("The name cannot be empty", nameof(name));
+
+            if (method == null)
+                throw new ArgumentNullException(nameof(method));
+
+            lock (__lock)
+                m_namedCreateHelpers.Add(name, method);
+        }
+
+        /// <summary>
+        /// Unregisters a method for custom channel creation
+        /// </summary>
+        /// <returns><c>true</c>, if the override was removed, <c>false</c> otherwise.</returns>
+        /// <param name="method">The method to remove from the list.</param>
+        public bool RemoveCreateOverride(Func<ChannelScope, ChannelNameAttribute, IRetireAbleChannel> method)
+        {
+            if (method == null)
+                throw new ArgumentNullException(nameof(method));
+            
+            lock (__lock)
+                return m_createOverrides.Remove(method);
+        }
+
+        /// <summary>
+        /// Unregisters a method for custom channel creation
+        /// </summary>
+        /// <returns><c>true</c>, if the override was removed, <c>false</c> otherwise.</returns>
+        /// <param name="name">The name of the channel to remove the override for</param>
+        public bool RemoveCreateOverride(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("The name cannot be empty", nameof(name));
+
+            lock (__lock)
+                return m_namedCreateHelpers.Remove(name);
+        }
 
 		/// <summary>
 		/// Gets or creates a channel
@@ -224,7 +292,28 @@ namespace CoCoL
 		/// <typeparam name="T">The type of data in the channel.</typeparam>
 		protected virtual IChannel<T> DoCreateChannel<T>(ChannelNameAttribute attribute)
 		{
-			return ChannelManager.CreateChannelForScope<T>(attribute);
+            // Recusively visit the scope create helpers
+            var cur = this;
+            while (cur != null)
+            {
+                if (cur.m_namedCreateHelpers.TryGetValue(attribute.Name, out var creator))
+                {
+                    var res = creator(this, attribute);
+                    if (res != null)
+                        return (IChannel<T>)res;
+                }
+
+                foreach (var p in cur.m_createOverrides)
+                {
+                    var res = p(this, attribute);
+                    if (res != null)
+                        return (IChannel<T>)res;
+                }
+
+                cur = cur.ParentScope;
+            }
+
+            return ChannelManager.CreateChannelForScope<T>(attribute);
 		}
 
 		/// <summary>
@@ -257,9 +346,26 @@ namespace CoCoL
 				}
 
 				return null;
-
 			}		
 		}
+
+        /// <summary>
+        /// Registers a channel in the current scope to provide a different channel for that name
+        /// </summary>
+        /// <param name="name">The name of the channel to register.</param>
+        /// <param name="channel">The channel instance to use.</param>
+        /// <typeparam name="T">The channel data type parameter.</typeparam>
+        public void RegisterChannel<T>(string name, IChannel<T> channel)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("Must provide the channel name", nameof(name));
+
+            if (channel == null)
+                throw new ArgumentNullException(nameof(channel));
+
+            lock (__lock)
+                m_lookup[name] = channel;
+        }
 
 		#region IDisposable implementation
 
