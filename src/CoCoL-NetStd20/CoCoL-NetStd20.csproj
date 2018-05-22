@@ -98,5 +98,8 @@
     <Compile Include="..\CoCoL\TaskPool.cs">
       <Link>TaskPool.cs</Link>
     </Compile>
+    <Compile Include="..\CoCoL\Skeletons.cs" >
+      <Link>Skeletons.cs</Link>
+    </Compile>
   </ItemGroup>
 </Project>
