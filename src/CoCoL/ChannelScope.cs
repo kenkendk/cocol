@@ -296,7 +296,7 @@ namespace CoCoL
             var cur = this;
             while (cur != null)
             {
-                if (cur.m_namedCreateHelpers.TryGetValue(attribute.Name, out var creator))
+                if (!string.IsNullOrWhiteSpace(attribute.Name) && cur.m_namedCreateHelpers.TryGetValue(attribute.Name, out var creator))
                 {
                     var res = creator(this, attribute);
                     if (res != null)
