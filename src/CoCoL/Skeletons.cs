@@ -68,7 +68,7 @@ namespace CoCoL
                             // Did it work?
                             if (t.IsCompleted && !(t.IsCanceled || t.IsFaulted))
                             {
-                                if (pending.Count >= maxparallel)
+                                if (pending.Count > maxparallel)
                                     pending[0] = null;
                                 else
                                     pending[0] = Task.Run(() => self.Source.ReadAsync());
