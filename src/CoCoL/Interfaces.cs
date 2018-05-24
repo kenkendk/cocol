@@ -68,7 +68,7 @@ namespace CoCoL
 	/// <summary>
 	/// Represents and interface that is retire-able
 	/// </summary>
-	public interface IRetireAbleChannel
+    public interface IRetireAbleChannel : IUntypedChannel
 	{
 		/// <summary>
 		/// Stops this channel from processing messages
