@@ -60,7 +60,7 @@ namespace CoCoL
                     while (true)
                     {
                         // Wait for something to happen
-                        var t = await Task.WhenAny(pending);
+                        var t = await Task.WhenAny(pending.Where(x => x != null));
 
                         // If the reader completed
                         if (t == pending[0])
@@ -163,6 +163,7 @@ namespace CoCoL
         /// <returns>An awaitable task.</returns>
         /// <param name="input">The data source.</param>
         /// <param name="output">The channels to distribute the data to.</param>
+        /// <param name="policy">The policy used to scatter the inputs</param>
         /// <typeparam name="T">The 1st type parameter.</typeparam>
         public static Task ScatterAsync<T>(IReadChannel<T> input, IWriteChannel<T>[] output, ScatterGatherPolicy policy = ScatterGatherPolicy.Any)
         {
