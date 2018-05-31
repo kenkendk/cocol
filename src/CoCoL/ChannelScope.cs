@@ -61,16 +61,6 @@ namespace CoCoL
 		/// </summary>
 		protected Dictionary<string, IRetireAbleChannel> m_lookup = new Dictionary<string, IRetireAbleChannel>();
 
-        /// <summary>
-        /// Lookup table for create helpers that trigger on specific channel names
-        /// </summary>
-        protected readonly Dictionary<string, Func<ChannelScope, ChannelNameAttribute, IRetireAbleChannel>> m_namedCreateHelpers = new Dictionary<string, Func<ChannelScope, ChannelNameAttribute, IRetireAbleChannel>>();
-
-        /// <summary>
-        /// Method that performs the channel creation
-        /// </summary>
-        protected readonly List<Func<ChannelScope, ChannelNameAttribute, IRetireAbleChannel>> m_createOverrides = new List<Func<ChannelScope, ChannelNameAttribute, IRetireAbleChannel>>();
-
 		/// <summary>
 		/// The key used to assign the current scope into the current call-context
 		/// </summary>
@@ -106,64 +96,6 @@ namespace CoCoL
 			lock (__lock)
 				__scopes[m_instancekey] = this;
 		}
-
-        /// <summary>
-        /// Registers a method that can override custom channel creation
-        /// </summary>
-        /// <param name="method">The method to add to the list.</param>
-        public void AddCreateOverride(Func<ChannelScope, ChannelNameAttribute, IRetireAbleChannel> method)
-        {
-            if (method == null)
-                throw new ArgumentNullException(nameof(method));
-
-            lock (__lock)
-                m_createOverrides.Add(method);
-        }
-
-        /// <summary>
-        /// Registers a method that can override custom channel creation
-        /// </summary>
-        /// <param name="name">The name of the channel to handle</param>
-        /// <param name="method">The method to add to the list.</param>
-        public void AddCreateOverride(string name, Func<ChannelScope, ChannelNameAttribute, IRetireAbleChannel> method)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("The name cannot be empty", nameof(name));
-
-            if (method == null)
-                throw new ArgumentNullException(nameof(method));
-
-            lock (__lock)
-                m_namedCreateHelpers.Add(name, method);
-        }
-
-        /// <summary>
-        /// Unregisters a method for custom channel creation
-        /// </summary>
-        /// <returns><c>true</c>, if the override was removed, <c>false</c> otherwise.</returns>
-        /// <param name="method">The method to remove from the list.</param>
-        public bool RemoveCreateOverride(Func<ChannelScope, ChannelNameAttribute, IRetireAbleChannel> method)
-        {
-            if (method == null)
-                throw new ArgumentNullException(nameof(method));
-            
-            lock (__lock)
-                return m_createOverrides.Remove(method);
-        }
-
-        /// <summary>
-        /// Unregisters a method for custom channel creation
-        /// </summary>
-        /// <returns><c>true</c>, if the override was removed, <c>false</c> otherwise.</returns>
-        /// <param name="name">The name of the channel to remove the override for</param>
-        public bool RemoveCreateOverride(string name)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("The name cannot be empty", nameof(name));
-
-            lock (__lock)
-                return m_namedCreateHelpers.Remove(name);
-        }
 
 		/// <summary>
 		/// Gets or creates a channel
@@ -284,6 +216,17 @@ namespace CoCoL
 			return GetOrCreate<T>(attr);
 		}
 
+        /// <summary>
+        /// Hook method that allows custom channel creation
+        /// </summary>
+        /// <returns>The created channel or null, if there is no special handler.</returns>
+        /// <param name="attribute">The attribute describing the channel to create.</param>
+        /// <typeparam name="T">The type of data in the channel.</typeparam>
+        protected virtual IChannel<T> TryCreateChannel<T>(ChannelNameAttribute attribute)
+        {
+            return null;
+        }
+
 		/// <summary>
 		/// Creates the channel by calling the ChannelManager.
 		/// </summary>
@@ -292,23 +235,12 @@ namespace CoCoL
 		/// <typeparam name="T">The type of data in the channel.</typeparam>
 		protected virtual IChannel<T> DoCreateChannel<T>(ChannelNameAttribute attribute)
 		{
-            // Recusively visit the scope create helpers
             var cur = this;
-            while (cur != null)
+            while (cur != null && cur != Root)
             {
-                if (!string.IsNullOrWhiteSpace(attribute.Name) && cur.m_namedCreateHelpers.TryGetValue(attribute.Name, out var creator))
-                {
-                    var res = creator(this, attribute);
-                    if (res != null)
-                        return (IChannel<T>)res;
-                }
-
-                foreach (var p in cur.m_createOverrides)
-                {
-                    var res = p(this, attribute);
-                    if (res != null)
-                        return (IChannel<T>)res;
-                }
+                var res = cur.TryCreateChannel<T>(attribute);
+                if (res != null)
+                    return res;
 
                 cur = cur.ParentScope;
             }
@@ -391,9 +323,11 @@ namespace CoCoL
 					while (Current.m_isDisposed)
 						Current = Current.ParentScope;
 				}
-				__scopes.Remove(this.m_instancekey);
+				
+                // We do not de-register or de-allocate as the scope might still be used
+                __scopes.Remove(this.m_instancekey);
+                m_lookup = null;
 				m_isDisposed = true;
-				m_lookup = null;
 			}
 		}
 
@@ -504,8 +438,172 @@ namespace CoCoL
 		}
 
 #endif
-
-
 	}
+
+    /// <summary>
+    /// Support implementation channel scopes that support custom channel create logic based on the channel name
+    /// </summary>  
+    public abstract class PrefixCreateChannelScope : ChannelScope
+    {
+        /// <summary>
+        /// The channel selector method used to choose if a channel should be custom created or not.
+        /// Return <c>true</c> to create the channel as a custom channel, <c>false</c> to use a default.
+        /// </summary>
+        private readonly Func<string, bool> m_selector;
+
+        /// <summary>
+        /// The method used to create the channel of the given type
+        /// </summary>
+        private readonly Func<ChannelScope, ChannelNameAttribute, Type, IUntypedChannel> m_creator;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CoCoL.PrefixCreateChannelScope"/> class.
+        /// </summary>
+        /// <param name="creator">The creator method to use</param>
+        /// <param name="prefix">The prefix for a channel name that indicates custom channels, or an empty string to make all channels custom created.</param>
+        /// <param name="redirectunnamed">Set to <c>true</c> if unnamed channels should be created as custom channels.</param>
+        protected PrefixCreateChannelScope(Func<ChannelScope, ChannelNameAttribute, Type, IUntypedChannel> creator, string prefix, bool redirectunnamed)
+            : this(creator, name =>
+                {
+                    // If all channels need to be network channels, we assign a name to this channel
+                    if (string.IsNullOrWhiteSpace(name) && redirectunnamed)
+                        return true;
+
+                    // Only create those with the right prefix
+                    return !string.IsNullOrWhiteSpace(name) && name.StartsWith(prefix ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+                })
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:CoCoL.PrefixCreateChannelScope"/> class.
+        /// </summary>
+        /// <param name="creator">The creator method to use</param>
+        /// <param name="names">The list of names to create with the <paramref name="creator"/>.</param>
+        protected PrefixCreateChannelScope(Func<ChannelScope, ChannelNameAttribute, Type, IUntypedChannel> creator, params string[] names)
+            : this(creator, name => name != null && (Array.IndexOf(names, name) >= 0))
+        {
+            if (names == null)
+                throw new ArgumentNullException(nameof(names));
+        }
+
+        /// <summary>
+        /// Starts a new <see cref="T:CoCoL.PrefixCreateChannelScope"/>.
+        /// </summary>
+        /// <param name="creator">The creator method to use</param>
+        /// <param name="names">The names of the channels to make profiled</param>
+        public PrefixCreateChannelScope(Func<ChannelScope, ChannelNameAttribute, Type, IUntypedChannel> creator, params INamedItem[] names)
+            : this(creator, names.Where(x => x != null && !string.IsNullOrWhiteSpace(x.Name)).Select(x => x.Name).ToArray())
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CoCoL.PrefixCreateChannelScope"/> class.
+        /// </summary>
+        /// <param name="creator">The creator method to use </param>
+        /// <param name="selector">The selector method used too determine if a channel should be created with the <paramref name="creator" /> function or not.</param>
+        protected PrefixCreateChannelScope(Func<ChannelScope, ChannelNameAttribute, Type, IUntypedChannel> creator, Func<string, bool> selector)
+        {
+            m_creator = creator ?? throw new ArgumentNullException(nameof(creator));
+            m_selector = selector ?? throw new ArgumentNullException(nameof(selector));
+        }
+
+
+        /// <summary>
+        /// Hook method that allows custom channel creation
+        /// </summary>
+        /// <returns>The created channel or null, if there is no special handler.</returns>
+        /// <param name="attribute">The attribute describing the channel to create.</param>
+        /// <typeparam name="T">The type of data in the channel.</typeparam>
+        protected override IChannel<T> TryCreateChannel<T>(ChannelNameAttribute attribute)
+        {
+            return m_selector(attribute.Name)
+                ? (IChannel<T>)m_creator(this, attribute, typeof(T))
+                : null;
+        }
+
+        /// <summary>
+        /// Helper method to invoke the default channel instance creator
+        /// </summary>
+        /// <returns>The created channel.</returns>
+        /// <param name="attribute">The attribute describing the channel to create.</param>
+        protected IChannel<T> BaseCreateChannel<T>(ChannelNameAttribute attribute)
+        {
+            if (ParentScope != Root)
+                return ParentScope.GetOrCreate<T>(attribute);
+            
+            return ChannelManager.CreateChannelForScope<T>(attribute);
+        }
+    }
+
+    /// <summary>
+    /// Creates a scope where some or all channels are wrapped as profiling channels
+    /// </summary>
+    public class ProfilerChannelScope : PrefixCreateChannelScope
+    {
+        /// <summary>
+        /// Starts a new <see cref="T:CoCoL.ProfilerChannelScope"/>.
+        /// </summary>
+        /// <param name="prefix">The prefix for a channel name that indicates a profiling channel, or an empty string to make all channels custom created.</param>
+        /// <param name="redirectunnamed">Set to <c>true</c> if unnamed channels should be created as custom channels.</param>
+        public ProfilerChannelScope(string prefix = null, bool redirectunnamed = false)
+            : base(Creator, prefix, redirectunnamed)
+        {
+        }
+
+        /// <summary>
+        /// Starts a new <see cref="T:CoCoL.ProfilerChannelScope"/>.
+        /// </summary>
+        /// <param name="names">The names of the channels to make profiled</param>
+        public ProfilerChannelScope(params string[] names)
+            : base(Creator, names)
+        {
+        }
+
+        /// <summary>
+        /// Starts a new <see cref="T:CoCoL.ProfilerChannelScope"/>.
+        /// </summary>
+        /// <param name="names">The names of the channels to make profiled</param>
+        public ProfilerChannelScope(params INamedItem[] names)
+            : base(Creator, names)
+        {
+        }
+
+        /// <summary>
+        /// Starts a new <see cref="T:CoCoL.ProfilerChannelScope"/>.
+        /// </summary>
+        /// <param name="selector">The selector method used too determine if a channel should be created as a profiling method or not.</param>
+        public ProfilerChannelScope(Func<string, bool> selector)
+            : base(Creator, selector)
+        {
+        }
+
+        /// <summary>
+        /// Handler method to create a profiling channel
+        /// </summary>
+        /// <returns>The profiling channel.</returns>
+        /// <param name="scope">The scope calling the method.</param>
+        /// <param name="attr">The channel attribute.</param>
+        /// <param name="type">The type to create the channel for</param>
+        private static IUntypedChannel Creator(ChannelScope scope, ChannelNameAttribute attr, Type type)
+        {
+            return 
+                (IUntypedChannel)typeof(ProfilerChannelScope)
+                .GetMethod(nameof(CreateProfilingChannel), System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly | System.Reflection.BindingFlags.NonPublic)
+                .MakeGenericMethod(type)
+                .Invoke(scope, new object[] { attr });
+        }
+
+        /// <summary>
+        /// Creates a channel that is wrapped in a profiling channel instance
+        /// </summary>
+        /// <returns>The profiling-wrapped channel.</returns>
+        /// <param name="attribute">The channel attribute.</param>
+        /// <typeparam name="T">The channel type parameter.</typeparam>
+        private IChannel<T> CreateProfilingChannel<T>(ChannelNameAttribute attribute)
+        {
+            return new ProfilingChannel<T>(this.BaseCreateChannel<T>(attribute));
+        }
+    }
 }
 

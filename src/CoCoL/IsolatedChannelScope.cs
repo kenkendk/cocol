@@ -87,9 +87,9 @@ namespace CoCoL
 		public void InjectChannel(string name, IRetireAbleChannel channel)
 		{
 			if (string.IsNullOrWhiteSpace(name))
-				throw new ArgumentNullException("name");
+				throw new ArgumentNullException(nameof(name));
 			if (channel == null)
-				throw new ArgumentNullException("channel");
+				throw new ArgumentNullException(nameof(channel));
 
 			lock (__lock)
 				m_lookup[name] = channel;
@@ -127,19 +127,40 @@ namespace CoCoL
 		public void InjectChannelFromParent(string name, ChannelScope parent = null)
 		{
 			if (string.IsNullOrWhiteSpace(name))
-				throw new ArgumentNullException("name");
+				throw new ArgumentNullException(nameof(name));
 			parent = parent ?? this.ParentScope;
 
 			lock (__lock)
 			{
 				var c = parent.RecursiveLookup(name);
-				if (c == null)
-					throw new Exception(string.Format("No channel with the name {0} was found in the parent scope"));
-
-				m_lookup[name] = c;
+                m_lookup[name] = c ?? throw new Exception($"No channel with the name \"{name}\" was found in the parent scope");
 			}
 		}
-
 	}
+
+    /// <summary>
+    /// Creates a scope that disables custom channel creation
+    /// </summary>
+    public class CustomCreationIsolationScope : ChannelScope
+    {
+        /// <summary>
+        /// Starts a new instance of the <see cref="T:CoCoL.CustomCreationIsolationScope"/> class.
+        /// </summary>
+        public CustomCreationIsolationScope()
+            : base(true)
+        {
+        }
+
+        /// <summary>
+        /// Returns the default channel type
+        /// </summary>
+        /// <returns>The created channel.</returns>
+        /// <param name="attribute">The channel attribute.</param>
+        /// <typeparam name="T">The channel type parameter.</typeparam>
+        protected override IChannel<T> TryCreateChannel<T>(ChannelNameAttribute attribute)
+        {
+            return ChannelManager.CreateChannelForScope<T>(attribute);
+        }
+    }
 }
 

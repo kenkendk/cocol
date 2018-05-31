@@ -10,6 +10,7 @@ using System.Linq;
 #if PCL_BUILD
 namespace System.Reflection
 {
+    [Flags]
     internal enum BindingFlags
 	{
 		Default = 0,
@@ -93,7 +94,12 @@ namespace CoCoL
 			return self.GetTypeInfo().ImplementedInterfaces.ToArray();
 		}
 
-		public static MethodInfo GetMethod(this Type self, string name, params Type[] types)
+        public static MethodInfo GetMethod(this Type self, string name, params Type[] types)
+        {
+            return GetMethod(self, name, BindingFlags.Default, types);
+        }
+
+        public static MethodInfo GetMethod(this Type self, string name, BindingFlags bindingFlags, params Type[] types)
 		{
 			var typeslen = types == null ? 0 : types.Length;
 			if (typeslen == 0)
