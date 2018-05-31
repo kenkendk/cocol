@@ -354,7 +354,7 @@ namespace CoCoL
 		/// <param name="method">The process method.</param>
 		/// <typeparam name="T">The type of the channel object parameter.</typeparam>
 		/// <param name="catchRetiredExceptions">If set to <c>true</c> any RetiredExceptions are caught and ignored.</param>
-		public static async Task RunTask<T>(this T channels, Func<T, Task> method, bool catchRetiredExceptions = true)
+		public static async Task RunTask<T>(T channels, Func<T, Task> method, bool catchRetiredExceptions = true)
 		{
 			AutoWireChannelsDirect(channels);
 			try
