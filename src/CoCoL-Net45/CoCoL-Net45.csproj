@@ -67,6 +67,12 @@
     <Compile Include="..\CoCoL\BroadcastingChannel.cs" />
     <Compile Include="..\CoCoL\TaskPool.cs" />
     <Compile Include="..\CoCoL\Skeletons.cs" />
+    <Compile Include="..\CoCoL\ProfilingChannel.cs">
+      <Link>ProfilingChannel.cs</Link>
+    </Compile>
+    <Compile Include="..\CoCoL\RateLimitChannel.cs">
+      <Link>RateLimitChannel.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

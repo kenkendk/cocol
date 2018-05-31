@@ -119,8 +119,14 @@
     <Compile Include="..\CoCoL\TaskPool.cs">
       <Link>TaskPool.cs</Link>
     </Compile>
-    <Compile Include="..\CoCoL\Skeletons.cs" >
+    <Compile Include="..\CoCoL\Skeletons.cs">
       <Link>Skeletons.cs</Link>
+    </Compile>
+    <Compile Include="..\CoCoL\ProfilingChannel.cs">
+      <Link>ProfilingChannel.cs</Link>
+    </Compile>
+    <Compile Include="..\CoCoL\RateLimitChannel.cs">
+      <Link>RateLimitChannel.cs</Link>
     </Compile>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
