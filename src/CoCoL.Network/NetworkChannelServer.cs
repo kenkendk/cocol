@@ -241,7 +241,7 @@ namespace CoCoL.Network
 		public override void Dispose(bool disposing)
 		{
 			try { m_socket.Stop(); }
-			catch { }
+            catch (Exception ex) { LOG.Warn("Failed on socket stop", ex); }
 
 			base.Dispose(disposing);
 		}
