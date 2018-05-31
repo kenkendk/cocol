@@ -143,7 +143,11 @@ namespace CoCoL
         /// Registers a desire to read from the channel
         /// </summary>
         /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-        Task<T> ReadAsync(ITwoPhaseOffer offer = null);
+        Task<T> ReadAsync(ITwoPhaseOffer offer);
+        /// <summary>
+        /// Registers a desire to read from the channel
+        /// </summary>
+        Task<T> ReadAsync();
 	}
 
 	/// <summary>
@@ -154,9 +158,15 @@ namespace CoCoL
         /// <summary>
         /// Registers a desire to write to the channel
         /// </summary>
+        /// <param name="value">The value to write to the channel.</param>
+        Task WriteAsync(T value);
+
+        /// <summary>
+        /// Registers a desire to write to the channel
+        /// </summary>
         /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
         /// <param name="value">The value to write to the channel.</param>
-        Task WriteAsync(T value, ITwoPhaseOffer offer = null);
+        Task WriteAsync(T value, ITwoPhaseOffer offer);
 
         /// <summary>
 		/// Registers a desire to write to the channel

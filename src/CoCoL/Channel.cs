@@ -517,8 +517,16 @@ namespace CoCoL
         /// <summary>
         /// Registers a desire to read from the channel
         /// </summary>
+        public Task<T> ReadAsync()
+        {
+            return ReadAsync(Timeout.Infinite, null);
+        }
+
+        /// <summary>
+        /// Registers a desire to read from the channel
+        /// </summary>
         /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-        public Task<T> ReadAsync(ITwoPhaseOffer offer = null)
+        public Task<T> ReadAsync(ITwoPhaseOffer offer)
         {
             return ReadAsync(Timeout.Infinite, offer);
         }
@@ -603,9 +611,18 @@ namespace CoCoL
         /// <summary>
         /// Registers a desire to write to the channel
         /// </summary>
+        /// <param name="value">The value to write to the channel.</param>
+        public Task WriteAsync(T value)
+        {
+            return WriteAsync(value, Timeout.Infinite, null);
+        }
+
+        /// <summary>
+        /// Registers a desire to write to the channel
+        /// </summary>
         /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
         /// <param name="value">The value to write to the channel.</param>
-        public Task WriteAsync(T value, ITwoPhaseOffer offer = null)
+        public Task WriteAsync(T value, ITwoPhaseOffer offer)
         {
             return WriteAsync(value, Timeout.Infinite, offer);
         }
