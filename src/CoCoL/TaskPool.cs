@@ -128,6 +128,33 @@ namespace CoCoL
         }
 
         /// <summary>
+        /// Runs a repeated parallel operation with a maximum of 10 concurrent handlers 
+        /// </summary>
+        /// <returns>An awaitable task.</returns>
+        /// <param name="source">The channel where requests are read from</param>
+        /// <param name="handler">The method to invoke for each item</param>
+        /// <param name="errorHandler">The error handler</param>
+        /// <typeparam name="T">The type of data elements to handle</typeparam>
+        public static Task RunParallelAsync<T>(IReadChannel<T> source, Func<T, Task> handler, Func<T, Exception, Task> errorHandler = null)
+        {
+            return RunParallelAsync(source, handler, default(System.Threading.CancellationToken), 10, errorHandler);
+        }
+
+        /// <summary>
+        /// Runs a repeated parallel operation 
+        /// </summary>
+        /// <returns>An awaitable task.</returns>
+        /// <param name="source">The channel where requests are read from</param>
+        /// <param name="handler">The method to invoke for each item</param>
+        /// <param name="maxparallel">The maximum parallelism to use.</param>
+        /// <param name="errorHandler">The error handler</param>
+        /// <typeparam name="T">The type of data elements to handle</typeparam>
+        public static Task RunParallelAsync<T>(IReadChannel<T> source, Func<T, Task> handler, int maxparallel, Func<T, Exception, Task> errorHandler = null)
+        {
+            return RunParallelAsync(source, handler, default(System.Threading.CancellationToken), maxparallel, errorHandler);
+        }
+
+        /// <summary>
         /// Runs a repeated parallel operation 
         /// </summary>
         /// <returns>An awaitable task.</returns>
@@ -137,7 +164,7 @@ namespace CoCoL
         /// <param name="maxparallel">The maximum parallelism to use.</param>
         /// <param name="errorHandler">The error handler</param>
         /// <typeparam name="T">The type of data elements to handle</typeparam>
-        public static Task RunParallelAsync<T>(IReadChannel<T> source, Func<T, Task> handler, System.Threading.CancellationToken token = default(System.Threading.CancellationToken), int maxparallel = 10, Func<T, Exception, Task> errorHandler = null)
+        public static Task RunParallelAsync<T>(IReadChannel<T> source, Func<T, Task> handler, System.Threading.CancellationToken token, int maxparallel = 10, Func<T, Exception, Task> errorHandler = null)
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
