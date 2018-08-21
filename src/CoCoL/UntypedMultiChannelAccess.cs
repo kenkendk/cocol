@@ -427,9 +427,9 @@ namespace CoCoL
 			{
 				// Timeout is handled by offer instance
 				if (c.IsRead)
-					tasks[c.Channel.ReadAsync(Timeout.Infinite, offer)] = c;
+					tasks[c.Channel.ReadAsync(offer)] = c;
 				else
-					tasks[c.Channel.WriteAsync(c.Value, Timeout.Infinite, offer)] = c;
+					tasks[c.Channel.WriteAsync(c.Value, offer)] = c;
 
 				// Fast exit to avoid littering the channels if we are done
 				if (offer.IsTaken)

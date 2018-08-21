@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace CoCoL
@@ -170,32 +171,20 @@ namespace CoCoL
         /// <returns>The async.</returns>
         public Task<T> ReadAsync()
         {
-            return ReadAsync(Timeout.Infinite, null);
-        }
-
-        /// <summary>
-        /// Registers a desire to read from the channel
-        /// </summary>
-        /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-        /// <returns>The async.</returns>
-        public Task<T> ReadAsync(ITwoPhaseOffer offer)
-        {
-            return ReadAsync(Timeout.Infinite, offer);
+            return ReadAsync(null);
         }
 
 		/// <summary>
 		/// Registers a desire to read from the channel
 		/// </summary>
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a
-		/// negative span to wait forever.</param>
 		/// <returns>The async.</returns>
-		public Task<T> ReadAsync(TimeSpan timeout, ITwoPhaseOffer offer = null)
+        public Task<T> ReadAsync(ITwoPhaseOffer offer)
 		{
             var tg = m_target;
 			if (tg == null)
 				throw new ObjectDisposedException(this.GetType().FullName);
-			return ((IReadChannel<T>)tg).ReadAsync(timeout, offer);
+            return ((IReadChannel<T>)tg).ReadAsync(offer);
 		}
 		#endregion
 	}
@@ -222,18 +211,7 @@ namespace CoCoL
         /// <returns>The async.</returns>
         public Task WriteAsync(T value)
         {
-            return WriteAsync(value, Timeout.Infinite, null);
-        }
-
-        /// <summary>
-        /// Registers a desire to write to the channel
-        /// </summary>
-        /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-        /// <param name="value">The value to write to the channel.</param>
-        /// <returns>The async.</returns>
-        public Task WriteAsync(T value, ITwoPhaseOffer offer)
-        {
-            return WriteAsync(value, Timeout.Infinite, offer);
+            return WriteAsync(value, null);
         }
 
 		/// <summary>
@@ -241,15 +219,12 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
 		/// <param name="value">The value to write to the channel.</param>
-		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a
-		/// negative span to wait forever.</param>
-		/// <returns>The async.</returns>
-		public Task WriteAsync(T value, TimeSpan timeout, ITwoPhaseOffer offer = null)
+        public Task WriteAsync(T value, ITwoPhaseOffer offer)
 		{
 			var tg = m_target;
 			if (tg == null)
 				throw new ObjectDisposedException(this.GetType().FullName);
-			return ((IWriteChannel<T>)tg).WriteAsync(value, timeout, offer);
+            return ((IWriteChannel<T>)tg).WriteAsync(value, offer);
 		}
 
 		#endregion

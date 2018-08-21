@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace CoCoL.Network
@@ -55,32 +56,19 @@ namespace CoCoL.Network
         /// <returns>The async.</returns>
         public Task WriteAsync(T value)
         {
-            return WriteAsync(value, Timeout.Infinite, null);
-        }
-
-        /// <summary>
-        /// Registers a desire to write to the channel
-        /// </summary>
-        /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-        /// <param name="value">The value to write to the channel.</param>
-        /// <returns>The async.</returns>
-        public Task WriteAsync(T value, ITwoPhaseOffer offer)
-        {
-            return WriteAsync(value, Timeout.Infinite, offer);
+            return WriteAsync(value, null);
         }
 
 		/// <summary>
 		/// Registers a desire to write to the channel
 		/// </summary>
-		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
+		/// <param name="offer">A two-phase offer, use null to unconditionally accept</param>
 		/// <param name="value">The value to write to the channel.</param>
-		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a
-		/// negative span to wait forever.</param>
 		/// <returns>The async.</returns>
-		public async Task WriteAsync(T value, TimeSpan timeout, ITwoPhaseOffer offer)
+        public async Task WriteAsync(T value, ITwoPhaseOffer offer)
 		{
 			var tcs = new TaskCompletionSource<bool>();
-			await NetworkConfig.TransmitRequestAsync(new PendingNetworkRequest(this, typeof(T), timeout == Timeout.Infinite ? new DateTime(0) : DateTime.Now + timeout, offer, tcs, value));
+            await NetworkConfig.TransmitRequestAsync(new PendingNetworkRequest(this, typeof(T), Timeout.InfiniteDateTime, offer, tcs, value));
 			await tcs.Task;
 		}
 
@@ -94,30 +82,17 @@ namespace CoCoL.Network
         /// <returns>The async.</returns>
         public Task<T> ReadAsync()
         {
-            return ReadAsync(Timeout.Infinite, null);
-        }
-
-        /// <summary>
-        /// Registers a desire to read from the channel
-        /// </summary>
-        /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-        /// <returns>The async.</returns>
-        public Task<T> ReadAsync(ITwoPhaseOffer offer)
-        {
-            return ReadAsync(Timeout.Infinite, offer);
+            return ReadAsync(null);
         }
 
 		/// <summary>
 		/// Registers a desire to read from the channel
 		/// </summary>
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a
-		/// negative span to wait forever.</param>
-		/// <returns>The async.</returns>
-		public async Task<T> ReadAsync(TimeSpan timeout, ITwoPhaseOffer offer = null)
+        public async Task<T> ReadAsync(ITwoPhaseOffer offer)
 		{
 			var tcs = new TaskCompletionSource<T>();
-			await NetworkConfig.TransmitRequestAsync(new PendingNetworkRequest(this, typeof(T), timeout == Timeout.Infinite ? new DateTime(0) : DateTime.Now + timeout, offer, tcs));
+			await NetworkConfig.TransmitRequestAsync(new PendingNetworkRequest(this, typeof(T), Timeout.InfiniteDateTime, offer, tcs));
 			return await tcs.Task;
 		}
 

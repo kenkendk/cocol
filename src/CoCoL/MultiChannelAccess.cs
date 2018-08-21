@@ -451,8 +451,9 @@ namespace CoCoL
 		/// <param name="requests">The list of requests</param>
 		/// <param name="timeout">The maximum time to wait for a value to read.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be read.</param>
+        /// <param name="cancelToken">The cancellation token</param>
 		/// <typeparam name="T">The channel data type.</typeparam>
-		private static Task<MultisetRequest<T>> ReadOrWriteAnyAsync<T>(Action<object> callback, IEnumerable<MultisetRequest<T>> requests, TimeSpan timeout, MultiChannelPriority priority)
+        private static Task<MultisetRequest<T>> ReadOrWriteAnyAsync<T>(Action<object> callback, IEnumerable<MultisetRequest<T>> requests, TimeSpan timeout, MultiChannelPriority priority, CancellationToken cancelToken = default(CancellationToken))
 		{
 			// This method could also use the untyped version, 
 			// but using the type version is faster as there are no reflection
@@ -461,7 +462,7 @@ namespace CoCoL
 			var tcs = new TaskCompletionSource<MultisetRequest<T>>();
 
 			// We only accept the first offer
-			var offer = new SingleOffer<MultisetRequest<T>>(tcs, timeout == Timeout.Infinite ? Timeout.InfiniteDateTime : DateTime.Now + timeout);
+            var offer = new SingleOffer<MultisetRequest<T>>(tcs, timeout == Timeout.Infinite ? Timeout.InfiniteDateTime : DateTime.Now + timeout, cancelToken);
 			offer.SetCommitCallback(callback);
 
 			switch (priority)
@@ -483,9 +484,9 @@ namespace CoCoL
 			{
 				// Timeout is handled by offer instance
 				if (c.IsRead)
-					tasks[c.ReadChannel.ReadAsync(Timeout.Infinite, offer)] = c;
+					tasks[c.ReadChannel.ReadAsync(offer)] = c;
 				else
-					tasks[c.WriteChannel.WriteAsync(c.Value, Timeout.Infinite, offer)] = c;
+					tasks[c.WriteChannel.WriteAsync(c.Value, offer)] = c;
 
 				// Fast exit to avoid littering the channels if we are done
 				if (offer.IsTaken)

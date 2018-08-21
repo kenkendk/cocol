@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace CoCoL
@@ -73,24 +74,14 @@ namespace CoCoL
         /// </summary>
         public Task<T> ReadAsync()
         {
-            return ReadAsync(Timeout.Infinite, null);
+            return ReadAsync(null);
         }
 
         /// <summary>
         /// Registers a desire to read from the channel
         /// </summary>
         /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-        public Task<T> ReadAsync(ITwoPhaseOffer offer)
-        {
-            return ReadAsync(Timeout.Infinite, offer);
-        }
-
-        /// <summary>
-        /// Registers a desire to read from the channel
-        /// </summary>
-        /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-        /// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-        public async Task<T> ReadAsync(TimeSpan timeout, ITwoPhaseOffer offer)
+        public async Task<T> ReadAsync(ITwoPhaseOffer offer)
         {
             if (m_maxreads > 0)
             {
@@ -117,7 +108,7 @@ namespace CoCoL
                 }
             }
 
-            return await m_channel.ReadAsync(timeout, offer);
+            return await m_channel.ReadAsync(offer);
         }
 
         /// <summary>
@@ -126,26 +117,14 @@ namespace CoCoL
         /// <param name="value">The value to write to the channel.</param>
         public Task WriteAsync(T value)
         {
-            return WriteAsync(value, Timeout.Infinite, null);
+            return WriteAsync(value, null);
         }
 
         /// <summary>
         /// Registers a desire to write to the channel
         /// </summary>
         /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-        /// <param name="value">The value to write to the channel.</param>
-        public Task WriteAsync(T value, ITwoPhaseOffer offer)
-        {
-            return WriteAsync(value, Timeout.Infinite, offer);
-        }
-
-        /// <summary>
-        /// Registers a desire to write to the channel
-        /// </summary>
-        /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-        /// <param name="value">The value to write to the channel.</param>
-        /// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-        public async Task WriteAsync(T value, TimeSpan timeout, ITwoPhaseOffer offer = null)
+        public async Task WriteAsync(T value, ITwoPhaseOffer offer)
         {
             if (m_maxwrites > 0)
             {
@@ -172,7 +151,7 @@ namespace CoCoL
                 }
             }
 
-            await m_channel.WriteAsync(value, timeout, offer);
+            await m_channel.WriteAsync(value, offer);
         }
 
         /// <summary>

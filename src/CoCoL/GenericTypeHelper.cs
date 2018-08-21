@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 
 namespace CoCoL
 {
@@ -26,18 +27,16 @@ namespace CoCoL
 		/// <returns>The async task.</returns>
 		/// <param name="channel">The channel to read from.</param>
 		/// <param name="offer">The two-phase offer.</param>
-		/// <param name="timeout">The timeout value.</param>
-		Task<object> ReadAsync(IUntypedChannel channel, TimeSpan timeout, ITwoPhaseOffer offer = null);
+        Task<object> ReadAsync(IUntypedChannel channel, ITwoPhaseOffer offer);
 
 		/// <summary>
 		/// Writes the channel and returns the task
 		/// </summary>
 		/// <returns>The async task.</returns>
+        /// <param name="channel">The channel to write to.</param>
 		/// <param name="channel">The channel to write to.</param>
 		/// <param name="value">The value to write.</param>
-		/// <param name="offer">The two-phase offer.</param>
-		/// <param name="timeout">The timeout value.</param>
-		Task WriteAsync(IUntypedChannel channel, object value, TimeSpan timeout, ITwoPhaseOffer offer = null);
+        Task WriteAsync(IUntypedChannel channel, object value, ITwoPhaseOffer offer);
 
 		/// <summary>
 		/// Requests a read on the channel.
@@ -79,10 +78,9 @@ namespace CoCoL
 		/// <returns>The async task.</returns>
 		/// <param name="channel">The channel to read from.</param>
 		/// <param name="offer">The two-phase offer.</param>
-		/// <param name="timeout">The timeout value.</param>
-		public async Task<object> ReadAsync(IUntypedChannel channel, TimeSpan timeout, ITwoPhaseOffer offer = null)
+        public async Task<object> ReadAsync(IUntypedChannel channel, ITwoPhaseOffer offer)
 		{
-			return (await (channel as IReadChannel<T>).ReadAsync(timeout, offer));
+            return (await (channel as IReadChannel<T>).ReadAsync(offer));
 		}
 
 		/// <summary>
@@ -92,10 +90,9 @@ namespace CoCoL
 		/// <param name="channel">The channel to write to.</param>
 		/// <param name="value">The value to write.</param>
 		/// <param name="offer">The two-phase offer.</param>
-		/// <param name="timeout">The timeout value.</param>
-		public Task WriteAsync(IUntypedChannel channel, object value, TimeSpan timeout, ITwoPhaseOffer offer = null)
+        public Task WriteAsync(IUntypedChannel channel, object value, ITwoPhaseOffer offer)
 		{
-			return (channel as IWriteChannel<T>).WriteAsync((T)value, timeout, offer);
+			return (channel as IWriteChannel<T>).WriteAsync((T)value, offer);
 		}
 
 		/// <summary>

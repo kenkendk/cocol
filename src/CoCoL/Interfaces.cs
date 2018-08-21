@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 #if DISABLE_WAITCALLBACK
@@ -133,21 +134,16 @@ namespace CoCoL
 	/// </summary>
 	public interface IReadChannel<T> : IRetireAbleChannel
 	{
-		/// <summary>
-		/// Registers a desire to read from the channel
-		/// </summary>
-		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-		Task<T> ReadAsync(TimeSpan timeout, ITwoPhaseOffer offer = null);
-        /// <summary>
-        /// Registers a desire to read from the channel
-        /// </summary>
-        /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-        Task<T> ReadAsync(ITwoPhaseOffer offer);
         /// <summary>
         /// Registers a desire to read from the channel
         /// </summary>
         Task<T> ReadAsync();
+
+        /// <summary>
+        /// Registers a desire to read from the channel
+        /// </summary>
+        /// <param name="offer">A two-phase offer, use null to unconditionally accept</param>
+        Task<T> ReadAsync(ITwoPhaseOffer offer);
 	}
 
 	/// <summary>
@@ -162,19 +158,11 @@ namespace CoCoL
         Task WriteAsync(T value);
 
         /// <summary>
-        /// Registers a desire to write to the channel
-        /// </summary>
-        /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-        /// <param name="value">The value to write to the channel.</param>
-        Task WriteAsync(T value, ITwoPhaseOffer offer);
-
-        /// <summary>
 		/// Registers a desire to write to the channel
 		/// </summary>
-		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
+		/// <param name="offer">A two-phase offer, use null to unconditionally accept</param>
 		/// <param name="value">The value to write to the channel.</param>
-		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-		Task WriteAsync(T value, TimeSpan timeout, ITwoPhaseOffer offer = null);
+        Task WriteAsync(T value, ITwoPhaseOffer offer );
 	}
 
 	/// <summary>
@@ -253,6 +241,45 @@ namespace CoCoL
 		/// <param name="caller">The offer initiator.</param>
 		Task WithdrawAsync(object caller);
 	}
+
+    /// <summary>
+    /// Represents an offer that needs notification once the initial match has failed
+    /// </summary>
+    public interface IProbeAbleOffer
+    {
+        /// <summary>
+        /// Signals the instance that the probe phase is completed
+        /// </summary>
+        void ProbeComplete();
+    }
+
+    /// <summary>
+    /// Represents an offer that can expire
+    /// </summary>
+    public interface IExpiringOffer : ITwoPhaseOffer, IProbeAbleOffer
+    {
+        /// <summary>
+        /// The time the offer expires
+        /// </summary>
+        DateTime Expires { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether this <see cref="T:CoCoL.ITimeoutAbleOffer"/> is expired.
+        /// </summary>
+        bool IsExpired { get; }
+    }
+
+    /// <summary>
+    /// Represents an offer that can be cancelled
+    /// </summary>
+    public interface ICancelAbleOffer : ITwoPhaseOffer
+    {
+        /// <summary>
+        /// The cancellation token
+        /// </summary>
+        /// <value>The cancel token.</value>
+        CancellationToken CancelToken { get; }            
+    }
 
 	/// <summary>
 	/// Interface for a thread pool implementation

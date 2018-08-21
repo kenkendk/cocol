@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace CoCoL
 {
@@ -152,22 +153,16 @@ namespace CoCoL
 			/// The callback method for reporting progress
 			/// </summary>
 			public TaskCompletionSource<T> Source;
-			/// <summary>
-			/// The timeout value
-			/// </summary>
-			public DateTime Expires;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="CoCoL.Channel&lt;T&gt;.ReaderEntry"/> struct.
 			/// </summary>
 			/// <param name="offer">The offer handler</param>
 			/// <param name="callback">The callback method for reporting progress.</param>
-			/// <param name="expires">The timeout value.</param>
-			public ReaderEntry(ITwoPhaseOffer offer, TaskCompletionSource<T> callback, DateTime expires)
+			public ReaderEntry(ITwoPhaseOffer offer, TaskCompletionSource<T> callback)
 			{
 				Offer = offer;
 				Source = callback;
-				Expires = expires;
 			}
 
 			/// <summary>
@@ -178,6 +173,31 @@ namespace CoCoL
 			/// Tries to set the source to Cancelled
 			/// </summary>
 			void IEntry.TrySetCancelled() { Source.TrySetCanceled(); }
+
+            /// <summary>
+            /// Gets a value indicating whether this <see cref="T:CoCoL.Channel`1.ReaderEntry"/> is timed out.
+            /// </summary>
+            public bool IsTimeout => Offer is IExpiringOffer && ((IExpiringOffer)Offer).Expires < DateTime.Now;
+
+            /// <summary>
+            /// Gets a value indicating whether this <see cref="T:CoCoL.Channel`1.ReaderEntry"/> is cancelled.
+            /// </summary>
+            public bool IsCancelled => Offer is ICancelAbleOffer && ((ICancelAbleOffer)Offer).CancelToken.IsCancellationRequested;
+
+            /// <summary>
+            /// Gets a value representing the expiration time of this entry
+            /// </summary>
+            public DateTime Expires => Offer is IExpiringOffer ? ((IExpiringOffer)Offer).Expires : new DateTime(0);
+
+            /// <summary>
+            /// Signals that the probe phase has finished
+            /// </summary>
+            public void ProbeCompleted()
+            {
+                if (Offer is IExpiringOffer offer)
+                    offer.ProbeComplete();
+                    
+            }
 		}
 
 		/// <summary>
@@ -193,10 +213,10 @@ namespace CoCoL
 			/// The callback method for reporting progress
 			/// </summary>
 			public TaskCompletionSource<bool> Source;
-			/// <summary>
-			/// The timeout value
-			/// </summary>
-			public DateTime Expires;
+            /// <summary>
+            /// The cancellation token
+            /// </summary>
+            public CancellationToken CancelToken;
 			/// <summary>
 			/// The value being written
 			/// </summary>
@@ -207,13 +227,11 @@ namespace CoCoL
 			/// </summary>
 			/// <param name="offer">The offer handler</param>
 			/// <param name="callback">The callback method for reporting progress.</param>
-			/// <param name="expires">The timeout value.</param>
 			/// <param name="value">The value being written.</param>
-			public WriterEntry(ITwoPhaseOffer offer, TaskCompletionSource<bool> callback, DateTime expires, T value)
+            public WriterEntry(ITwoPhaseOffer offer, TaskCompletionSource<bool> callback, T value)
 			{
 				Offer = offer;
 				Source = callback;
-				Expires = expires;
 				Value = value;
 			}
 
@@ -229,6 +247,30 @@ namespace CoCoL
 				if (Source != null) 
 					Source.TrySetCanceled(); 
 			}
+
+            /// <summary>
+            /// Gets a value indicating whether this <see cref="T:CoCoL.Channel`1.ReaderEntry"/> is timed out.
+            /// </summary>
+            public bool IsTimeout => Offer is IExpiringOffer && ((IExpiringOffer)Offer).IsExpired;
+
+            /// <summary>
+            /// Gets a value indicating whether this <see cref="T:CoCoL.Channel`1.ReaderEntry"/> is cancelled.
+            /// </summary>
+            public bool IsCancelled => Offer is ICancelAbleOffer && ((ICancelAbleOffer)Offer).CancelToken.IsCancellationRequested;
+
+            /// <summary>
+            /// Gets a value representing the expiration time of this entry
+            /// </summary>
+            public DateTime Expires => Offer is IExpiringOffer ? ((IExpiringOffer)Offer).Expires : new DateTime(0);
+
+            /// <summary>
+            /// Signals that the probe phase has finished
+            /// </summary>
+            public void ProbeCompleted()
+            {
+                if (Offer is IExpiringOffer offer)
+                    offer.ProbeComplete();
+            }
 		}
 
 		/// <summary>
@@ -519,26 +561,18 @@ namespace CoCoL
         /// </summary>
         public Task<T> ReadAsync()
         {
-            return ReadAsync(Timeout.Infinite, null);
-        }
-
-        /// <summary>
-        /// Registers a desire to read from the channel
-        /// </summary>
-        /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-        public Task<T> ReadAsync(ITwoPhaseOffer offer)
-        {
-            return ReadAsync(Timeout.Infinite, offer);
+            return ReadAsync(null);
         }
 
 		/// <summary>
 		/// Registers a desire to read from the channel
 		/// </summary>
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-		public async Task<T> ReadAsync(TimeSpan timeout, ITwoPhaseOffer offer = null)
-		{				
-			var rd = new ReaderEntry(offer, new TaskCompletionSource<T>(), timeout.Ticks <= 0 ? Timeout.InfiniteDateTime : DateTime.Now + timeout);
+        public async Task<T> ReadAsync(ITwoPhaseOffer offer)
+		{
+            var rd = new ReaderEntry(offer, new TaskCompletionSource<T>());
+            if (rd.IsCancelled)
+                throw new TaskCanceledException();
 
 			using (await m_asynclock.LockAsync())
 			{
@@ -551,14 +585,20 @@ namespace CoCoL
 				m_readerQueue.Add(rd);
 				if (!await MatchReadersAndWriters(true, rd.Source.Task))
 				{
+                    rd.ProbeCompleted();
 					System.Diagnostics.Debug.Assert(m_readerQueue[m_readerQueue.Count - 1].Source == rd.Source);
 
-					// If this was a probe call, return a timeout now
-					if (timeout.Ticks >= 0 && rd.Expires < DateTime.Now)
-					{
-						m_readerQueue.RemoveAt(m_readerQueue.Count - 1);
-						ThreadPool.QueueItem(() => rd.Source.TrySetException(new TimeoutException()));
-					}
+                    // If this was a probe call, return a timeout now
+                    if (rd.IsTimeout)
+                    {
+                        m_readerQueue.RemoveAt(m_readerQueue.Count - 1);
+                        ThreadPool.QueueItem(() => rd.Source.TrySetException(new TimeoutException()));
+                    }
+                    else if (rd.IsCancelled)
+                    {
+                        m_readerQueue.RemoveAt(m_readerQueue.Count - 1);
+                        ThreadPool.QueueItem(() => rd.Source.TrySetException(new TaskCanceledException()));
+                    }
 					else
 					{
 						// Make room if we have too many
@@ -599,8 +639,8 @@ namespace CoCoL
 						// If we have expanded the queue with a new batch, see if we can purge old entries
 						m_readerQueueCleanup = await PerformQueueCleanupAsync(m_readerQueue, true, m_readerQueueCleanup);
 
-						if (rd.Expires != Timeout.InfiniteDateTime)
-							ExpirationManager.AddExpirationCallback(rd.Expires, () => ExpireItemsAsync().FireAndForget());
+                        if (rd.Offer is IExpiringOffer && ((IExpiringOffer)rd.Offer).Expires != Timeout.InfiniteDateTime)
+                            ExpirationManager.AddExpirationCallback(((IExpiringOffer)rd.Offer).Expires, () => ExpireItemsAsync().FireAndForget());
 					}
 				}
 			}
@@ -614,17 +654,7 @@ namespace CoCoL
         /// <param name="value">The value to write to the channel.</param>
         public Task WriteAsync(T value)
         {
-            return WriteAsync(value, Timeout.Infinite, null);
-        }
-
-        /// <summary>
-        /// Registers a desire to write to the channel
-        /// </summary>
-        /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-        /// <param name="value">The value to write to the channel.</param>
-        public Task WriteAsync(T value, ITwoPhaseOffer offer)
-        {
-            return WriteAsync(value, Timeout.Infinite, offer);
+            return WriteAsync(value, null);
         }
 
 		/// <summary>
@@ -632,10 +662,11 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
 		/// <param name="value">The value to write to the channel.</param>
-		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a negative span to wait forever.</param>
-		public async Task WriteAsync(T value, TimeSpan timeout, ITwoPhaseOffer offer = null)
+        public async Task WriteAsync(T value, ITwoPhaseOffer offer)
 		{
-			var wr = new WriterEntry(offer, new TaskCompletionSource<bool>(), timeout.Ticks <= 0 ? Timeout.InfiniteDateTime : DateTime.Now + timeout, value);
+			var wr = new WriterEntry(offer, new TaskCompletionSource<bool>(), value);
+            if (wr.IsCancelled)
+                throw new TaskCanceledException();
 
 			using (await m_asynclock.LockAsync())
 			{
@@ -649,6 +680,7 @@ namespace CoCoL
 				m_writerQueue.Add(wr);
 				if (!await MatchReadersAndWriters(false, wr.Source.Task))
 				{
+                    wr.ProbeCompleted();
 					System.Diagnostics.Debug.Assert(m_writerQueue[m_writerQueue.Count - 1].Source == wr.Source);
 
 					// If we have a buffer slot to use
@@ -659,7 +691,7 @@ namespace CoCoL
 							if (offer != null)
 								await offer.CommitAsync(this);
 
-							m_writerQueue[m_writerQueue.Count - 1] = new WriterEntry(null, null, Timeout.InfiniteDateTime, value);
+                            m_writerQueue[m_writerQueue.Count - 1] = new WriterEntry(null, null, value);
 							wr.Source.TrySetResult(true);
 						}
 						else
@@ -669,12 +701,17 @@ namespace CoCoL
 					}
 					else
 					{
-						// If this was a probe call, return a timeout now
-						if (timeout.Ticks >= 0 && wr.Expires < DateTime.Now)
-						{
-							m_writerQueue.RemoveAt(m_writerQueue.Count - 1);
-							ThreadPool.QueueItem(() => wr.Source.SetException(new TimeoutException()));
-						}
+                        // If this was a probe call, return a timeout now
+                        if (wr.IsTimeout)
+                        {
+                            m_writerQueue.RemoveAt(m_writerQueue.Count - 1);
+                            ThreadPool.QueueItem(() => wr.Source.SetException(new TimeoutException()));
+                        }
+                        else if (wr.IsCancelled)
+                        {
+                            m_writerQueue.RemoveAt(m_writerQueue.Count - 1);
+                            ThreadPool.QueueItem(() => wr.Source.TrySetException(new TaskCanceledException()));
+                        }
 						else
 						{
 							// Make room if we have too many
@@ -717,8 +754,8 @@ namespace CoCoL
 							// If we have expanded the queue with a new batch, see if we can purge old entries
 							m_writerQueueCleanup = await PerformQueueCleanupAsync(m_writerQueue, true, m_writerQueueCleanup);
 
-							if (wr.Expires != Timeout.InfiniteDateTime)
-								ExpirationManager.AddExpirationCallback(wr.Expires, () => ExpireItemsAsync().FireAndForget());
+                            if (wr.Offer is IExpiringOffer && ((IExpiringOffer)wr.Offer).Expires != Timeout.InfiniteDateTime)
+                                ExpirationManager.AddExpirationCallback(((IExpiringOffer)wr.Offer).Expires, () => ExpireItemsAsync().FireAndForget());
 						}
 					}
 				}
@@ -784,7 +821,7 @@ namespace CoCoL
 							nextItem.Source.SetResult(true);
 
 						// Now that the transaction has completed for the writer, record it as waiting forever
-						m_writerQueue[m_bufferSize - 1] = new WriterEntry(null, null, Timeout.InfiniteDateTime, nextItem.Value);
+                        m_writerQueue[m_bufferSize - 1] = new WriterEntry(null, null, nextItem.Value);
 
 						// We can have at most one, since we process at most one read
 						break;
