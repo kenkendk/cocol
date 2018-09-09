@@ -10,8 +10,8 @@
     <ProductVersion>8.0.30703</ProductVersion>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>CoCoL.snk</AssemblyOriginatorKeyFile>
-    <ReleaseVersion>1.6.1</ReleaseVersion>
+    <AssemblyOriginatorKeyFile>..\CoCoL.snk</AssemblyOriginatorKeyFile>
+    <ReleaseVersion>1.6.2</ReleaseVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
