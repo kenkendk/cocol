@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>CoCoL</id>
-    <version>1.6.1</version>
+    <version>1.6.2</version>
     <title>CoCoL</title>
     <authors>Kenneth Skovhede</authors>
     <owners>Kenneth Skovhede</owners>
@@ -10,7 +10,7 @@
     <projectUrl>https://github.com/kenkendk/cocol</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Concurrent Communications Library</description>
-    <releaseNotes>Added broadcast channels. Added better call stack information. Fixed some minor issues.</releaseNotes>
+    <releaseNotes>Added new features and simplified API.</releaseNotes>
     <copyright>Copyright 2017, Kenneth Skovhede</copyright>
     <tags>Multithreading Multiprocessing Concurrency CSP Go Golang Actor</tags>
   </metadata>
