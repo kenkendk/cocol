@@ -18,6 +18,9 @@ script:
   - mono ./testrunner/NUnit.ConsoleRunner.3.4.0/tools/nunit3-console.exe ./src/UnitTest/bin/Release/net461/UnitTest-Net461.exe
   - dotnet test -c Release src/UnitTest-NetCore
 
+global:
+    - DOTNET_SKIP_FIRST_TIME_EXPERIENCE=true
+    - DOTNET_CLI_TELEMETRY_OPTOUT=1
 env:
   global:
    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
