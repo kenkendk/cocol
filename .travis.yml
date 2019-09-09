@@ -2,6 +2,7 @@ dist: bionic
 language: csharp
 solution: src/CoCoL.sln
 dotnet: 2.2
+mono: 6.0
 install:
   - nuget restore src/CoCoL.sln
   # Would be easier to do donet restore CoCoL.sln, but that bombs because the PCL project cannot build ...
