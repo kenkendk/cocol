@@ -398,7 +398,10 @@ namespace CoCoL
 
 			try
 			{
-				accept = (wr.Source == null || wr.Source.Task.Status == TaskStatus.WaitingForActivation) && (wr.Offer == null || await wr.Offer.OfferAsync(this));
+				accept =
+                    (wr.Source == null || wr.Source.Task.Status == TaskStatus.WaitingForActivation)
+                    &&
+                    (wr.Offer == null || await wr.Offer.OfferAsync(this));
 			}
 			catch (Exception ex)
 			{
@@ -438,7 +441,10 @@ namespace CoCoL
 
 			try
 			{
-				accept = (rd.Source == null || rd.Source.Task.Status == TaskStatus.WaitingForActivation) && (rd.Offer == null || await rd.Offer.OfferAsync(this));
+				accept =
+                    (rd.Source == null || rd.Source.Task.Status == TaskStatus.WaitingForActivation)
+                    &&
+                    (rd.Offer == null || await rd.Offer.OfferAsync(this));
 			}
 			catch (Exception ex)
 			{
@@ -680,7 +686,6 @@ namespace CoCoL
 				m_writerQueue.Add(wr);
 				if (!await MatchReadersAndWriters(false, wr.Source.Task))
 				{
-                    wr.ProbeCompleted();
 					System.Diagnostics.Debug.Assert(m_writerQueue[m_writerQueue.Count - 1].Source == wr.Source);
 
 					// If we have a buffer slot to use
@@ -698,9 +703,14 @@ namespace CoCoL
 						{
 							wr.Source.TrySetCanceled();
 						}
+
+                        // For good measure, we also make sure the probe phase is completed
+                        wr.ProbeCompleted();
 					}
 					else
 					{
+                        wr.ProbeCompleted();
+
                         // If this was a probe call, return a timeout now
                         if (wr.IsTimeout)
                         {
