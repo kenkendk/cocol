@@ -34,6 +34,26 @@ namespace UnitTest
 		}
 
         [TEST_METHOD]
+        public void TestImmediateWrite()
+        {
+            var c = ChannelManager.CreateChannel<int>();
+
+            // Register two pending reads
+            var n1 = c.ReadAsync();
+            var n2 = c.ReadAsync();
+
+            if (!c.TryWrite(4))
+                throw new Exception("Failed to write to channel with immediate timeout");
+            if (!c.TryWrite(5))
+                throw new Exception("Failed to write to channel with immediate timeout");
+
+            if (n1.Result != 4)
+                throw new Exception("Invalid data read");
+            if (n2.Result != 5)
+                throw new Exception("Invalid data read");
+        }
+
+        [TEST_METHOD]
 		public void TestOrderedRetire()
 		{
 			var c = ChannelManager.CreateChannel<int>(buffersize: 2);
