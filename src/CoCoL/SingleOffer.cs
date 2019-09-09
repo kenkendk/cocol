@@ -88,7 +88,7 @@ namespace CoCoL
         /// <param name="expires">The time when the offer expires.</param>
         /// <param name="cancelToken">The cancellation token</param>
         public TimeoutOffer(TimeSpan expires, CancellationToken cancelToken)
-            : this(DateTime.Now + expires, cancelToken)
+            : this(expires == Timeout.Infinite ? Timeout.InfiniteDateTime : DateTime.Now + expires, cancelToken)
         {
         }
 
@@ -138,7 +138,7 @@ namespace CoCoL
         }
 
         /// <inheritdoc />
-        public bool IsExpired => m_probeComplete && DateTime.Now > Expires;
+        public bool IsExpired => m_probeComplete && Expires != Timeout.InfiniteDateTime && DateTime.Now > Expires;
 
     }
 
