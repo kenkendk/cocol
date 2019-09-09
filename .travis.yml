@@ -1,3 +1,4 @@
+dist: bionic
 language: csharp
 solution: src/CoCoL.sln
 dotnet: 2.2
