@@ -593,10 +593,10 @@ namespace CoCoL
             return ReadAsync(null);
         }
 
-		/// <summary>
-		/// Registers a desire to read from the channel
-		/// </summary>
-		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
+        /// <summary>
+        /// Registers a desire to read from the channel
+        /// </summary>
+        /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
         public async Task<T> ReadAsync(ITwoPhaseOffer offer)
 		{
             var rd = new ReaderEntry(offer);
@@ -613,7 +613,7 @@ namespace CoCoL
                     rd.Source.SetException(new RetiredException(this.Name));
 #endif
                     return await rd.Source.Task;
-				}
+                }
 
 				m_readerQueue.Add(rd);
 				if (!await MatchReadersAndWriters(true, rd.Source.Task))
