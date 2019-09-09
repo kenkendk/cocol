@@ -31,7 +31,7 @@
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Release\portable-net45\CoCoL.xml</DocumentationFile>
     <ConsolePause>false</ConsolePause>
-    <DefineConstants>PCL_BUILD;LIMITED_REFLECTION_SUPPORT;DISABLE_SERIALIZATION;DISABLE_WAITCALLBACK</DefineConstants>
+    <DefineConstants>PCL_BUILD;LIMITED_REFLECTION_SUPPORT;DISABLE_SERIALIZATION;DISABLE_WAITCALLBACK;NO_TASK_ASYNCCONTINUE</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
