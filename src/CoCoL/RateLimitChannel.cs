@@ -124,6 +124,7 @@ namespace CoCoL
         /// Registers a desire to write to the channel
         /// </summary>
         /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
+        /// <param name="value">The value to write</param>
         public async Task WriteAsync(T value, ITwoPhaseOffer offer)
         {
             if (m_maxwrites > 0)

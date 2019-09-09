@@ -29,13 +29,13 @@ namespace CoCoL
 		/// <param name="offer">The two-phase offer.</param>
         Task<object> ReadAsync(IUntypedChannel channel, ITwoPhaseOffer offer);
 
-		/// <summary>
-		/// Writes the channel and returns the task
-		/// </summary>
-		/// <returns>The async task.</returns>
+        /// <summary>
+        /// Writes the channel and returns the task
+        /// </summary>
+        /// <returns>The async task.</returns>
         /// <param name="channel">The channel to write to.</param>
-		/// <param name="channel">The channel to write to.</param>
-		/// <param name="value">The value to write.</param>
+        /// <param name="value">The value to write.</param>
+        /// <param name="offer">The two-phase offer.</param>
         Task WriteAsync(IUntypedChannel channel, object value, ITwoPhaseOffer offer);
 
 		/// <summary>

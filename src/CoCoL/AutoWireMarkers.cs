@@ -305,11 +305,8 @@ namespace CoCoL
 		/// <summary>
 		/// Registers a desire to write to the channel
 		/// </summary>
-		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
 		/// <param name="value">The value to write to the channel.</param>
-		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a
-        /// <param name="cancelToken">The cancellation token</param>
-		/// negative span to wait forever.</param>
+		/// <param name="offer">The two-phase offer</param>
 		/// <returns>The async.</returns>
         public Task WriteAsync(T value, ITwoPhaseOffer offer)
 		{
