@@ -1,6 +1,6 @@
 language: csharp
 solution: src/CoCoL.sln
-dotnet: 2.0.0
+dotnet: 2.2
 install:
   - nuget restore src/CoCoL.sln
   # Would be easier to do donet restore CoCoL.sln, but that bombs because the PCL project cannot build ...
