@@ -18,7 +18,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\portable-net45</OutputPath>
-    <DefineConstants>DEBUG;PCL_BUILD;LIMITED_REFLECTION_SUPPORT;DISABLE_SERIALIZATION;DISABLE_WAITCALLBACK</DefineConstants>
+    <DefineConstants>DEBUG;PCL_BUILD;LIMITED_REFLECTION_SUPPORT;DISABLE_SERIALIZATION;DISABLE_WAITCALLBACK;NO_TASK_ASYNCCONTINUE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Debug\CoCoL.xml</DocumentationFile>

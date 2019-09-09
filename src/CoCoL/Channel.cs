@@ -158,11 +158,14 @@ namespace CoCoL
 			/// Initializes a new instance of the <see cref="CoCoL.Channel&lt;T&gt;.ReaderEntry"/> struct.
 			/// </summary>
 			/// <param name="offer">The offer handler</param>
-			/// <param name="callback">The callback method for reporting progress.</param>
-			public ReaderEntry(ITwoPhaseOffer offer, TaskCompletionSource<T> callback)
+			public ReaderEntry(ITwoPhaseOffer offer)
 			{
 				Offer = offer;
-				Source = callback;
+#if NO_TASK_ASYNCCONTINUE
+                Source = new TaskCompletionSource<T>();
+#else
+                Source = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+#endif
 			}
 
 			/// <summary>
@@ -226,19 +229,33 @@ namespace CoCoL
 			/// Initializes a new instance of the <see cref="CoCoL.Channel&lt;T&gt;.WriterEntry"/> struct.
 			/// </summary>
 			/// <param name="offer">The offer handler</param>
-			/// <param name="callback">The callback method for reporting progress.</param>
 			/// <param name="value">The value being written.</param>
-            public WriterEntry(ITwoPhaseOffer offer, TaskCompletionSource<bool> callback, T value)
+            public WriterEntry(ITwoPhaseOffer offer, T value)
 			{
 				Offer = offer;
-				Source = callback;
-				Value = value;
+#if NO_TASK_ASYNCCONTINUE
+                Source = new TaskCompletionSource<bool>();
+#else
+                Source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+#endif
+                Value = value;
 			}
 
-			/// <summary>
-			/// The offer handler for the request
-			/// </summary>
-			ITwoPhaseOffer IEntry.Offer { get { return Offer; } }
+            /// <summary>
+            /// Initializes a new empty instance of the <see cref="CoCoL.Channel&lt;T&gt;.WriterEntry"/> struct.
+            /// </summary>
+            /// <param name="value">The value being written.</param>
+            public WriterEntry(T value)
+            {
+                Offer = null;
+                Source = null;
+                Value = value;
+            }
+
+            /// <summary>
+            /// The offer handler for the request
+            /// </summary>
+            ITwoPhaseOffer IEntry.Offer { get { return Offer; } }
 			/// <summary>
 			/// Tries to set the source to Cancelled
 			/// </summary>
@@ -538,12 +555,18 @@ namespace CoCoL
 					if (caller == rd.Source.Task || (wr.Source != null && caller == wr.Source.Task))
 						processed = true;
 
-					ThreadPool.QueueItem(() => rd.Source.SetResult(wr.Value));
+#if NO_TASK_ASYNCCONTINUE
+                    ThreadPool.QueueItem(() => rd.Source.SetResult(wr.Value));
 					if (wr.Source != null)
 						ThreadPool.QueueItem(() => wr.Source.SetResult(true));
+#else
+                    rd.Source.SetResult(wr.Value);
+                    if (wr.Source != null)
+                        wr.Source.SetResult(true);
+#endif
 
-					// Release items if there is space in the buffer
-					await ProcessWriteQueueBufferAfterReadAsync(true);
+                    // Release items if there is space in the buffer
+                    await ProcessWriteQueueBufferAfterReadAsync(true);
 
 					// Adjust the cleanup threshold
 					if (m_writerQueue.Count <= m_writerQueueCleanup - MIN_QUEUE_CLEANUP_THRESHOLD)
@@ -576,7 +599,7 @@ namespace CoCoL
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
         public async Task<T> ReadAsync(ITwoPhaseOffer offer)
 		{
-            var rd = new ReaderEntry(offer, new TaskCompletionSource<T>());
+            var rd = new ReaderEntry(offer);
             if (rd.IsCancelled)
                 throw new TaskCanceledException();
 
@@ -584,8 +607,12 @@ namespace CoCoL
 			{
 				if (m_isRetired)
 				{
+#if NO_TASK_ASYNCCONTINUE
                     ThreadPool.QueueItem(() => rd.Source.SetException(new RetiredException(this.Name)));
-					return await rd.Source.Task;
+#else
+                    rd.Source.SetException(new RetiredException(this.Name));
+#endif
+                    return await rd.Source.Task;
 				}
 
 				m_readerQueue.Add(rd);
@@ -598,44 +625,65 @@ namespace CoCoL
                     if (rd.IsTimeout)
                     {
                         m_readerQueue.RemoveAt(m_readerQueue.Count - 1);
+#if NO_TASK_ASYNCCONTINUE
                         ThreadPool.QueueItem(() => rd.Source.TrySetException(new TimeoutException()));
+#else
+                        rd.Source.TrySetException(new TimeoutException());
+#endif
                     }
                     else if (rd.IsCancelled)
                     {
                         m_readerQueue.RemoveAt(m_readerQueue.Count - 1);
+#if NO_TASK_ASYNCCONTINUE
                         ThreadPool.QueueItem(() => rd.Source.TrySetException(new TaskCanceledException()));
+#else
+                        rd.Source.TrySetException(new TaskCanceledException());
+#endif
                     }
-					else
+                    else
 					{
 						// Make room if we have too many
 						if (m_maxPendingReaders > 0 && (m_readerQueue.Count - 1) >= m_maxPendingReaders)
 						{
 							switch (m_pendingReadersOverflowStrategy)
 							{
-							case QueueOverflowStrategy.FIFO:
+							    case QueueOverflowStrategy.FIFO:
 								{
 									var exp = m_readerQueue[0].Source;
-									m_readerQueue.RemoveAt(0);
-                                        ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException(this.Name)));
-								}
+								    m_readerQueue.RemoveAt(0);
+#if NO_TASK_ASYNCCONTINUE
+                                    ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException(this.Name)));
+#else
+                                    exp.TrySetException(new ChannelOverflowException(this.Name));
+#endif
+                                }
+                                break;
 
-								break;
-							case QueueOverflowStrategy.LIFO:
+							    case QueueOverflowStrategy.LIFO:
 								{
 									var exp = m_readerQueue[m_readerQueue.Count - 2].Source;
 									m_readerQueue.RemoveAt(m_readerQueue.Count - 2);
-                                        ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException(this.Name)));
-								}
+#if NO_TASK_ASYNCCONTINUE
+                                    ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException(this.Name)));
+#else
+                                    exp.TrySetException(new ChannelOverflowException(this.Name));
+#endif
+                                }
 
-								break;
-							case QueueOverflowStrategy.Reject:
-							default:
+                                break;
+
+							    case QueueOverflowStrategy.Reject:
+							    default:
 								{
 									var exp = m_readerQueue[m_readerQueue.Count - 1].Source;
 									m_readerQueue.RemoveAt(m_readerQueue.Count - 1);
-                                        ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException(this.Name)));
+#if NO_TASK_ASYNCCONTINUE
+                                    ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException(this.Name)));
+#else
+                                    exp.TrySetException(new ChannelOverflowException(this.Name));
+#endif
 
-									await rd.Source.Task;
+                                    await rd.Source.Task;
 								}
 
 								return await rd.Source.Task;
@@ -670,7 +718,7 @@ namespace CoCoL
 		/// <param name="value">The value to write to the channel.</param>
         public async Task WriteAsync(T value, ITwoPhaseOffer offer)
 		{
-			var wr = new WriterEntry(offer, new TaskCompletionSource<bool>(), value);
+			var wr = new WriterEntry(offer, value);
             if (wr.IsCancelled)
                 throw new TaskCanceledException();
 
@@ -678,8 +726,12 @@ namespace CoCoL
 			{
 				if (m_isRetired)
 				{
+#if NO_TASK_ASYNCCONTINUE
                     ThreadPool.QueueItem(() => wr.Source.SetException(new RetiredException(this.Name)));
-					await wr.Source.Task;
+#else
+                    wr.Source.SetException(new RetiredException(this.Name));
+#endif
+                    await wr.Source.Task;
 					return;
 				}
 
@@ -696,7 +748,7 @@ namespace CoCoL
 							if (offer != null)
 								await offer.CommitAsync(this);
 
-                            m_writerQueue[m_writerQueue.Count - 1] = new WriterEntry(null, null, value);
+                            m_writerQueue[m_writerQueue.Count - 1] = new WriterEntry(value);
 							wr.Source.TrySetResult(true);
 						}
 						else
@@ -706,8 +758,8 @@ namespace CoCoL
 
                         // For good measure, we also make sure the probe phase is completed
                         wr.ProbeCompleted();
-					}
-					else
+                    }
+                    else
 					{
                         wr.ProbeCompleted();
 
@@ -715,14 +767,22 @@ namespace CoCoL
                         if (wr.IsTimeout)
                         {
                             m_writerQueue.RemoveAt(m_writerQueue.Count - 1);
+#if NO_TASK_ASYNCCONTINUE
                             ThreadPool.QueueItem(() => wr.Source.SetException(new TimeoutException()));
+#else
+                            wr.Source.SetException(new TimeoutException());
+#endif
                         }
                         else if (wr.IsCancelled)
                         {
                             m_writerQueue.RemoveAt(m_writerQueue.Count - 1);
+#if NO_TASK_ASYNCCONTINUE
                             ThreadPool.QueueItem(() => wr.Source.TrySetException(new TaskCanceledException()));
+#else
+                            wr.Source.TrySetException(new TaskCanceledException());
+#endif
                         }
-						else
+                        else
 						{
 							// Make room if we have too many
 							if (m_maxPendingWriters > 0 && (m_writerQueue.Count - m_bufferSize - 1) >= m_maxPendingWriters)
@@ -733,28 +793,46 @@ namespace CoCoL
 										{
 											var exp = m_writerQueue[m_bufferSize].Source;
 											m_writerQueue.RemoveAt(m_bufferSize);
-											if (exp != null)
+                                            if (exp != null)
+                                            {
+#if NO_TASK_ASYNCCONTINUE
                                                 ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException(this.Name)));
-										}
+#else
+                                                exp.TrySetException(new ChannelOverflowException(this.Name));
+#endif
+                                            }
+                                        }
 
-										break;
+                                        break;
 									case QueueOverflowStrategy.LIFO:
 										{
 											var exp = m_writerQueue[m_writerQueue.Count - 2].Source;
 											m_writerQueue.RemoveAt(m_writerQueue.Count - 2);
-											if (exp != null)
+                                            if (exp != null)
+                                            {
+#if NO_TASK_ASYNCCONTINUE
                                                 ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException(this.Name)));
-										}
+#else
+                                                exp.TrySetException(new ChannelOverflowException(this.Name));
+#endif
+                                            }
+                                        }
 
-										break;
+                                        break;
 									case QueueOverflowStrategy.Reject:
 									default:
 										{
 											var exp = m_writerQueue[m_writerQueue.Count - 1].Source;
 											m_writerQueue.RemoveAt(m_writerQueue.Count - 1);
-											if (exp != null)
+                                            if (exp != null)
+                                            {
+#if NO_TASK_ASYNCCONTINUE
                                                 ThreadPool.QueueItem(() => exp.TrySetException(new ChannelOverflowException(this.Name)));
-											await wr.Source.Task;
+#else
+                                                exp.TrySetException(new ChannelOverflowException(this.Name));
+#endif
+                                            }
+                                            await wr.Source.Task;
 										}
 
 										return;
@@ -831,7 +909,7 @@ namespace CoCoL
 							nextItem.Source.SetResult(true);
 
 						// Now that the transaction has completed for the writer, record it as waiting forever
-                        m_writerQueue[m_bufferSize - 1] = new WriterEntry(null, null, nextItem.Value);
+                        m_writerQueue[m_bufferSize - 1] = new WriterEntry(nextItem.Value);
 
 						// We can have at most one, since we process at most one read
 						break;
@@ -968,16 +1046,28 @@ namespace CoCoL
 			// If there are pending retire messages, send them
 			if (readers != null || writers != null)
 			{
-				if (readers != null)
-					foreach (var r in readers)
+                if (readers != null)
+                    foreach (var r in readers)
+                    {
+#if NO_TASK_ASYNCCONTINUE
                         ThreadPool.QueueItem(() => r.Source.TrySetException(new RetiredException(this.Name)));
+#else
+                        r.Source.TrySetException(new RetiredException(this.Name));
+#endif
+                    }
 
-				if (writers != null)
-					foreach (var w in writers)
-						if (w.Source != null)
+                if (writers != null)
+                    foreach (var w in writers)
+                        if (w.Source != null)
+                        {
+#if NO_TASK_ASYNCCONTINUE
                             ThreadPool.QueueItem(() => w.Source.TrySetException(new RetiredException(this.Name)));
-			}
-		}
+#else
+                            w.Source.TrySetException(new RetiredException(this.Name));
+#endif
+                        }
+            }
+        }
 
 
 		/// <summary>
