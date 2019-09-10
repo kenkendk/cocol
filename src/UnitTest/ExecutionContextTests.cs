@@ -112,6 +112,10 @@ namespace UnitTest
 
                 ExecutionScope.Current.EnsureFinishedAsync(TimeSpan.FromSeconds(5)).WaitForTaskOrThrow();
 				Console.WriteLine("Max concurrent threads: {0}, should be {1}", max_concurrent, poolsize <= 0 ? "unlimited" : poolsize.ToString());
+
+                if (poolsize > 0 && max_concurrent > poolsize)
+                    throw new Exception($"The pool allowed {max_concurrent} concurrent threads, but should be limited to {poolsize}");
+
 			}
 
 		}

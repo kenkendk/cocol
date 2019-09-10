@@ -72,10 +72,10 @@ namespace CommsTimeAwait
 				while (true)
 				{
 					var value = await chan_read.ReadAsync();
-					var offer = new SingleOffer<T>();
+                    // Parallel delta copy
 					await Task.WhenAll(
 						chan_a.WriteAsync(value),
-						chan_b.WriteAsync(value, CoCoL.Timeout.Infinite, offer)
+						chan_b.WriteAsync(value)
 					);
 				}
 			}

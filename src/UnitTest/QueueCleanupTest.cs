@@ -60,7 +60,7 @@ namespace UnitTest
 			var c = ChannelManager.CreateChannel<int>();
 
 			var offers = Enumerable.Range(0, 550).Select(x => new TestableTwoPhase(false)).ToArray();
-			var readtasks = offers.Select(x => c.ReadAsync(Timeout.Infinite, x)).ToArray();
+			var readtasks = offers.Select(x => c.ReadAsync(x)).ToArray();
 
 			var cleared = offers.Where(x => x.HasOffered && !x.HasWithdrawn && !x.HasComitted).Count();
 			if (cleared < 500)

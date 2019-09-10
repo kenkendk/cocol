@@ -5,10 +5,147 @@ using System.Collections.Generic;
 
 namespace CoCoL
 {
-	/// <summary>
-	/// A helper for ensuring we only offer to a single recipient
-	/// </summary>
-	public class SingleOffer<T> : ITwoPhaseOffer
+    /// <summary>
+    /// A cancel-able two-phase offer
+    /// </summary>
+    public class CancellationOffer : ICancelAbleOffer
+    {
+        /// <summary>
+        /// A task that is completed
+        /// </summary>
+        private static readonly Task NO_OP = Task.FromResult(true);
+
+        /// <summary>
+        /// The cancellation token
+        /// </summary>
+        public CancellationToken CancelToken { get; private set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:CoCoL.TimeoutOffer"/> class.
+        /// </summary>
+        /// <param name="cancelToken">The cancellation token</param>
+        public CancellationOffer(CancellationToken cancelToken)
+        {
+            CancelToken = cancelToken;
+        }
+
+        /// <inheritdoc />
+        public Task CommitAsync(object caller)
+        {
+            return NO_OP;
+        }
+
+        /// <inheritdoc />
+        public Task<bool> OfferAsync(object caller)
+        {
+            return Task.FromResult(!CancelToken.IsCancellationRequested);
+        }
+
+        /// <inheritdoc />
+        public Task WithdrawAsync(object caller)
+        {
+            return NO_OP;
+        }
+    }
+
+    /// <summary>
+    /// A two-phase offer that expires
+    /// </summary>
+    public class TimeoutOffer : IExpiringOffer, ICancelAbleOffer
+    {
+        /// <summary>
+        /// A task that is completed
+        /// </summary>
+        private static readonly Task NO_OP = Task.FromResult(true);
+
+        /// <summary>
+        /// The time the offer expires
+        /// </summary>
+        public DateTime Expires { get; private set; }
+
+        /// <summary>
+        /// The cancellation token
+        /// </summary>
+        public CancellationToken CancelToken { get; private set; }
+
+        /// <summary>
+        /// Flag to track if the probe phase is complete.
+        /// </summary>
+        private bool m_probeComplete = false;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:CoCoL.TimeoutOffer"/> class.
+        /// </summary>
+        /// <param name="expires">The time when the offer expires.</param>
+        public TimeoutOffer(TimeSpan expires)
+            : this(expires, default(CancellationToken))
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:CoCoL.TimeoutOffer"/> class.
+        /// </summary>
+        /// <param name="expires">The time when the offer expires.</param>
+        /// <param name="cancelToken">The cancellation token</param>
+        public TimeoutOffer(TimeSpan expires, CancellationToken cancelToken)
+            : this(expires == Timeout.Infinite ? Timeout.InfiniteDateTime : DateTime.Now + expires, cancelToken)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:CoCoL.TimeoutOffer"/> class.
+        /// </summary>
+        /// <param name="expires">The time when the offer expires.</param>
+        public TimeoutOffer(DateTime expires)
+            : this(expires, default(CancellationToken))
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:CoCoL.TimeoutOffer"/> class.
+        /// </summary>
+        /// <param name="expires">The time when the offer expires.</param>
+        /// <param name="cancelToken">The cancellation token</param>
+        public TimeoutOffer(DateTime expires, CancellationToken cancelToken)
+        {
+            CancelToken = cancelToken;
+            Expires = expires;
+        }
+
+
+        /// <inheritdoc />
+        public Task CommitAsync(object caller)
+        {
+            return NO_OP;
+        }
+
+        /// <inheritdoc />
+        public Task<bool> OfferAsync(object caller)
+        {
+            return Task.FromResult(!CancelToken.IsCancellationRequested && !IsExpired);
+        }
+
+        /// <inheritdoc />
+        public Task WithdrawAsync(object caller)
+        {
+            return NO_OP;
+        }
+
+        /// <inheritdoc />
+        public void ProbeComplete()
+        {
+            m_probeComplete = true;
+        }
+
+        /// <inheritdoc />
+        public bool IsExpired => m_probeComplete && Expires != Timeout.InfiniteDateTime && DateTime.Now > Expires;
+
+    }
+
+    /// <summary>
+    /// A helper for ensuring we only offer to a single recipient
+    /// </summary>
+    public class SingleOffer<T> : ICancelAbleOffer
 	{
 		/// <summary>
 		/// Workaround to use System.Thread.Interlocked.Increment,
@@ -32,10 +169,10 @@ namespace CoCoL
 		/// The completion source to signal on completio
 		/// </summary>
 		private readonly TaskCompletionSource<T> m_tcs;
-		/// <summary>
-		/// The time the offer expires
-		/// </summary>
-		private readonly DateTime m_timeout;
+        /// <summary>
+        /// The time the offer expires
+        /// </summary>
+        private readonly DateTime m_expires;
 		/// <summary>
 		/// A value indicating if the request is the first to set the TaskCompletionSource
 		/// </summary>
@@ -48,6 +185,10 @@ namespace CoCoL
 		/// The offer caller instance
 		/// </summary>
 		private object m_offerCaller = null;
+        /// <summary>
+        /// The cancellation token
+        /// </summary>
+        public CancellationToken CancelToken { get; private set; }
 		/// <summary>
 		/// The list of offers
 		/// </summary>
@@ -66,10 +207,12 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="tcs">The task completion source</param>
 		/// <param name="timeout">The timeout value</param>
-		public SingleOffer(TaskCompletionSource<T> tcs, DateTime timeout) 
+        /// <param name="cancelToken">The cancellation token</param>
+        public SingleOffer(TaskCompletionSource<T> tcs, DateTime timeout, CancellationToken cancelToken = default(CancellationToken)) 
 		{
 			m_tcs = tcs;
-			m_timeout = timeout;
+			m_expires = timeout;
+            CancelToken = cancelToken;
 		}
 
 		/// <summary>
@@ -96,25 +239,30 @@ namespace CoCoL
 		{
 			if (m_taken || m_isFirst != TRUE)
 				return Task.FromResult(false);
-			
-			lock (m_lock)
-				if (m_isLocked)
-				{					
-					if (caller == m_offerCaller)
-						throw new InvalidOperationException("Cannot issue multiple operations on the same channel");
-				
-					var tcs = new TaskCompletionSource<bool>();
-					m_offers.Enqueue(new KeyValuePair<TaskCompletionSource<bool>, object>(tcs, caller));
-					return tcs.Task;
-				}
-				else
-				{
-					System.Diagnostics.Debug.Assert(m_offers.Count == 0, "Two-Phase instance was unlocked but with pending offers?");
 
-					m_isLocked = true;
-					m_offerCaller = caller;
-					return Task.FromResult(true);
-				}
+            lock (m_lock)
+            {
+                if (CancelToken.IsCancellationRequested)
+                    return Task.FromResult(false);
+
+                if (m_isLocked)
+                {
+                    if (caller == m_offerCaller)
+                        throw new InvalidOperationException("Cannot issue multiple operations on the same channel");
+
+                    var tcs = new TaskCompletionSource<bool>();
+                    m_offers.Enqueue(new KeyValuePair<TaskCompletionSource<bool>, object>(tcs, caller));
+                    return tcs.Task;
+                }
+                else
+                {
+                    System.Diagnostics.Debug.Assert(m_offers.Count == 0, "Two-Phase instance was unlocked but with pending offers?");
+
+                    m_isLocked = true;
+                    m_offerCaller = caller;
+                    return Task.FromResult(true);
+                }
+            }
 		}
 
 		/// <summary>
@@ -196,16 +344,16 @@ namespace CoCoL
 		{
 			// If there is no timeout, do nothing
 			// If we are already completed, do nothing
-			if (m_timeout == Timeout.InfiniteDateTime || IsTaken)
+			if (m_expires == Timeout.InfiniteDateTime || IsTaken)
 				return;
 
 			// If the timeout has occurred, set the timeout
-			else if (m_timeout < DateTime.Now)
+			else if (m_expires < DateTime.Now)
 				ExpirationCallback();
 
 			// Register the timeout callback
 			else
-				ExpirationManager.AddExpirationCallback(m_timeout, ExpirationCallback);
+				ExpirationManager.AddExpirationCallback(m_expires, ExpirationCallback);
 		}
 	}
 }

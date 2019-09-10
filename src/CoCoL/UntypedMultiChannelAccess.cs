@@ -197,9 +197,9 @@ namespace CoCoL
 		/// <param name="requests">The list of requests.</param>
 		/// <param name="timeout">The maximum time to wait for a value to read.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be read.</param>
-		public static async Task<IMultisetRequestUntyped> ReadFromAnyAsync(Action<object> callback, IEnumerable<IMultisetRequestUntyped> requests, TimeSpan timeout, MultiChannelPriority priority)
+		public static Task<IMultisetRequestUntyped> ReadFromAnyAsync(Action<object> callback, IEnumerable<IMultisetRequestUntyped> requests, TimeSpan timeout, MultiChannelPriority priority)
 		{
-			return (await ReadOrWriteAnyAsync(callback, requests, timeout, priority));
+			return ReadOrWriteAnyAsync(callback, requests, timeout, priority);
 		}
 		#endregion
 
@@ -427,9 +427,9 @@ namespace CoCoL
 			{
 				// Timeout is handled by offer instance
 				if (c.IsRead)
-					tasks[c.Channel.ReadAsync(Timeout.Infinite, offer)] = c;
+					tasks[c.Channel.ReadAsync(offer)] = c;
 				else
-					tasks[c.Channel.WriteAsync(c.Value, Timeout.Infinite, offer)] = c;
+					tasks[c.Channel.WriteAsync(c.Value, offer)] = c;
 
 				// Fast exit to avoid littering the channels if we are done
 				if (offer.IsTaken)

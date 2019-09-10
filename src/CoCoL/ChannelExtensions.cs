@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Runtime.ExceptionServices;
+using System.Threading;
 
 namespace CoCoL
 {
@@ -98,7 +99,7 @@ namespace CoCoL
 		public static Task WaitForTaskOrThrow(this Task task)
 		{
 			if (task == null)
-				throw new ArgumentNullException("task");
+				throw new ArgumentNullException(nameof(task));
 			
 			task.WaitForTask();
 			if (task.IsCanceled)
@@ -122,7 +123,7 @@ namespace CoCoL
 		/// <summary>
 		/// Leaves the task un-awaited, supressing warnings if the task is not awaited
 		/// </summary>
-		/// <param name="task">he task to suppress.</param>
+		/// <param name="task">The task to suppress.</param>
 		public static void FireAndForget(this Task task) { }
 
 		/// <summary>
@@ -160,14 +161,46 @@ namespace CoCoL
 			return tcs.Task;
 		}
 
-		#region Avoid compile warnings when using the write method in fire-n-forget mode
-		/// <summary>
-		/// Write to the channel in a blocking manner
-		/// </summary>
-		/// <param name="value">The value to write into the channel</param>
-		/// <param name="self">The channel to read from</param>
-		/// <typeparam name="T">The channel data type parameter.</typeparam>
-		public static void WriteNoWait<T>(this IWriteChannel<T> self, T value)
+        #region Extra methods for constructing two-phase commit offers
+        /// <summary>
+        /// Creates a <see cref="ITwoPhaseOffer"/> for a timeout value
+        /// </summary>
+        /// <returns>The offer.</returns>
+        /// <param name="timeout">The timeout value.</param>
+        /// <param name="cancelToken">The cancellation token.</param>
+        public static ITwoPhaseOffer AsOffer(this TimeSpan timeout, CancellationToken cancelToken = default(CancellationToken))
+        {
+            return new TimeoutOffer(timeout, cancelToken);
+        }
+        /// <summary>
+        /// Creates a <see cref="ITwoPhaseOffer"/> for a timeout value
+        /// </summary>
+        /// <returns>The offer.</returns>
+        /// <param name="timeout">The timeout value.</param>
+        /// <param name="cancelToken">The cancellation token.</param>
+        public static ITwoPhaseOffer AsOffer(this DateTime timeout, CancellationToken cancelToken = default(CancellationToken))
+        {
+            return new TimeoutOffer(timeout, cancelToken);
+        }
+        /// <summary>
+        /// Creates a <see cref="ITwoPhaseOffer"/> for a cancellation token
+        /// </summary>
+        /// <returns>The offer.</returns>
+        /// <param name="cancelToken">The cancellation token.</param>
+        public static ITwoPhaseOffer AsOffer(this CancellationToken cancelToken)
+        {
+            return new CancellationOffer(cancelToken);
+        }
+        #endregion
+
+        #region Avoid compile warnings when using the write method in fire-n-forget mode
+        /// <summary>
+        /// Write to the channel in a blocking manner
+        /// </summary>
+        /// <param name="value">The value to write into the channel</param>
+        /// <param name="self">The channel to read from</param>
+        /// <typeparam name="T">The channel data type parameter.</typeparam>
+        public static void WriteNoWait<T>(this IWriteChannel<T> self, T value)
 		{
 			self.WriteAsync(value, Timeout.Infinite).FireAndForget();
 		}
@@ -186,32 +219,86 @@ namespace CoCoL
 		#endregion
 
 		#region Simple channel overload methods
+        /// <summary>
+        /// Write to the channel in a probing and asynchronous manner
+        /// </summary>
+        /// <param name="value">The value to write into the channel</param>
+        /// <param name="self">The channel to read from</param>
+        /// <typeparam name="T">The channel data type parameter.</typeparam>
+        /// <returns>True if the write succeeded, false otherwise</returns>
+        public static Task<bool> TryWriteAsync<T>(this IWriteChannel<T> self, T value)
+        {
+            return TryWriteAsync(self, value, Timeout.Immediate);
+        }
 		/// <summary>
 		/// Write to the channel in a probing and asynchronous manner
 		/// </summary>
 		/// <param name="value">The value to write into the channel</param>
 		/// <param name="self">The channel to read from</param>
+        /// <param name="waittime">The time to wait before cancelling</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		/// <returns>True if the write succeeded, false otherwise</returns>
-		public static Task<bool> TryWriteAsync<T>(this IWriteChannel<T> self, T value)
+		public static Task<bool> TryWriteAsync<T>(this IWriteChannel<T> self, T value, TimeSpan waittime)
 		{
-			return self.WriteAsync(value, Timeout.Immediate, null).ContinueWith(x => x.IsCompleted);
+            return self.WriteAsync(value, new TimeoutOffer(waittime)).ContinueWith(x => x.IsCompleted);
 		}
+        /// <summary>
+        /// Reads the channel in a probing and asynchronous manner
+        /// </summary>
+        /// <param name="self">The channel to read from</param>
+        /// <typeparam name="T">The channel data type parameter.</typeparam>
+        /// <returns>True if the read succeeded, false otherwise</returns>
+        public static Task<KeyValuePair<bool, T>> TryReadAsync<T>(this IReadChannel<T> self)
+        {
+            return TryReadAsync(self, Timeout.Immediate);
+        }
 		/// <summary>
 		/// Reads the channel in a probing and asynchronous manner
 		/// </summary>
 		/// <param name="self">The channel to read from</param>
+        /// <param name="waittime">The amount of time to wait before cancelling</param>
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		/// <returns>True if the read succeeded, false otherwise</returns>
-		public static Task<KeyValuePair<bool, T>> TryReadAsync<T>(this IReadChannel<T> self)
+        public static Task<KeyValuePair<bool, T>> TryReadAsync<T>(this IReadChannel<T> self, TimeSpan waittime)
 		{
-			return self.ReadAsync(Timeout.Immediate, null).ContinueWith(x => {
+            return self.ReadAsync(new TimeoutOffer(waittime)).ContinueWith(x => {
 				if (x.IsFaulted || x.IsCanceled)
 					return new KeyValuePair<bool, T>(false, default(T));
 
 				return new KeyValuePair<bool, T>(true, x.Result);
 			});
 		}
+		/// <summary>
+		/// Reads the channel asynchronously.
+		/// </summary>
+		/// <returns>The task for awaiting completion.</returns>
+		/// <param name="self">The channel to read.</param>
+		/// <param name="timeout">The read timeout.</param>
+        public static Task<T> ReadAsync<T>(this IReadChannel<T> self, TimeSpan timeout)
+		{
+            return self.ReadAsync(new TimeoutOffer(timeout));
+		}
+        /// <summary>
+        /// Reads the channel asynchronously.
+        /// </summary>
+        /// <returns>The task for awaiting completion.</returns>
+        /// <param name="self">The channel to read.</param>
+        /// <param name="timeout">The read timeout.</param>
+        /// <param name="cancelToken">The cancellation token</param>
+        public static Task<T> ReadAsync<T>(this IReadChannel<T> self, TimeSpan timeout, CancellationToken cancelToken)
+        {
+            return self.ReadAsync(new TimeoutOffer(timeout, cancelToken));
+        }		
+        /// <summary>
+        /// Reads the channel asynchronously.
+        /// </summary>
+        /// <returns>The task for awaiting completion.</returns>
+        /// <param name="self">The channel to read.</param>
+        /// <param name="cancelToken">The cancellation token</param>
+        public static Task<T> ReadAsync<T>(this IReadChannel<T> self, CancellationToken cancelToken)
+        {
+            return self.ReadAsync(new CancellationOffer(cancelToken));
+        }		
 		#endregion
 
 		#region Blocking channel usage
@@ -225,7 +312,7 @@ namespace CoCoL
 		{
 			try
 			{
-				return self.ReadAsync(Timeout.Infinite).WaitForTask().Result;
+				return self.ReadAsync(null).WaitForTask().Result;
 			}
 			catch(AggregateException aex)
 			{
@@ -247,7 +334,7 @@ namespace CoCoL
 		{
 			try
 			{
-				return self.ReadAsync(timeout).WaitForTask().Result;
+                return self.ReadAsync(new TimeoutOffer(timeout)).WaitForTask().Result;
 			}
 			catch(AggregateException aex)
 			{
@@ -267,7 +354,7 @@ namespace CoCoL
 		/// <returns>True if the read succeeded, false otherwise</returns>
 		public static bool TryRead<T>(this IReadChannel<T> self, out T result)
 		{
-			var res = self.ReadAsync(Timeout.Immediate).WaitForTask();
+            var res = self.ReadAsync(new TimeoutOffer(Timeout.Immediate)).WaitForTask();
 
 			if (res.IsFaulted || res.IsCanceled)
 			{
@@ -289,7 +376,7 @@ namespace CoCoL
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		public static void Write<T>(this IWriteChannel<T> self, T value)
 		{
-			var res = self.WriteAsync(value, Timeout.Infinite).WaitForTask();
+			var res = self.WriteAsync(value, null).WaitForTask();
 
 			if (res.Exception != null)
 			{
@@ -313,7 +400,7 @@ namespace CoCoL
 		/// <typeparam name="T">The channel data type parameter.</typeparam>
 		public static void Write<T>(this IWriteChannel<T> self, T value, TimeSpan timeout)
 		{
-			var res = self.WriteAsync(value, timeout).WaitForTask();
+            var res = self.WriteAsync(value, new TimeoutOffer(timeout)).WaitForTask();
 
 			if (res.Exception != null)
 			{
@@ -337,7 +424,7 @@ namespace CoCoL
 		/// <returns>True if the write succeeded, false otherwise</returns>
 		public static bool TryWrite<T>(this IWriteChannel<T> self, T value)
 		{
-			var task = self.WriteAsync(value, Timeout.Immediate).WaitForTask();
+            var task = self.WriteAsync(value, new TimeoutOffer(Timeout.Immediate)).WaitForTask();
 			return !(task.IsFaulted || task.IsCanceled) && task.IsCompleted;
 		}
 
@@ -706,29 +793,52 @@ namespace CoCoL
 		/// <param name="self">The channel to read.</param>
 		public static object Read(this IUntypedChannel self)
 		{
-			return Read(self, Timeout.Infinite, null);
+			return Read(self, null);
 		}
 
 		/// <summary>
-		/// Reads the channel asynchronously.
+		/// Reads the channel synchronously.
 		/// </summary>
 		/// <returns>The value read.</returns>
 		/// <param name="self">The channel to read.</param>
-		/// <param name="offer">The two-phase offer.</param>
 		/// <param name="timeout">The read timeout.</param>
-		public static object Read(this IUntypedChannel self, TimeSpan timeout, ITwoPhaseOffer offer = null)
+		public static object Read(this IUntypedChannel self, TimeSpan timeout)
 		{
-			return WaitForTask<object>(ReadAsync(self, timeout, offer)).Result;
+			return WaitForTask<object>(ReadAsync(self, new TimeoutOffer(timeout))).Result;
 		}
 
 		/// <summary>
-		/// Reads the channel asynchronously.
+		/// Reads the channel synchronously.
 		/// </summary>
-		/// <returns>The task for awaiting completion.</returns>
+		/// <returns>The value read.</returns>
 		/// <param name="self">The channel to read.</param>
-		public static Task<object> ReadAsync(this IUntypedChannel self)
+		/// <param name="cancelToken">The cancellation token.</param>
+		public static object Read(this IUntypedChannel self, CancellationToken cancelToken)
 		{
-			return ReadAsync(self, Timeout.Infinite, null);
+            return WaitForTask<object>(ReadAsync(self, new CancellationOffer(cancelToken))).Result;
+		}
+
+		/// <summary>
+		/// Reads the channel synchronously.
+		/// </summary>
+		/// <returns>The value read.</returns>
+		/// <param name="self">The channel to read.</param>
+		/// <param name="timeout">The read timeout.</param>
+		/// <param name="cancelToken">The cancellation token.</param>
+		public static object Read(this IUntypedChannel self, TimeSpan timeout, CancellationToken cancelToken)
+		{
+			return WaitForTask<object>(ReadAsync(self, new TimeoutOffer(timeout, cancelToken))).Result;
+		}
+
+		/// <summary>
+		/// Reads the channel synchronously.
+		/// </summary>
+		/// <returns>The value read.</returns>
+		/// <param name="self">The channel to read.</param>
+		/// <param name="offer">The two-phase offer token.</param>
+		public static object Read(this IUntypedChannel self, ITwoPhaseOffer offer)
+		{
+			return WaitForTask<object>(ReadAsync(self, offer)).Result;
 		}
 			
 		/// <summary>
@@ -738,19 +848,52 @@ namespace CoCoL
 		/// <param name="value">The value to write.</param>
 		public static void Write(this IUntypedChannel self, object value)
 		{
-			Write(self, value, Timeout.Infinite, null);
+			Write(self, value, null);
 		}
-			
+
 		/// <summary>
 		/// Writes the channel synchronously
 		/// </summary>
 		/// <param name="self">The channel to write.</param>
 		/// <param name="value">The value to write.</param>
 		/// <param name="timeout">The write timeout.</param>
-		/// <param name="offer">The two-phase offer instance or null.</param>
-		public static void Write(this IUntypedChannel self, object value, TimeSpan timeout, ITwoPhaseOffer offer = null)
+		public static void Write(this IUntypedChannel self, object value, TimeSpan timeout)
 		{
-			var res = WriteAsync(self, value, timeout, offer).WaitForTask();
+			Write(self, value, new TimeoutOffer(timeout));
+		}			
+
+		/// <summary>
+		/// Writes the channel synchronously
+		/// </summary>
+		/// <param name="self">The channel to write.</param>
+		/// <param name="value">The value to write.</param>
+		/// <param name="cancelToken">The cancellation token.</param>
+		public static void Write(this IUntypedChannel self, object value, CancellationToken cancelToken)
+		{
+            Write(self, value, new CancellationOffer(cancelToken));
+		}			
+
+		/// <summary>
+		/// Writes the channel synchronously
+		/// </summary>
+		/// <param name="self">The channel to write.</param>
+		/// <param name="value">The value to write.</param>
+		/// <param name="timeout">The write timeout.</param>
+		/// <param name="cancelToken">The cancellation token.</param>
+		public static void Write(this IUntypedChannel self, object value, TimeSpan timeout, CancellationToken cancelToken)
+		{
+			Write(self, value, new TimeoutOffer(timeout, cancelToken));
+		}			
+
+		/// <summary>
+		/// Writes the channel synchronously
+		/// </summary>
+		/// <param name="self">The channel to write.</param>
+		/// <param name="value">The value to write.</param>
+        /// <param name="offer">The two-phase offer.</param>
+		public static void Write(this IUntypedChannel self, object value, ITwoPhaseOffer offer)
+		{
+			var res = WriteAsync(self, value, offer).WaitForTask();
 
 			if (res.Exception != null)
 			{
@@ -773,7 +916,7 @@ namespace CoCoL
 		/// <param name="value">The value to write.</param>
 		public static Task WriteAsync(this IUntypedChannel self, object value)
 		{
-			return WriteAsync(self, value, Timeout.Infinite, null);
+			return WriteAsync(self, value, null);
 		}
 
 		/// <summary>
@@ -781,11 +924,68 @@ namespace CoCoL
 		/// </summary>
 		/// <returns>The task for awaiting completion.</returns>
 		/// <param name="self">The channel to read.</param>
-		/// <param name="offer">The two-phase offer.</param>
-		/// <param name="timeout">The read timeout.</param>
-		public static Task<object> ReadAsync(this IUntypedChannel self, TimeSpan timeout,  ITwoPhaseOffer offer = null)
+		public static Task<object> ReadAsync(this IUntypedChannel self)
 		{
-			return UntypedAccessMethods.CreateReadAccessor(self).ReadAsync(self, timeout, offer);
+			return ReadAsync(self, null);
+		}
+
+		/// <summary>
+		/// Reads the channel asynchronously.
+		/// </summary>
+		/// <returns>The task for awaiting completion.</returns>
+		/// <param name="self">The channel to read.</param>
+		/// <param name="timeout">The read timeout.</param>
+        public static Task<object> ReadAsync(this IUntypedChannel self, TimeSpan timeout)
+		{
+            return UntypedAccessMethods.CreateReadAccessor(self).ReadAsync(self, new TimeoutOffer(timeout));
+		}
+
+        /// <summary>
+        /// Reads the channel asynchronously.
+        /// </summary>
+        /// <returns>The task for awaiting completion.</returns>
+        /// <param name="self">The channel to read.</param>
+        /// <param name="timeout">The read timeout.</param>
+        /// <param name="cancelToken">The cancellation token</param>
+        public static Task<object> ReadAsync(this IUntypedChannel self, TimeSpan timeout, CancellationToken cancelToken)
+        {
+            return UntypedAccessMethods.CreateReadAccessor(self).ReadAsync(self, new TimeoutOffer(timeout, cancelToken));
+        }
+
+        /// <summary>
+        /// Reads the channel asynchronously.
+        /// </summary>
+        /// <returns>The task for awaiting completion.</returns>
+        /// <param name="self">The channel to read.</param>
+        /// <param name="offer">The two-phase offer.</param>
+        public static Task<object> ReadAsync(this IUntypedChannel self, ITwoPhaseOffer offer)
+        {
+            return UntypedAccessMethods.CreateReadAccessor(self).ReadAsync(self, offer);
+        }
+
+		/// <summary>
+		/// Writes the channel asynchronously
+		/// </summary>
+		/// <returns>The task for awaiting completion.</returns>
+		/// <param name="self">The channel to write.</param>
+		/// <param name="value">The value to write.</param>
+		/// <param name="timeout">The write timeout.</param>
+		public static Task WriteAsync(this IUntypedChannel self, object value, TimeSpan timeout)
+		{
+			return UntypedAccessMethods.CreateWriteAccessor(self).WriteAsync(self, value, new TimeoutOffer(timeout));
+		}
+
+		/// <summary>
+		/// Writes the channel asynchronously
+		/// </summary>
+		/// <returns>The task for awaiting completion.</returns>
+		/// <param name="self">The channel to write.</param>
+		/// <param name="value">The value to write.</param>
+		/// <param name="timeout">The write timeout.</param>
+		/// <param name="cancelToken">The cancellation token</param>
+		public static Task WriteAsync(this IUntypedChannel self, object value, TimeSpan timeout, CancellationToken cancelToken)
+		{
+			return UntypedAccessMethods.CreateWriteAccessor(self).WriteAsync(self, value, new TimeoutOffer(timeout, cancelToken));
 		}
 
 		/// <summary>
@@ -795,10 +995,9 @@ namespace CoCoL
 		/// <param name="self">The channel to write.</param>
 		/// <param name="offer">The two-phase offer.</param>
 		/// <param name="value">The value to write.</param>
-		/// <param name="timeout">The write timeout.</param>
-		public static Task WriteAsync(this IUntypedChannel self, object value, TimeSpan timeout, ITwoPhaseOffer offer = null)
+		public static Task WriteAsync(this IUntypedChannel self, object value, ITwoPhaseOffer offer)
 		{
-			return UntypedAccessMethods.CreateWriteAccessor(self).WriteAsync(self, value, timeout, offer);
+			return UntypedAccessMethods.CreateWriteAccessor(self).WriteAsync(self, value, offer);
 		}
 
 		#endregion

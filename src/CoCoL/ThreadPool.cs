@@ -119,8 +119,8 @@ namespace CoCoL
 	/// <summary>
 	/// A thread pool that puts a cap on the number of concurrent requests
 	/// </summary>
-	public class CappedThreadedThreadPool : IFinishAbleThreadPool
-	{
+	public class CappedThreadedThreadPool : IFinishAbleThreadPool, ILimitingThreadPool
+    {
 		/// <summary>
 		/// The list of pending work
 		/// </summary>

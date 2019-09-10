@@ -14,7 +14,7 @@ using TEST_METHOD = NUnit.Framework.TestAttribute;
 
 namespace UnitTest
 {
-    [TOP_LEVEL]
+    //[TOP_LEVEL]
 	public class NetworkChannelTest
 	{
 		private class SelfHoster : IDisposable
@@ -53,7 +53,7 @@ namespace UnitTest
 			#endregion
 		}
 
-        [TEST_METHOD]
+        //[TEST_METHOD]
 		public void SimpleNetwork()
 		{
 			using (new SelfHoster())
@@ -70,7 +70,7 @@ namespace UnitTest
 			}
 		}
 
-        [TEST_METHOD]
+        //[TEST_METHOD]
 		public void SimpleNetworkTimeout()
 		{
 			using (new SelfHoster())
@@ -93,7 +93,7 @@ namespace UnitTest
 			}
 		}
 
-        [TEST_METHOD]
+        //[TEST_METHOD]
 		public void MixedOperationOnNetwork()
 		{
 			using (new SelfHoster())
@@ -101,7 +101,7 @@ namespace UnitTest
 				new MixedOperationTest().TestMultiTypeReadWrite();
 		}
 
-        [TEST_METHOD]
+        //[TEST_METHOD]
 		public void TestMultiAccessOperationOnNetwork()
 		{
 			using (new SelfHoster())

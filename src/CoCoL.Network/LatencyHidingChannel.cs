@@ -43,7 +43,7 @@ namespace CoCoL.Network
 		public LatencyHidingWriter(IWriteChannelEnd<T> parent, int buffersize)
 		{
 			if (buffersize <= 0)
-				throw new ArgumentOutOfRangeException("buffersize");
+				throw new ArgumentOutOfRangeException(nameof(buffersize));
 			m_parent = parent;
 			m_buffersize = buffersize;
 		}
@@ -88,29 +88,17 @@ namespace CoCoL.Network
         /// <returns>The async.</returns>
         public Task WriteAsync(T value)
         {
-            return WriteAsync(value, Timeout.Infinite, null);
-        }
-        /// <summary>
-        /// Registers a desire to write to the channel
-        /// </summary>
-        /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-        /// <param name="value">The value to write to the channel.</param>
-        /// <returns>The async.</returns>
-        public Task WriteAsync(T value, ITwoPhaseOffer offer)
-        {
-            return WriteAsync(value, Timeout.Infinite, offer);
+            return WriteAsync(value, null);
         }
 		/// <summary>
 		/// Registers a desire to write to the channel
 		/// </summary>
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
 		/// <param name="value">The value to write to the channel.</param>
-		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a
-		/// negative span to wait forever.</param>
 		/// <returns>The async.</returns>
-		public async Task WriteAsync(T value, TimeSpan timeout, ITwoPhaseOffer offer = null)
+        public async Task WriteAsync(T value, ITwoPhaseOffer offer)
 		{
-			m_writeQueue.Enqueue(m_parent.WriteAsync(value, timeout, offer));
+			m_writeQueue.Enqueue(m_parent.WriteAsync(value, offer));
 			while (m_writeQueue.Count > m_buffersize)
 				await m_writeQueue.Dequeue();
 		}
@@ -184,7 +172,7 @@ namespace CoCoL.Network
 		public LatencyHidingReader(IReadChannelEnd<T> parent, int buffersize)
 		{
 			if (buffersize <= 0)
-				throw new ArgumentOutOfRangeException("buffersize");
+				throw new ArgumentOutOfRangeException(nameof(buffersize));
 			m_parent = parent;
 			m_buffersize = buffersize;
 		}
@@ -228,31 +216,20 @@ namespace CoCoL.Network
         /// <returns>The async.</returns>
         public Task<T> ReadAsync()
         {
-            return ReadAsync(Timeout.Infinite, null);
-        }
-        /// <summary>
-        /// Registers a desire to read from the channel
-        /// </summary>
-        /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-        /// <returns>The async.</returns>
-        public Task<T> ReadAsync(ITwoPhaseOffer offer )
-        {
-            return ReadAsync(Timeout.Infinite, offer);
+            return ReadAsync(null);
         }
 		/// <summary>
 		/// Registers a desire to read from the channel
 		/// </summary>
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-		/// <param name="timeout">The time to wait for the operation, use zero to return a timeout immediately if no items can be read. Use a
-		/// negative span to wait forever.</param>
-		/// <returns>The async.</returns>
-		public Task<T> ReadAsync(TimeSpan timeout, ITwoPhaseOffer offer = null)
+		/// <returns>An awaitable task.</returns>
+        public Task<T> ReadAsync(ITwoPhaseOffer offer)
 		{
 			if (offer != null)
 				throw new InvalidOperationException("LatencyHidingReader does not support offers");
 
 			while (m_readQueue.Count < m_buffersize)
-				m_readQueue.Enqueue(m_parent.ReadAsync(timeout, offer));
+				m_readQueue.Enqueue(m_parent.ReadAsync(offer));
 			
 			return m_readQueue.Dequeue();
 		}

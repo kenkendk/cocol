@@ -144,7 +144,7 @@ namespace CoCoL.Network
 							lock (lck)
 								transactions[req.RequestID] = req.NoOffer ? null : new TwoPhaseNetworkHandler(req, nwc);
 								
-							((IUntypedChannel)chan).ReadAsync(TimeoutToTimeSpan(req.Timeout), transactions[req.RequestID]).ContinueWith(async x =>
+							((IUntypedChannel)chan).ReadAsync(transactions[req.RequestID]).ContinueWith(async x =>
 								{
 									NetworkMessageType responsetype;
 									object responseitem = null;
@@ -187,7 +187,7 @@ namespace CoCoL.Network
 							lock (lck)
 								transactions[req.RequestID] = req.NoOffer ? null : new TwoPhaseNetworkHandler(req, nwc);
 						
-							((IUntypedChannel)chan).WriteAsync(req.Value, TimeoutToTimeSpan(req.Timeout), transactions[req.RequestID]).ContinueWith(async x =>
+							((IUntypedChannel)chan).WriteAsync(req.Value, transactions[req.RequestID]).ContinueWith(async x =>
 								{
 									NetworkMessageType responsetype;
 									object responseitem = null;
