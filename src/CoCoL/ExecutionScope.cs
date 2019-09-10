@@ -83,7 +83,7 @@ namespace CoCoL
 		private ExecutionScope(ExecutionScope parent, IThreadPool threadPool)
 		{
 			if (threadPool == null)
-				throw new ArgumentNullException("threadPool");
+				throw new ArgumentNullException(nameof(threadPool));
 
 			ParentScope = parent;
 			m_threadPool = threadPool;

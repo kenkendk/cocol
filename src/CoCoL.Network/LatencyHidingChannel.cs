@@ -43,7 +43,7 @@ namespace CoCoL.Network
 		public LatencyHidingWriter(IWriteChannelEnd<T> parent, int buffersize)
 		{
 			if (buffersize <= 0)
-				throw new ArgumentOutOfRangeException("buffersize");
+				throw new ArgumentOutOfRangeException(nameof(buffersize));
 			m_parent = parent;
 			m_buffersize = buffersize;
 		}
@@ -172,7 +172,7 @@ namespace CoCoL.Network
 		public LatencyHidingReader(IReadChannelEnd<T> parent, int buffersize)
 		{
 			if (buffersize <= 0)
-				throw new ArgumentOutOfRangeException("buffersize");
+				throw new ArgumentOutOfRangeException(nameof(buffersize));
 			m_parent = parent;
 			m_buffersize = buffersize;
 		}

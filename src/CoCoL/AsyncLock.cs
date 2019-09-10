@@ -32,7 +32,7 @@ namespace CoCoL
 		public AsyncSemaphore(int initialCount) 
 		{ 
 			if (initialCount < 0) 
-				throw new ArgumentOutOfRangeException("initialCount"); 
+				throw new ArgumentOutOfRangeException(nameof(initialCount)); 
 			
 			m_currentCount = initialCount; 
 		} 
