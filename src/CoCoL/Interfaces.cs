@@ -318,5 +318,12 @@ namespace CoCoL
 		/// <param name="waittime">The maximum time to wait for completion.</param>
 		Task EnsureFinishedAsync(TimeSpan waittime = default(TimeSpan));
 	}
+
+    /// <summary>
+	/// A marker interface that signals that all continuations must be enqueued
+	/// </summary>
+	public interface ILimitingThreadPool : IThreadPool
+	{
+	}
 }
 

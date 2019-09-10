@@ -56,6 +56,11 @@ namespace CoCoL
 		/// <value>The parent scope.</value>
 		public ExecutionScope ParentScope { get; private set; }
 
+        /// <summary>
+        /// A flag indicating if the currently active thread pool is a limiting thread pool
+        /// </summary>
+        public bool IsLimitingPool => m_threadPool is ILimitingThreadPool;
+
 		/// <summary>
 		/// Static initializer to control the creation order
 		/// </summary>
