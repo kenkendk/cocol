@@ -39,9 +39,9 @@ namespace CoCoL.Network
 				null);
 
 			if (m == null)
-				throw new Exception(string.Format("No such method found: {0}", CustomParserName));
+				throw new System.IO.InvalidDataException(string.Format("No such method found: {0}", CustomParserName));
 			if (m.ReturnType != datatype)
-				throw new Exception(string.Format("Parser method {0} should return type {1} but returns type {2}", CustomParserName, datatype, m.ReturnType));
+				throw new System.IO.InvalidDataException(string.Format("Parser method {0} should return type {1} but returns type {2}", CustomParserName, datatype, m.ReturnType));
 
 			return x => m.Invoke(target, new object[] { x });
 		}

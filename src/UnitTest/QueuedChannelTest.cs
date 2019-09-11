@@ -23,14 +23,14 @@ namespace UnitTest
 
 			c.Write(4);
 			if (!c.TryWrite(5))
-				throw new Exception("Failed to write to buffered channel");
+				throw new UnittestException("Failed to write to buffered channel");
 			if (c.TryWrite(6))
-				throw new Exception("Succeeded to write to filled buffered channel");
+				throw new UnittestException("Succeeded to write to filled buffered channel");
 
 			if (c.Read() != 4)
-				throw new Exception("Invalid data read");
+				throw new UnittestException("Invalid data read");
 			if (c.Read() != 5)
-				throw new Exception("Invalid data read");
+				throw new UnittestException("Invalid data read");
 		}
 
         [TEST_METHOD]
@@ -43,14 +43,14 @@ namespace UnitTest
             var n2 = c.ReadAsync();
 
             if (!c.TryWrite(4))
-                throw new Exception("Failed to write to channel with immediate timeout");
+                throw new UnittestException("Failed to write to channel with immediate timeout");
             if (!c.TryWrite(5))
-                throw new Exception("Failed to write to channel with immediate timeout");
+                throw new UnittestException("Failed to write to channel with immediate timeout");
 
             if (n1.Result != 4)
-                throw new Exception("Invalid data read");
+                throw new UnittestException("Invalid data read");
             if (n2.Result != 5)
-                throw new Exception("Invalid data read");
+                throw new UnittestException("Invalid data read");
         }
 
         [TEST_METHOD]
@@ -64,12 +64,12 @@ namespace UnitTest
 			c.Retire();
 
 			if (c.Read() != 6)
-				throw new Exception("Invalid data read");
+				throw new UnittestException("Invalid data read");
 			if (c.Read() != 7)
-				throw new Exception("Invalid data read");
+				throw new UnittestException("Invalid data read");
 
 			if (!c.IsRetiredAsync.WaitForTask().Result)
-				throw new Exception("Channel was not retired as expected");
+				throw new UnittestException("Channel was not retired as expected");
 		}
 
         [TEST_METHOD]

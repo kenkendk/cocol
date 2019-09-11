@@ -36,7 +36,7 @@ namespace UnitTest
 			public Task CommitAsync(object caller)
 			{
 				if (!AllowPass)
-					throw new Exception("Unexpected commit?");
+					throw new UnittestException("Unexpected commit?");
 
 				HasComitted = true;
 				return Task.FromResult(true);
@@ -45,9 +45,9 @@ namespace UnitTest
 			public Task WithdrawAsync(object caller)
 			{
 				if (!HasOffered)
-					throw new Exception("Withdraw without offer?");
+					throw new UnittestException("Withdraw without offer?");
 				if (HasWithdrawn && !AllowPass)
-					throw new Exception("Multple withdraws?");
+					throw new UnittestException("Multple withdraws?");
 
 				HasWithdrawn = true;
 				return Task.FromResult(true);
@@ -64,24 +64,24 @@ namespace UnitTest
 
 			var cleared = offers.Where(x => x.HasOffered && !x.HasWithdrawn && !x.HasComitted).Count();
 			if (cleared < 500)
-				throw new Exception(string.Format("Expected {0} items cleared but got {1}", 500, cleared));
+				throw new UnittestException(string.Format("Expected {0} items cleared but got {1}", 500, cleared));
 
 			var tx = c.ReadAsync();
 			cleared = offers.Where(x => x.HasOffered && !x.HasWithdrawn && !x.HasComitted).Count();
 			if (cleared < 500)
-				throw new Exception(string.Format("Expected {0} items cleared but got {1}", 500, cleared));
+				throw new UnittestException(string.Format("Expected {0} items cleared but got {1}", 500, cleared));
 
 			if (!c.TryWrite(42))
-				throw new Exception("Write not allowed?");
+				throw new UnittestException("Write not allowed?");
 
 			cleared = offers.Where(x => x.HasOffered && !x.HasWithdrawn && !x.HasComitted).Count();
 			if (cleared != 550)
-				throw new Exception(string.Format("Expected {0} items cleared but got {1}", 550, cleared));
+				throw new UnittestException(string.Format("Expected {0} items cleared but got {1}", 550, cleared));
 
 			Task.WhenAll(readtasks).WaitForTask();
 
 			if (tx.Result != 42)
-				throw new Exception("Read failed?");
+				throw new UnittestException("Read failed?");
 		}
 	}
 }

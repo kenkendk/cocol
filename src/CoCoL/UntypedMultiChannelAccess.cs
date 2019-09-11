@@ -410,7 +410,7 @@ namespace CoCoL
 			switch (priority)
 			{
 				case MultiChannelPriority.Fair:
-					throw new Exception(string.Format("Construct a {0} or {1} object to use fair multichannel operations", typeof(MultiChannelSetRead<>).Name, typeof(MultiChannelSetWrite<>).Name));
+					throw new InvalidOperationException(string.Format("Construct a {0} or {1} object to use fair multichannel operations", typeof(MultiChannelSetRead<>).Name, typeof(MultiChannelSetWrite<>).Name));
 				case MultiChannelPriority.Random:
 					requests = MultiChannelAccess.Shuffle(requests);
 					break;

@@ -57,7 +57,7 @@ namespace UnitTest
 				{
 					foreach(var y in cmp)
 						Console.WriteLine("{0}: ({1}, {2})", y.Real, y.SL.Key, y.SL.Value);
-					throw new Exception("Sorted sequence was incorrect!");
+					throw new UnittestException("Sorted sequence was incorrect!");
 				}
 		}
 	}

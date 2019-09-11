@@ -64,9 +64,9 @@ namespace UnitTest
 			var all = Task.WhenAll(tasks).WaitForTask();
 
 			if (count != 2)
-				throw new Exception(string.Format("Unexpected count, expected {0} but got {1}", 2, count));
+				throw new UnittestException(string.Format("Unexpected count, expected {0} but got {1}", 2, count));
 			if (all.IsFaulted || !all.IsCompleted)
-				throw new Exception("Unexpected task state");
+				throw new UnittestException("Unexpected task state");
 
 		}		
 	}

@@ -394,7 +394,7 @@ namespace CoCoL
                     {
                         ChannelScope sc;
                         if (!__scopes.TryGetValue(cur, out sc))
-                            throw new Exception(string.Format("Unable to find scope in lookup table, this may be caused by attempting to transport call contexts between AppDomains (eg. with remoting calls)"));
+                            throw new InvalidOperationException(string.Format("Unable to find scope in lookup table, this may be caused by attempting to transport call contexts between AppDomains (eg. with remoting calls)"));
 
                         return sc;
                     }
@@ -424,7 +424,7 @@ namespace CoCoL
 					{
 						ChannelScope sc;
 						if (!__scopes.TryGetValue(cur, out sc))
-							throw new Exception(string.Format("Unable to find scope in lookup table, this may be caused by attempting to transport call contexts between AppDomains (eg. with remoting calls)"));
+							throw new InvalidOperationException(string.Format("Unable to find scope in lookup table, this may be caused by attempting to transport call contexts between AppDomains (eg. with remoting calls)"));
 
 						return sc;
 					}

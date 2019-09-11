@@ -21,7 +21,7 @@ namespace UnitTest
 
 			chan.WriteAsync(4);
 			if ((int)chan.Read() != 4)
-				throw new Exception("Unable to use untyped channel");
+				throw new UnittestException("Unable to use untyped channel");
 		}
 	}
 }

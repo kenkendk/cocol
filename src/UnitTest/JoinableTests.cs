@@ -76,9 +76,9 @@ namespace UnitTest
 			var all = Task.WhenAll(p1(), p2(), p3()).WaitForTask();
 
 			if (count != 1)
-				throw new Exception(string.Format("Unexpected count, expected {0} but got {1}", 1, count));
+				throw new UnittestException(string.Format("Unexpected count, expected {0} but got {1}", 1, count));
 			if (all.IsFaulted || !all.IsCompleted)
-				throw new Exception("Unexpected task state");
+				throw new UnittestException("Unexpected task state");
 
 		}
 
@@ -149,9 +149,9 @@ namespace UnitTest
 			var all = Task.WhenAll(p1(), p2(), p3()).WaitForTask();
 
 			if (count != 2)
-				throw new Exception(string.Format("Unexpected count, expected {0} but got {1}", 2, count));
+				throw new UnittestException(string.Format("Unexpected count, expected {0} but got {1}", 2, count));
 			if (all.IsFaulted || !all.IsCompleted)
-				throw new Exception("Unexpected task state");
+				throw new UnittestException("Unexpected task state");
 
 		}
 
@@ -215,9 +215,9 @@ namespace UnitTest
 			var all = Task.WhenAll(p1(), p2(), p3()).WaitForTask();
 
 			if (count != 2)
-				throw new Exception(string.Format("Unexpected count, expected {0} but got {1}", 2, count));
+				throw new UnittestException(string.Format("Unexpected count, expected {0} but got {1}", 2, count));
 			if (all.IsFaulted || !all.IsCompleted)
-				throw new Exception("Unexpected task state");
+				throw new UnittestException("Unexpected task state");
 		}
 	}
 }

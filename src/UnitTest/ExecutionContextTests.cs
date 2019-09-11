@@ -76,8 +76,8 @@ namespace UnitTest
 								if (cur > poolsize && poolsize > 0)
 								{
 									Console.WriteLine("Found {0} concurrent threads", cur);
-									earlyRetire.TrySetException(new Exception(string.Format("Found {0} concurrent threads", cur)));
-									throw new Exception(string.Format("Found {0} concurrent threads", cur));
+									earlyRetire.TrySetException(new UnittestException(string.Format("Found {0} concurrent threads", cur)));
+									throw new UnittestException(string.Format("Found {0} concurrent threads", cur));
 								}
 
 								// By blocking the actual thread, we provoke the threadpool to start multiple threads
@@ -114,7 +114,7 @@ namespace UnitTest
 				Console.WriteLine("Max concurrent threads: {0}, should be {1}", max_concurrent, poolsize <= 0 ? "unlimited" : poolsize.ToString());
 
                 if (poolsize > 0 && max_concurrent > poolsize)
-                    throw new Exception($"The pool allowed {max_concurrent} concurrent threads, but should be limited to {poolsize}");
+                    throw new UnittestException($"The pool allowed {max_concurrent} concurrent threads, but should be limited to {poolsize}");
 
 			}
 

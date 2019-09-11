@@ -224,7 +224,7 @@ namespace CoCoL.Network
 						break;
 						
 					default:
-						throw new Exception("Unsupported message: {0}");
+						throw new InvalidOperationException("Unsupported message: {0}");
 						
 				}
 			}

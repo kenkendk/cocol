@@ -30,7 +30,7 @@ namespace CoCoL
 			         select StartFromTypes(a.GetTypes())).Sum();
 
 			if (c == 0)
-				throw new Exception("No process found in given assemblies");
+				throw new ArgumentException("No process found in given assemblies", nameof(asm));
 		}
 
 		/// <summary>

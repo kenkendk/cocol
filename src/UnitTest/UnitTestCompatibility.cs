@@ -1,6 +1,15 @@
 ﻿using System;
 namespace UnitTest
 {
+    [Serializable]
+    public class UnittestException : Exception
+    {
+        public UnittestException(string message)
+            : base(message)
+        {
+        }
+    }
+
     public static class TestAssert
     {
         public static void Throws<T>(Action m)

@@ -57,7 +57,7 @@ namespace UnitTest
 			c.Run();
 
 			if (c.Sum != 100)
-				throw new Exception(string.Format("Autowire or loader failed, sum was supposed to be {0} but was {1}", 100, c.Sum));
+				throw new UnittestException(string.Format("Autowire or loader failed, sum was supposed to be {0} but was {1}", 100, c.Sum));
 		}	
 	}
 }

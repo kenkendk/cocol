@@ -168,7 +168,7 @@ namespace CoCoL.Network
 			await recv;
 
 			if (rbuf[1] != SOCKET_PROTOCOL_MAJOR_VERSION || rbuf[2] != SOCKET_PROTOCOL_MINOR_VERSION)
-				throw new Exception(string.Format("Remote socket has version {0}.{1} but {2}.{3} was expected", rbuf[1], rbuf[2], SOCKET_PROTOCOL_MAJOR_VERSION, SOCKET_PROTOCOL_MINOR_VERSION));
+				throw new InvalidDataException(string.Format("Remote socket has version {0}.{1} but {2}.{3} was expected", rbuf[1], rbuf[2], SOCKET_PROTOCOL_MAJOR_VERSION, SOCKET_PROTOCOL_MINOR_VERSION));
 
 			var headlen = rbuf[0];
 			await ForceReadAsync(m_stream, rbuf, 3, rbuf[0] - 3);
@@ -176,14 +176,14 @@ namespace CoCoL.Network
 			var magiclen = rbuf[3];
 			//if (!ArraysEqual(SOCKET_MAGIC_HEADER, rbuf, 4))
 			if (!rbuf.Skip(4).Take(magiclen).SequenceEqual(SOCKET_MAGIC_HEADER))
-				throw new Exception("Magic header was incorrect");
+				throw new InvalidDataException("Magic header was incorrect");
 
 			var serializerlen = rbuf[4 + magiclen];
 			if (!rbuf.Skip(5 + magiclen).Take(serializerlen).SequenceEqual(SOCKET_SERIALIZER))
-				throw new Exception("Serializer was incorrect");
+				throw new InvalidDataException("Serializer was incorrect");
 
 			if (serializerlen + magiclen + 5 != headlen)
-				throw new Exception("Extra data in header not supported");
+				throw new InvalidDataException("Extra data in header not supported");
 		}
 
 		/// <summary>
@@ -292,13 +292,13 @@ namespace CoCoL.Network
 
 						var streamlen = BitConverter.ToUInt64(buffer, 0);
 						if (streamlen > MAX_MESSAGE_SIZE)
-							throw new Exception("Perhaps too big data?");
+							throw new InvalidDataException("Perhaps too big data?");
 
 						await ForceReadAsync(stream, buffer, 0, 2);
 
 						var headlen = BitConverter.ToUInt16(buffer, 0);
 						if (headlen > buffer.Length || headlen > streamlen)
-							throw new Exception("Perhaps too big data?");
+							throw new InvalidDataException("Perhaps too big data?");
 
 						await ForceReadAsync(stream, buffer, 0, headlen);
 
@@ -314,7 +314,7 @@ namespace CoCoL.Network
 
 						var payloadlen = BitConverter.ToUInt64(buffer, 0);
 						if (payloadlen > MAX_MESSAGE_SIZE || payloadlen > streamlen - headlen)
-							throw new Exception("Perhaps too big data?");
+							throw new InvalidDataException("Perhaps too big data?");
 
 						object payload = null;
 						if (header.PayloadClassName != null)
@@ -414,7 +414,7 @@ namespace CoCoL.Network
 
 						// We write it all into the array before writing to the stream
 						if (headlen > SMALL_MESSAGE_SIZE - 8 - 2 - 8)
-							throw new Exception("Too larger header");
+							throw new InvalidDataException("Too larger header");
 
 						// Make a memory stream for the payload
 						using(var ms = new MemoryStream())
@@ -435,7 +435,7 @@ namespace CoCoL.Network
 							}
 
 							if (payloadlen > MAX_MESSAGE_SIZE)
-								throw new Exception("Too large message payload");
+								throw new InvalidDataException("Too large message payload");
 
 							ulong packlen = 8uL + 2uL + headlen + 8uL + payloadlen;
 

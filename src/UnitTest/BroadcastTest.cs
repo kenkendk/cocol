@@ -38,7 +38,7 @@ namespace UnitTest
 						var r = await self.chan.ReadAsync();
 						counter.Increment();
 						if (Comparer<T>.Default.Compare(v, r) != 0)
-							throw new Exception(string.Format("Got {0} but expected {1}", r, v));
+							throw new UnittestException(string.Format("Got {0} but expected {1}", r, v));
 					}
 				}
 			);
@@ -75,7 +75,7 @@ namespace UnitTest
 
 			Task.WhenAll(readers.Union(new[] { writer })).WaitForTaskOrThrow();
 			if (counter.Count != readercount * values.Length)
-				throw new Exception(string.Format("The counter said {0} values were read, but {1} was expected", counter.Count, readercount * values.Length));
+				throw new UnittestException(string.Format("The counter said {0} values were read, but {1} was expected", counter.Count, readercount * values.Length));
 		}
 
         [TEST_METHOD]
@@ -95,7 +95,7 @@ namespace UnitTest
 
 			Task.WhenAll(readers.Union(new[] { writer1, writer2 })).WaitForTaskOrThrow();
 			if (counter.Count != readercount * readervalues.Length)
-				throw new Exception(string.Format("The counter said {0} values were read, but {1} was expected", counter.Count, readercount * readervalues.Length));
+				throw new UnittestException(string.Format("The counter said {0} values were read, but {1} was expected", counter.Count, readercount * readervalues.Length));
 		}
 
         [TEST_METHOD]
@@ -116,13 +116,13 @@ namespace UnitTest
 
 			System.Threading.Thread.Sleep(TimeSpan.FromSeconds(2));
 			if (counter.Count != 0)
-				throw new Exception("Broadcast has progressed even when there are not enough readers");
+				throw new UnittestException("Broadcast has progressed even when there are not enough readers");
 
 			((IJoinAbleChannel)c).Leave(true);
 
 			Task.WhenAll(readers.Union(new[] { writer1, writer2 })).WaitForTaskOrThrow();
 			if (counter.Count != readercount * readervalues.Length)
-				throw new Exception(string.Format("The counter said {0} values were read, but {1} was expected", counter.Count, readercount * readervalues.Length));
+				throw new UnittestException(string.Format("The counter said {0} values were read, but {1} was expected", counter.Count, readercount * readervalues.Length));
 		}
 
         [TEST_METHOD]
@@ -153,14 +153,14 @@ namespace UnitTest
 							var r = await self.chan.ReadAsync();
 							counter.Increment();
 							if (Comparer<int>.Default.Compare(v, r) != 0)
-								throw new Exception(string.Format("Got {0} but expected {1}", r, v));
+								throw new UnittestException(string.Format("Got {0} but expected {1}", r, v));
 						}
 					}
 				)).ToArray();
 
 				Task.WhenAll(readers.Union(new[] { writer })).WaitForTaskOrThrow();
 				if (counter.Count != readercount * values.Length)
-					throw new Exception(string.Format("The counter said {0} values were read, but {1} was expected", counter.Count, readercount * values.Length));
+					throw new UnittestException(string.Format("The counter said {0} values were read, but {1} was expected", counter.Count, readercount * values.Length));
 			}
 		}
 
@@ -192,14 +192,14 @@ namespace UnitTest
 							var r = await self.chan.ReadAsync();
 							counter.Increment();
 							if (Comparer<int>.Default.Compare(v, r) != 0)
-								throw new Exception(string.Format("Got {0} but expected {1}", r, v));
+								throw new UnittestException(string.Format("Got {0} but expected {1}", r, v));
 						}
 					}
 				)).ToArray();
 
 				Task.WhenAll(readers.Union(new[] { writer })).WaitForTaskOrThrow();
 				if (counter.Count != readercount * values.Length)
-					throw new Exception(string.Format("The counter said {0} values were read, but {1} was expected", counter.Count, readercount * values.Length));
+					throw new UnittestException(string.Format("The counter said {0} values were read, but {1} was expected", counter.Count, readercount * values.Length));
 			}
 		}
 	}

@@ -89,7 +89,7 @@ namespace StressedAlt
 				if (m_has_errors)
 				{
 					Console.WriteLine("Errors detected during warmup, quitting...");
-					throw new Exception("Errors detected");
+					throw new System.IO.InvalidDataException("Errors detected");
 				}
 
 				var expected = ((DateTime.Now - startWarmup).Ticks / WARMUP_ROUNDS) * MEASURE_ROUNDS * TOTAL_ROUNDS;

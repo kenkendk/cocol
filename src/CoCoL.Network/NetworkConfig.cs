@@ -60,7 +60,7 @@ namespace CoCoL.Network
 			lock (_lock)
 			{
 				if (_connectorTask != null && !_connectorTask.IsCompleted)
-					throw new Exception("Cannot change configuration while running");
+					throw new InvalidOperationException("Cannot change configuration while running");
 
 				NameServerHostname = nameserverhostname;
 				NameServerPort = nameserverport;

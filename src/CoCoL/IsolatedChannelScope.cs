@@ -133,7 +133,7 @@ namespace CoCoL
 			lock (__lock)
 			{
 				var c = parent.RecursiveLookup(name);
-                m_lookup[name] = c ?? throw new Exception($"No channel with the name \"{name}\" was found in the parent scope");
+                m_lookup[name] = c ?? throw new ArgumentException($"No channel with the name \"{name}\" was found in the parent scope", nameof(name));
 			}
 		}
 	}

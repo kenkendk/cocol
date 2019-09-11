@@ -188,7 +188,7 @@ namespace CoCoL
 
 			// In principle, a channel can be implemented non-generic, but for PCL we do not allow it
 			if (!item.GetType().IsConstructedGenericType)
-				throw new Exception(string.Format("Item is not a generic type, which is required in the PCL version: {0}", item.GetType()));
+				throw new ArgumentException(string.Format("Item is not a generic type, which is required in the PCL version: {0}", item.GetType()), nameof(item));
 
 			// Normally, we should only see one generic argument, but we play it safe
 			foreach (var t in item.GetType().GenericTypeArguments)

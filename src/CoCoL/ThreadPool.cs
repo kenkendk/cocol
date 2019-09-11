@@ -248,7 +248,7 @@ namespace CoCoL
 			}
 
 			if (waittime == default(TimeSpan))
-				throw new Exception(string.Format("Thread pool was not completed, there are {0} instances running", m_instances));
+				throw new InvalidOperationException(string.Format("Thread pool was not completed, there are {0} instances running", m_instances));
 
 			var endttime = DateTime.Now + waittime;
 			while (DateTime.Now < endttime)

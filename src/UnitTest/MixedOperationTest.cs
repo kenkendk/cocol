@@ -161,49 +161,49 @@ namespace UnitTest
             // Using explicit .AsUntyped() calls
 			var r = MultiChannelAccess.ReadFromAnyAsync(c1.AsUntyped(), c2.AsUntyped(), c3.AsUntyped()).WaitForTask().Result;
 			if (r == null)
-				throw new Exception("Unexpected null result");
+				throw new UnittestException("Unexpected null result");
 			if (r.Channel != c1)
-				throw new Exception("Unexpected read channel");
+				throw new UnittestException("Unexpected read channel");
 			
 			if (!(r.Value is int))
-				throw new Exception("Priority changed?");
+				throw new UnittestException("Priority changed?");
 			if ((int)r.Value != 1)
-				throw new Exception("Bad value?");
+				throw new UnittestException("Bad value?");
 
             // Using explicit .RequestRead() calls
 			r = MultiChannelAccess.ReadFromAnyAsync(c1.RequestRead(), c2.RequestRead(), c3.RequestRead()).WaitForTask().Result;
 			if (r == null)
-				throw new Exception("Unexpected null result");
+				throw new UnittestException("Unexpected null result");
 			if (r.Channel != c2)
-				throw new Exception("Unexpected read channel");
+				throw new UnittestException("Unexpected read channel");
 			if (!(r.Value is string))
-				throw new Exception("Priority changed?");
+				throw new UnittestException("Priority changed?");
 			if ((string)r.Value != "2")
-				throw new Exception("Bad value?");
+				throw new UnittestException("Bad value?");
 
             // Using channels directly
             r = MultiChannelAccess.ReadFromAnyAsync(c1, c2, c3).WaitForTask().Result;
             if (r == null)
-                throw new Exception("Unexpected null result");
+                throw new UnittestException("Unexpected null result");
             if (r.Channel != c3)
-                throw new Exception("Unexpected read channel");
+                throw new UnittestException("Unexpected read channel");
 
             if (!(r.Value is long))
-                throw new Exception("Priority changed?");
+                throw new UnittestException("Priority changed?");
             if ((long)r.Value != 3)
-                throw new Exception("Bad value?");
+                throw new UnittestException("Bad value?");
 
             // Writing with untyped channel request
             var t = new [] { c1.AsUntyped().RequestWrite(4) }.WriteToAnyAsync();
 			if (c1.Read() != 4)
-				throw new Exception("Bad value?");
+				throw new UnittestException("Bad value?");
 
             t.WaitForTask().Wait();
 
             // Writing with a typed write request, using mixed types
             var t2 = MultiChannelAccess.WriteToAnyAsync(c1.RequestWrite(5), c2.RequestWrite("6"));
             if (c1.Read() != 5)
-                throw new Exception("Bad value?");
+                throw new UnittestException("Bad value?");
 
             t2.WaitForTask().Wait();
         }

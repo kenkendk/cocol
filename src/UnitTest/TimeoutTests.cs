@@ -27,7 +27,7 @@ namespace UnitTest
 				try
 				{
 					await c.ReadAsync(TimeSpan.FromSeconds(2));
-					throw new Exception("Timeout did not happen?");
+					throw new UnittestException("Timeout did not happen?");
 				}
 				catch (TimeoutException)
 				{
@@ -36,7 +36,7 @@ namespace UnitTest
 
 			var t = p();
 			if (!t.Wait(TimeSpan.FromSeconds(3)))
-				throw new Exception("Failed to get timeout");
+				throw new UnittestException("Failed to get timeout");
 		}
 
         [TEST_METHOD]
@@ -51,7 +51,7 @@ namespace UnitTest
 					try
 					{
 						await MultiChannelAccess.ReadFromAnyAsync(TimeSpan.FromSeconds(2), c1, c2, c3);
-						throw new Exception("Timeout did not happen?");
+						throw new UnittestException("Timeout did not happen?");
 					}
 					catch (TimeoutException)
 					{
@@ -60,7 +60,7 @@ namespace UnitTest
 
 			var t = p();
 			if (!t.Wait(TimeSpan.FromSeconds(3)))
-				throw new Exception("Failed to get timeout");
+				throw new UnittestException("Failed to get timeout");
 
 		}
 
@@ -84,7 +84,7 @@ namespace UnitTest
 						);
 
 						if (!t.IsFaulted || !(t.Exception.InnerException is TimeoutException))
-							throw new Exception("Timeout did not happen?");
+							throw new UnittestException("Timeout did not happen?");
 					}
 					catch (TimeoutException)
 					{
@@ -92,10 +92,10 @@ namespace UnitTest
 				};
 
 			if (!p().Wait(TimeSpan.FromSeconds(3)))
-				throw new Exception("Failed to get timeout");
+				throw new UnittestException("Failed to get timeout");
 
 			if (!p().Wait(TimeSpan.FromSeconds(3)))
-				throw new Exception("Failed to get timeout");
+				throw new UnittestException("Failed to get timeout");
 			
 		}
 
@@ -123,41 +123,41 @@ namespace UnitTest
 						//Console.WriteLine("Not waiting for c3");
 
 						if (!t.IsFaulted || !(t.Exception.InnerException is TimeoutException))
-							throw new Exception("Timeout did not happen on c3?");
+							throw new UnittestException("Timeout did not happen on c3?");
 
 						if (!tasks[2].IsFaulted || !(tasks[2].Exception.InnerException is TimeoutException))
 						{
 							for (var i = 0; i < tasks.Count; i++)
 								if (tasks[i].IsFaulted && i != 2)
-									throw new Exception(string.Format("Timeout happened on c{0}, but should have happened on c3?", i + 1));
+									throw new UnittestException(string.Format("Timeout happened on c{0}, but should have happened on c3?", i + 1));
 							
-							throw new Exception("Timeout happened on another channel than c3?");
+							throw new UnittestException("Timeout happened on another channel than c3?");
 						}
 
 						tasks.RemoveAt(2);
 
 						if (tasks.Any(x => x.IsFaulted))
-							throw new Exception("Unexpected task fault?");
+							throw new UnittestException("Unexpected task fault?");
 
 						//Console.WriteLine("Waiting for c2");
 						t = await Task.WhenAny(tasks);
 						//Console.WriteLine("Not waiting for c2");
 
 						if (!t.IsFaulted || !(t.Exception.InnerException is TimeoutException))
-							throw new Exception("Timeout did not happen for c2?");
+							throw new UnittestException("Timeout did not happen for c2?");
 
 						if (!tasks[1].IsFaulted || !(tasks[1].Exception.InnerException is TimeoutException))
 						{
 							for (var i = 0; i < tasks.Count; i++)
 								if (tasks[i].IsFaulted && i != 1)
-									throw new Exception(string.Format("Timeout happened on c{0}, but should have happened on c2?", i + 1));
-							throw new Exception("Timeout happened on another channel than c2?");
+									throw new UnittestException(string.Format("Timeout happened on c{0}, but should have happened on c2?", i + 1));
+							throw new UnittestException("Timeout happened on another channel than c2?");
 						}
 
 						tasks.RemoveAt(1);
 
 						if (tasks.Any(x => x.IsFaulted))
-							throw new Exception("Unexpected task fault?");
+							throw new UnittestException("Unexpected task fault?");
 						
 						//Console.WriteLine("Completed");
 					}
@@ -168,7 +168,7 @@ namespace UnitTest
 
 			for (var i = 0; i < 5; i++)
 				if (!p().Wait(TimeSpan.FromSeconds(4)))
-					throw new Exception("Failed to get timeout");
+					throw new UnittestException("Failed to get timeout");
 		}
 
         [TEST_METHOD]
@@ -189,15 +189,15 @@ namespace UnitTest
 						var t = await Task.WhenAny(tasks);
 
 						if (!t.IsFaulted || !(t.Exception.InnerException is TimeoutException))
-							throw new Exception("Timeout did not happen on op2?");
+							throw new UnittestException("Timeout did not happen on op2?");
 
 						if (!tasks[1].IsFaulted || !(tasks[1].Exception.InnerException is TimeoutException))
 						{
 							for (var i = 0; i < tasks.Count; i++)
 								if (tasks[i].IsFaulted && i != 1)
-									throw new Exception(string.Format("Timeout happened on op{0}, but should have happened on op2?", i + 1));
+									throw new UnittestException(string.Format("Timeout happened on op{0}, but should have happened on op2?", i + 1));
 
-							throw new Exception("Timeout happened on another channel than op2?");
+							throw new UnittestException("Timeout happened on another channel than op2?");
 						}
 
 						tasks.RemoveAt(1);
@@ -205,15 +205,15 @@ namespace UnitTest
 						t = await Task.WhenAny(tasks);
 
 						if (!t.IsFaulted || !(t.Exception.InnerException is TimeoutException))
-							throw new Exception("Timeout did not happen on op2?");
+							throw new UnittestException("Timeout did not happen on op2?");
 
 						if (!tasks[1].IsFaulted || !(tasks[1].Exception.InnerException is TimeoutException))
 						{
 							for (var i = 0; i < tasks.Count; i++)
 								if (tasks[i].IsFaulted && i != 1)
-									throw new Exception(string.Format("Timeout happened on op{0}, but should have happened on op3?", i + 1));
+									throw new UnittestException(string.Format("Timeout happened on op{0}, but should have happened on op3?", i + 1));
 
-							throw new Exception("Timeout happened on another channel than op3?");
+							throw new UnittestException("Timeout happened on another channel than op3?");
 						}
 
 					}
@@ -224,7 +224,7 @@ namespace UnitTest
 
 			for (var i = 0; i < 5; i++)
 				if (!p().Wait(TimeSpan.FromSeconds(3)))
-					throw new Exception("Failed to get timeout");
+					throw new UnittestException("Failed to get timeout");
 		}
 
         [TEST_METHOD]
@@ -245,22 +245,22 @@ namespace UnitTest
 						var t = await Task.WhenAny(tasks);
 
 						if (!t.IsCompleted)
-							throw new Exception("Buffered write failed?");
+							throw new UnittestException("Buffered write failed?");
 
 						tasks.RemoveAt(0);
 
 						t = await Task.WhenAny(tasks);
 
 						if (!t.IsFaulted || !(t.Exception.InnerException is TimeoutException))
-							throw new Exception("Timeout did not happen on op1?");
+							throw new UnittestException("Timeout did not happen on op1?");
 
 						if (!tasks[0].IsFaulted || !(tasks[0].Exception.InnerException is TimeoutException))
 						{
 							for (var i = 0; i < tasks.Count; i++)
 								if (tasks[i].IsFaulted && i != 0)
-									throw new Exception(string.Format("Timeout happened on op{0}, but should have happened on op1?", i + 1));
+									throw new UnittestException(string.Format("Timeout happened on op{0}, but should have happened on op1?", i + 1));
 
-							throw new Exception("Timeout happened on another channel than op1?");
+							throw new UnittestException("Timeout happened on another channel than op1?");
 						}
 					}
 					catch (TimeoutException)
@@ -270,7 +270,7 @@ namespace UnitTest
 
 			for (var i = 0; i < 5; i++)
 				if (!p().Wait(TimeSpan.FromSeconds(3)))
-					throw new Exception("Failed to get timeout");
+					throw new UnittestException("Failed to get timeout");
 
 		}
 	}

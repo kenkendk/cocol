@@ -73,26 +73,26 @@ namespace UnitTest
 			}
 
 			if (x1 == null || !x1.HasChannel || x2 == null || !x2.HasChannel)
-				throw new Exception("Autoloader failed to load channel");
+				throw new UnittestException("Autoloader failed to load channel");
 
 			if (ChannelScope.Current != ChannelScope.Root)
-				throw new Exception("Unexpected current scope");
+				throw new UnittestException("Unexpected current scope");
 
 			AutomationExtensions.RetireAllChannels(x1);
 
 			if (c.IsRetiredAsync.WaitForTask().Result)
-				throw new Exception("Unexpected early retire");
+				throw new UnittestException("Unexpected early retire");
 
 			AutomationExtensions.RetireAllChannels(x2);
 
 			if (!c.IsRetiredAsync.WaitForTask().Result)
-				throw new Exception("Unexpected non-retire");
+				throw new UnittestException("Unexpected non-retire");
 
 			using (new ChannelScope())
 				AutomationExtensions.AutoWireChannels(y = new Writer());
 
 			if (y == null || !y.HasChannel || y.IsChannelRetired)
-				throw new Exception("Scope does not appear isolated");
+				throw new UnittestException("Scope does not appear isolated");
 
 		}
 
@@ -115,26 +115,26 @@ namespace UnitTest
 			}
 
 			if (x1 == null || !x1.HasChannel || x2 == null || !x2.HasChannel)
-				throw new Exception("Autoloader failed to load channel");
+				throw new UnittestException("Autoloader failed to load channel");
 
 			if (ChannelScope.Current != ChannelScope.Root)
-				throw new Exception("Unexpected current scope");
+				throw new UnittestException("Unexpected current scope");
 
 			AutomationExtensions.RetireAllChannels(x1);
 
 			if (c.IsRetiredAsync.WaitForTask().Result)
-				throw new Exception("Unexpected early retire");
+				throw new UnittestException("Unexpected early retire");
 
 			AutomationExtensions.RetireAllChannels(x2);
 
 			if (!c.IsRetiredAsync.WaitForTask().Result)
-				throw new Exception("Unexpected non-retire");
+				throw new UnittestException("Unexpected non-retire");
 
 			using (new ChannelScope())
 				AutomationExtensions.AutoWireChannels(y = new WriterEnd());
 
 			if (y == null || !y.HasChannel || y.IsChannelRetired)
-				throw new Exception("Scope does not appear isolated");
+				throw new UnittestException("Scope does not appear isolated");
 
 		}
 	}

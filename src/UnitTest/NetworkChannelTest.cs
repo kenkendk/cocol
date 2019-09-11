@@ -64,7 +64,7 @@ namespace UnitTest
 				var wrtask = networkchannel.WriteAsync(42);
 				var res = networkchannel.AsRead().Read();
 				if (res != 42)
-					throw new Exception("Broken network channel");
+					throw new UnittestException("Broken network channel");
 
 				wrtask.WaitForTaskOrThrow();
 			}
@@ -82,12 +82,12 @@ namespace UnitTest
 				res.WaitForTask();
 
 				if (!res.IsFaulted || !res.Exception.IsTimeoutException())
-					throw new Exception("Broken timeout implementation");
+					throw new UnittestException("Broken timeout implementation");
 
 				var wrtask = networkchannel.WriteAsync(42);
 
 				if (networkchannel.AsRead().Read(TimeSpan.FromSeconds(1)) != 42)
-					throw new Exception("Broken network channel");
+					throw new UnittestException("Broken network channel");
 			
 				wrtask.WaitForTaskOrThrow();
 			}

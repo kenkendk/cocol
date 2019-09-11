@@ -268,7 +268,7 @@ namespace CoCoL.Network
 							break;
 
 						default:
-							throw new Exception(string.Format("Invalid request type: {0}", req.RequestType));
+							throw new System.IO.InvalidDataException(string.Format("Invalid request type: {0}", req.RequestType));
 					}
 				}
 			}
@@ -277,7 +277,7 @@ namespace CoCoL.Network
 				LOG.Error(string.Format("Crashed network client"), ex);
 
 				try { nwc.Dispose(); }
-				catch { }
+				catch(Exception ex2) { LOG.Error("Failed to close client", ex2); }
 
 				throw;
 			}
