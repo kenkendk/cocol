@@ -12,7 +12,7 @@ namespace CoCoL.Network
 		/// <summary>
 		/// The channel marker attribute
 		/// </summary>
-		private ChannelNameAttribute m_attribute;
+		private readonly ChannelNameAttribute m_attribute;
 
 		/// <summary>
 		/// Flag indicating if the channel is retired

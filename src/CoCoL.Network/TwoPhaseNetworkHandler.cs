@@ -78,7 +78,7 @@ namespace CoCoL.Network
 						true
 					));
 
-				var res = await m_offercallback.Task;
+				var res = await m_offercallback.Task.ConfigureAwait(false);
 				m_offercallback = null;
 
 				return res;

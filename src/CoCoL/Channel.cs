@@ -139,16 +139,16 @@ namespace CoCoL
 		/// <summary>
 		/// Structure for keeping a read request
 		/// </summary>
-		protected struct ReaderEntry : IEntry
+		protected struct ReaderEntry : IEntry, IEquatable<ReaderEntry>
 		{
 			/// <summary>
 			/// The offer handler for the request
 			/// </summary>
-			public ITwoPhaseOffer Offer;
+			public readonly ITwoPhaseOffer Offer;
 			/// <summary>
 			/// The callback method for reporting progress
 			/// </summary>
-			public TaskCompletionSource<T> Source;
+			public readonly TaskCompletionSource<T> Source;
 #if !NO_TASK_ASYNCCONTINUE
 			/// <summary>
 			/// A flag indicating if signalling task completion must be enqued on the task pool
@@ -201,29 +201,39 @@ namespace CoCoL
                 if (Offer is IExpiringOffer offer)
                     offer.ProbeComplete();                    
             }
-		}
+
+            /// <summary>
+            /// Explict disable of compares
+            /// </summary>
+            /// <param name="other">The item to compare with</param>
+            /// <returns>Always throws an exception to avoid compares</returns>
+            public bool Equals(ReaderEntry other)
+            {
+                throw new NotImplementedException();
+            }
+        }
 
 		/// <summary>
 		/// Structure for keeping a write request
 		/// </summary>
-		protected struct WriterEntry : IEntry
+		protected struct WriterEntry : IEntry, IEquatable<WriterEntry>
 		{
 			/// <summary>
 			/// The offer handler for the request
 			/// </summary>
-			public ITwoPhaseOffer Offer;
+			public readonly ITwoPhaseOffer Offer;
 			/// <summary>
 			/// The callback method for reporting progress
 			/// </summary>
-			public TaskCompletionSource<bool> Source;
+			public readonly TaskCompletionSource<bool> Source;
             /// <summary>
             /// The cancellation token
             /// </summary>
-            public CancellationToken CancelToken;
+            public readonly CancellationToken CancelToken;
 			/// <summary>
 			/// The value being written
 			/// </summary>
-			public T Value;
+			public readonly T Value;
 
 #if !NO_TASK_ASYNCCONTINUE
 			/// <summary>
@@ -295,12 +305,21 @@ namespace CoCoL
                 if (Offer is IExpiringOffer offer)
                     offer.ProbeComplete();
             }
-		}
+            /// <summary>
+            /// Explict disable of compares
+            /// </summary>
+            /// <param name="other">The item to compare with</param>
+            /// <returns>Always throws an exception to avoid compares</returns>
+            public bool Equals(WriterEntry other)
+            {
+                throw new NotImplementedException();
+            }
+        }
 
-		/// <summary>
-		/// The queue with pending readers
-		/// </summary>
-		protected List<ReaderEntry> m_readerQueue = new List<ReaderEntry>(1);
+        /// <summary>
+        /// The queue with pending readers
+        /// </summary>
+        protected List<ReaderEntry> m_readerQueue = new List<ReaderEntry>(1);
 
 		/// <summary>
 		/// The queue with pending writers
@@ -425,7 +444,7 @@ namespace CoCoL
 				accept =
                     (wr.Source == null || wr.Source.Task.Status == TaskStatus.WaitingForActivation)
                     &&
-                    (wr.Offer == null || await wr.Offer.OfferAsync(this));
+                    (wr.Offer == null || await wr.Offer.OfferAsync(this).ConfigureAwait(false));
 			}
 			catch (Exception ex)
 			{
@@ -467,7 +486,7 @@ namespace CoCoL
 				accept =
                     (rd.Source == null || rd.Source.Task.Status == TaskStatus.WaitingForActivation)
                     &&
-                    (rd.Offer == null || await rd.Offer.OfferAsync(this));
+                    (rd.Offer == null || await rd.Offer.OfferAsync(this).ConfigureAwait(false));
 			}
 			catch (Exception ex)
 			{
@@ -517,18 +536,19 @@ namespace CoCoL
 				// is a writer
 				if (asReader)
 				{
-					if (!(offerWriter = await Offer(wr)))
+                    offerWriter = await Offer(wr).ConfigureAwait(false);
+                    if (!offerWriter)
 						continue;
 					
-					offerReader = await Offer(rd);
+					offerReader = await Offer(rd).ConfigureAwait(false);
 				}
 				else
 				{
-                    offerReader = await Offer(rd);
+                    offerReader = await Offer(rd).ConfigureAwait(false);
                     if (!offerReader)
 						continue;
 					
-					offerWriter = await Offer(wr);
+					offerWriter = await Offer(wr).ConfigureAwait(false);
 				}
 
 				// We flip the first entry, so we do not repeatedly
@@ -542,10 +562,10 @@ namespace CoCoL
 				if (!(offerReader && offerWriter))
 				{
 					if (wr.Offer != null && offerWriter)
-						await wr.Offer.WithdrawAsync(this);
+						await wr.Offer.WithdrawAsync(this).ConfigureAwait(false);
 
 					if (rd.Offer != null && offerReader)
-						await rd.Offer.WithdrawAsync(this);
+						await rd.Offer.WithdrawAsync(this).ConfigureAwait(false);
 				}
 				else
 				{
@@ -554,9 +574,9 @@ namespace CoCoL
 					m_readerQueue.RemoveAt(0);
 
 					if (wr.Offer != null)
-						await wr.Offer.CommitAsync(this);
+						await wr.Offer.CommitAsync(this).ConfigureAwait(false);
 					if (rd.Offer != null)
-						await rd.Offer.CommitAsync(this);
+						await rd.Offer.CommitAsync(this).ConfigureAwait(false);
 
 					if (caller == rd.Source.Task || (wr.Source != null && caller == wr.Source.Task))
 						processed = true;
@@ -565,7 +585,7 @@ namespace CoCoL
                     SetResult(wr, true);
 
                     // Release items if there is space in the buffer
-                    await ProcessWriteQueueBufferAfterReadAsync(true);
+                    await ProcessWriteQueueBufferAfterReadAsync(true).ConfigureAwait(false);
 
 					// Adjust the cleanup threshold
 					if (m_writerQueue.Count <= m_writerQueueCleanup - MIN_QUEUE_CLEANUP_THRESHOLD)
@@ -577,7 +597,7 @@ namespace CoCoL
 
 					// If this was the last item before the retirement, 
 					// flush all following and set the retired flag
-					await EmptyQueueIfRetiredAsync(true);
+					await EmptyQueueIfRetiredAsync(true).ConfigureAwait(false);
 				}
 			}
 
@@ -607,11 +627,11 @@ namespace CoCoL
 				if (m_isRetired)
 				{
 					TrySetException(rd, new RetiredException(this.Name));
-                    return await rd.Source.Task;
+                    return await rd.Source.Task.ConfigureAwait(false);
                 }
 
 				m_readerQueue.Add(rd);
-				if (!await MatchReadersAndWriters(true, rd.Source.Task))
+				if (!await MatchReadersAndWriters(true, rd.Source.Task).ConfigureAwait(false))
 				{
                     rd.ProbeCompleted();
 					System.Diagnostics.Debug.Assert(m_readerQueue[m_readerQueue.Count - 1].Source == rd.Source);
@@ -657,15 +677,14 @@ namespace CoCoL
 									var exp = m_readerQueue[m_readerQueue.Count - 1];
 									m_readerQueue.RemoveAt(m_readerQueue.Count - 1);
                                     TrySetException(exp, new ChannelOverflowException(this.Name));
-                                    await rd.Source.Task;
 								}
 
-								return await rd.Source.Task;
+                                break;
 							}
 						}
 
 						// If we have expanded the queue with a new batch, see if we can purge old entries
-						m_readerQueueCleanup = await PerformQueueCleanupAsync(m_readerQueue, true, m_readerQueueCleanup);
+						m_readerQueueCleanup = await PerformQueueCleanupAsync(m_readerQueue, true, m_readerQueueCleanup).ConfigureAwait(false);
 
                         if (rd.Offer is IExpiringOffer && ((IExpiringOffer)rd.Offer).Expires != Timeout.InfiniteDateTime)
                             ExpirationManager.AddExpirationCallback(((IExpiringOffer)rd.Offer).Expires, () => ExpireItemsAsync().FireAndForget());
@@ -673,7 +692,7 @@ namespace CoCoL
 				}
 			}
 
-			return await rd.Source.Task;
+			return await rd.Source.Task.ConfigureAwait(false);
 		}
 
         /// <summary>
@@ -701,12 +720,12 @@ namespace CoCoL
 				if (m_isRetired)
 				{
                     TrySetException(wr, new RetiredException(this.Name));
-                    await wr.Source.Task;
+                    await wr.Source.Task.ConfigureAwait(false);
 					return;
 				}
 
 				m_writerQueue.Add(wr);
-				if (!await MatchReadersAndWriters(false, wr.Source.Task))
+				if (!await MatchReadersAndWriters(false, wr.Source.Task).ConfigureAwait(false))
 				{
 					System.Diagnostics.Debug.Assert(m_writerQueue[m_writerQueue.Count - 1].Source == wr.Source);
 
@@ -716,7 +735,7 @@ namespace CoCoL
 						if (offer == null || await offer.OfferAsync(this))
 						{
 							if (offer != null)
-								await offer.CommitAsync(this);
+								await offer.CommitAsync(this).ConfigureAwait(false);
 
                             m_writerQueue[m_writerQueue.Count - 1] = new WriterEntry(value);
 							TrySetResult(wr, true);
@@ -773,7 +792,6 @@ namespace CoCoL
 											var exp = m_writerQueue[m_writerQueue.Count - 1];
 											m_writerQueue.RemoveAt(m_writerQueue.Count - 1);
                                             TrySetException(exp, new ChannelOverflowException(this.Name));
-                                            await wr.Source.Task;
 										}
 
 										return;
@@ -781,7 +799,7 @@ namespace CoCoL
 							}
 
 							// If we have expanded the queue with a new batch, see if we can purge old entries
-							m_writerQueueCleanup = await PerformQueueCleanupAsync(m_writerQueue, true, m_writerQueueCleanup);
+							m_writerQueueCleanup = await PerformQueueCleanupAsync(m_writerQueue, true, m_writerQueueCleanup).ConfigureAwait(false);
 
                             if (wr.Offer is IExpiringOffer && ((IExpiringOffer)wr.Offer).Expires != Timeout.InfiniteDateTime)
                                 ExpirationManager.AddExpirationCallback(((IExpiringOffer)wr.Offer).Expires, () => ExpireItemsAsync().FireAndForget());
@@ -804,6 +822,7 @@ namespace CoCoL
 		private async Task<int> PerformQueueCleanupAsync<Tx>(List<Tx> queue, bool isLocked, int queueCleanup)
 			where Tx : IEntry
 		{
+            var res = queueCleanup;
 			using(isLocked ? default(AsyncLock.Releaser) : await m_asynclock.LockAsync())
 			{
 				if (queue.Count > queueCleanup)
@@ -811,8 +830,8 @@ namespace CoCoL
 					for (var i = queue.Count - 1; i >= 0; i--)
 					{
 						if (queue[i].Offer != null)
-						if (await queue[i].Offer.OfferAsync(this))
-							await queue[i].Offer.WithdrawAsync(this);
+						if (await queue[i].Offer.OfferAsync(this).ConfigureAwait(false))
+							await queue[i].Offer.WithdrawAsync(this).ConfigureAwait(false);
 						else
 						{
 							TrySetCancelled(queue[i]);
@@ -821,11 +840,11 @@ namespace CoCoL
 					}
 
 					// Prevent repeated cleanup requests
-					queueCleanup = Math.Max(MIN_QUEUE_CLEANUP_THRESHOLD, queue.Count + MIN_QUEUE_CLEANUP_THRESHOLD);
+					res = Math.Max(MIN_QUEUE_CLEANUP_THRESHOLD, queue.Count + MIN_QUEUE_CLEANUP_THRESHOLD);
 				}
 			}
 
-			return queueCleanup;
+			return res;
 		}
 			
 		/// <summary>
@@ -841,10 +860,10 @@ namespace CoCoL
 				{
 					var nextItem = m_writerQueue[m_bufferSize - 1];
 
-					if (nextItem.Offer == null || await nextItem.Offer.OfferAsync(this))
+					if (nextItem.Offer == null || await nextItem.Offer.OfferAsync(this).ConfigureAwait(false))
 					{
 						if (nextItem.Offer != null)
-							await nextItem.Offer.CommitAsync(this);
+							await nextItem.Offer.CommitAsync(this).ConfigureAwait(false);
 
 						SetResult(nextItem, true);
 
@@ -906,7 +925,7 @@ namespace CoCoL
 						}
 				}
 				
-				await EmptyQueueIfRetiredAsync(true);
+				await EmptyQueueIfRetiredAsync(true).ConfigureAwait(false);
 			}
 		}
 
@@ -949,7 +968,7 @@ namespace CoCoL
 
 				// Retire if required
 				if ((asReader && m_joinedReaderCount <= 0) || (!asReader && m_joinedWriterCount <= 0))
-					await RetireAsync(false, true);
+					await RetireAsync(false, true).ConfigureAwait(false);
 			}
 		}
 
@@ -1136,23 +1155,6 @@ namespace CoCoL
 					entry.Source.TrySetResult(value);
 #endif
             }
-        }
-
-        /// <summary>
-        /// Tries to set the source result
-        /// </summary>
-        /// <param name="entry">The entry to signal</param>
-        /// <param name="value">The value to signal</param>
-        private static void TrySetResult(ReaderEntry entry, T value)
-		{
-#if NO_TASK_ASYNCCONTINUE
-            ThreadPool.QueueItem(() => entry.Source.TrySetResult(value));
-#else
-			if (entry.EnqueueContinuation)
-				ThreadPool.QueueItem(() => entry.Source.TrySetResult(value));
-			else
-				entry.Source.TrySetResult(value);
-#endif
         }
 
         /// <summary>
