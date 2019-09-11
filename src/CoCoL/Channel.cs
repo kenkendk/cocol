@@ -794,7 +794,7 @@ namespace CoCoL
                                             TrySetException(exp, new ChannelOverflowException(this.Name));
 										}
 
-										return;
+										break;
 								}
 							}
 
