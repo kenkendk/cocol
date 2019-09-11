@@ -45,11 +45,13 @@ namespace CoCoL
 			}
 			else
 			{
-				// Don't throw the exception here
-				// let the caller access the task
-				try { task.Wait(); } 
-				catch {	}
-			}
+                try { task.Wait(); }
+                catch
+                {
+                    // Don't throw the exception here
+                    // let the caller access the task
+                }
+            }
 
 			return task;
 		}

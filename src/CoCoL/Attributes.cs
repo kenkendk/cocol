@@ -11,7 +11,7 @@ namespace CoCoL
 		/// <summary>
 		/// The number of processes
 		/// </summary>
-		public long ProcessCount = 1;
+		public readonly long ProcessCount;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.ProcessAttribute"/> class.
@@ -51,37 +51,37 @@ namespace CoCoL
 		/// <summary>
 		/// The name of the channel
 		/// </summary>
-		public string Name;
+		public string Name { get; set; }
 
 		/// <summary>
 		/// The buffer size of the channel
 		/// </summary>
-		public int BufferSize;
+		public readonly int BufferSize;
 
 		/// <summary>
 		/// The target scope.
 		/// </summary>
-		public ChannelNameScope TargetScope;
+		public readonly ChannelNameScope TargetScope;
 
 		/// <summary>
 		/// The maximum number of pending readers
 		/// </summary>
-		public int MaxPendingReaders;
+		public readonly int MaxPendingReaders;
 
 		/// <summary>
 		/// The maximum number of pendinger writers
 		/// </summary>
-		public int MaxPendingWriters;
+		public readonly int MaxPendingWriters;
 
 		/// <summary>
 		/// The strategy for selecting pending readers to discard on overflow
 		/// </summary>
-		public QueueOverflowStrategy PendingReadersOverflowStrategy;
+		public readonly QueueOverflowStrategy PendingReadersOverflowStrategy;
 
 		/// <summary>
 		/// The strategy for selecting pending readers to discard on overflow
 		/// </summary>
-		public QueueOverflowStrategy PendingWritersOverflowStrategy;
+		public readonly QueueOverflowStrategy PendingWritersOverflowStrategy;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.ChannelNameAttribute"/> class.
@@ -114,11 +114,11 @@ namespace CoCoL
 		/// <summary>
 		/// The minimum number of readers required for a broadcast to be performed
 		/// </summary>
-		public int InitialBarrierSize = -1;
+		public readonly int InitialBarrierSize;
 		/// <summary>
 		/// The minimum number of readers required for the first broadcast to be performed
 		/// </summary>
-		public int MinimumReaders = -1;
+		public readonly int MinimumReaders;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.BroadcastChannelNameAttribute"/> class.

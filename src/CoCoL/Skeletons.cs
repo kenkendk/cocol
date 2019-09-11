@@ -228,8 +228,11 @@ namespace CoCoL
                                 {
                                     var any = false;
                                     for (var i = lst.Count - 1; i >= 0; i--)
-                                        if (any |= await lst[i].IsRetiredAsync)
+                                    {
+                                        any |= await lst[i].IsRetiredAsync;
+                                        if (any)
                                             lst.RemoveAt(i);
+                                    }
 
                                     if (lst.Count > 0 && any)
                                         continue;

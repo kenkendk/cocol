@@ -524,7 +524,8 @@ namespace CoCoL
 				}
 				else
 				{
-					if (!(offerReader = await Offer(rd)))
+                    offerReader = await Offer(rd);
+                    if (!offerReader)
 						continue;
 					
 					offerWriter = await Offer(wr);

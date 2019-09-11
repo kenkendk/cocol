@@ -143,7 +143,7 @@ namespace CoCoL
 						var writeInterface = new Type[] { channelType }.Union(channelType.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IWriteChannel<>))).FirstOrDefault();
 
 						if (readInterface == null && writeInterface == null)
-							throw new Exception(string.Format("Item {0} had a channelname attribute but is not of the channel type", c.Key.Name));
+							throw new ArgumentException(string.Format("Item {0} had a channelname attribute but is not of the channel type", c.Key.Name));
 
 						var isOnlyReadOrWrite = (readInterface == null) != (writeInterface == null);
 

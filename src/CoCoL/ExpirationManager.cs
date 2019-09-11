@@ -67,20 +67,23 @@ namespace CoCoL
 			/// </summary>
 			private Task m_timerTask;
 
-			/// <summary>
-			/// Registers a method for callback
-			/// </summary>
-			/// <param name="expires">The time when the expiration occurs</param>
-			/// <param name="callback">The method to call on expiration</param>
-			public void AddExpirationCallback(DateTime expires, Action callback)
+            /// <summary>
+            /// Registers a method for callback
+            /// </summary>
+            /// <param name="expires">The time when the expiration occurs</param>
+            /// <param name="callback">The method to call on expiration</param>
+            public void AddExpirationCallback(DateTime expires, Action callback)
 			{
 				lock (m_lock)
 				{
 					var empty = m_expiryTable.Count == 0;
 
 					List<Action> prev;
-					if (!m_expiryTable.TryGetValue(expires, out prev))
-						m_expiryTable.Add(expires, prev = new List<Action>(1));
+                    if (!m_expiryTable.TryGetValue(expires, out prev))
+                    {
+                        prev = new List<Action>(1);
+                        m_expiryTable.Add(expires, prev);
+                    }
 					prev.Add(callback);
 
 					if (expires < m_nextInvoke || empty)
@@ -106,8 +109,8 @@ namespace CoCoL
 						if (m_timerToken != null && !m_timerToken.IsCancellationRequested)
 							m_timerToken.Cancel();
 
-						(m_timerTask = Task.Delay(TimeSpan.FromTicks(Math.Max(duration, MIN_ALLOWED_WAIT)), (m_timerToken = new CancellationTokenSource()).Token))
-							.ContinueWith(RunTimer, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnRanToCompletion);
+                        m_timerTask = Task.Delay(TimeSpan.FromTicks(Math.Max(duration, MIN_ALLOWED_WAIT)), (m_timerToken = new CancellationTokenSource()).Token);
+                        m_timerTask.ContinueWith(RunTimer, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnRanToCompletion);
 					}
 				}
 			}

@@ -181,8 +181,7 @@ namespace CoCoL
 
 			if (m_channel != null)
 				try { m_channel.Retire(); }
-			catch { }
-			finally { }
+			    catch { /* Ignore retire errors */ }
 
 			AutomationExtensions.RetireAllChannels(this);
 		}

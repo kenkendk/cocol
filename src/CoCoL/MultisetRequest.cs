@@ -35,7 +35,7 @@ namespace CoCoL
 		/// <summary>
 		/// The result value
 		/// </summary>
-		public T Value;
+		public T Value { get; set; }
 		/// <summary>
 		/// The channel being read from
 		/// </summary>
