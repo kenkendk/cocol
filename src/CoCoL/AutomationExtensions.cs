@@ -234,6 +234,7 @@ namespace CoCoL
 						}
 						catch
 						{
+							// Ignore fileds that cannot be accessed
 						}
 
 						yield return new KeyValuePair<MemberInfo, T>(f, val);

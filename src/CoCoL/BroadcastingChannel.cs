@@ -194,7 +194,7 @@ namespace CoCoL
 						throw new ArgumentOutOfRangeException(string.Format("The value requests {0} readers waiting, but the channel only allows {1} waiting readers", m_initialBarrierSize, m_maxPendingReaders));
 				
 					m_initialBarrierSize = value;
-					await MatchReadersAndWriters(true, null);
+					await MatchReadersAndWriters(true, null).ConfigureAwait(false);
 				}
 		}
 	}

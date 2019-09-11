@@ -21,6 +21,9 @@ namespace CoCoL
 		/// <returns>The index of the key in the list, or the bitwise inverse of the closest match</returns>
 		private int Find(TKey key)
 		{
+			// TKey can be a struct, in which case this statement does nothing.
+			// But we need it for reference types to avoid a null-reference
+			// exception when comparing keys
 			if (key == null)
 				throw new ArgumentNullException(nameof(key));
 

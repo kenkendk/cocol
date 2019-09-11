@@ -26,7 +26,7 @@ namespace CoCoL
         /// <summary>
         /// Initializes a new instance of the <see cref="CoCoL.SingleThreadedWorker"/> class.
         /// </summary>
-        public SingleThreadedWorker()
+        protected SingleThreadedWorker()
         {
             AutomationExtensions.AutoWireChannels(this, null);
             m_channel = ChannelManager.CreateChannel<Func<Task>>();

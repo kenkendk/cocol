@@ -100,14 +100,15 @@ namespace CoCoL.Network
 		public static void TransmitRequest(PendingNetworkRequest req)
 		{
 			if (_connector == null)
+			{
 				lock (_lock)
 					if (_connector == null)
 					{
 						_connector = new NetworkClientConnector(NameServerHostname, NameServerPort);
 						_connectorTask = _connector.RunAsync();
 					}
-			
-				_connector.Requests.Write(req);
+			}
+			_connector.Requests.Write(req);
 		}
 
 		/// <summary>

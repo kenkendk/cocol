@@ -27,7 +27,7 @@ namespace CoCoL
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.ChannelEndBase"/> class.
 		/// </summary>
-		public ChannelEndBase(IRetireAbleChannel target, bool isReader)
+		protected ChannelEndBase(IRetireAbleChannel target, bool isReader)
 		{
 			if (target == null)
 				throw new ArgumentNullException("target");

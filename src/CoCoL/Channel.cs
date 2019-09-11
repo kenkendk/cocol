@@ -671,7 +671,7 @@ namespace CoCoL
 
                                 break;
 
-							    case QueueOverflowStrategy.Reject:
+							    //case QueueOverflowStrategy.Reject:
 							    default:
 								{
 									var exp = m_readerQueue[m_readerQueue.Count - 1];

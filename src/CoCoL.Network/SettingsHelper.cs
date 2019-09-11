@@ -212,6 +212,7 @@ namespace CoCoL.Network
 					reportmethod(string.Format("Unmatched option: {0}", n));
 				else
 				{
+					// Remove the parsed argument and adjust the loop counter
 					args.RemoveAt(i);
 					i--;
 

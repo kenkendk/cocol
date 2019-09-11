@@ -23,7 +23,7 @@ namespace CoCoL.Network
 		/// <summary>
 		/// The channel where the requests are made
 		/// </summary>
-		private IWriteChannelEnd<T> m_parent;
+		private readonly IWriteChannelEnd<T> m_parent;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.Network.LatencyHidingWriter&lt;T&gt;"/> class.

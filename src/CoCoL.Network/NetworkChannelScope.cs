@@ -57,7 +57,7 @@ namespace CoCoL.Network
         /// <returns>The profiling-wrapped channel.</returns>
         /// <param name="attribute">The channel attribute.</param>
         /// <typeparam name="T">The channel type parameter.</typeparam>
-        private IChannel<T> CreateNetworkChannel<T>(ChannelNameAttribute attribute)
+        private static IChannel<T> CreateNetworkChannel<T>(ChannelNameAttribute attribute)
         {
             // We do not support annoymous channels, so we assign a random ID
             if (string.IsNullOrWhiteSpace(attribute.Name))
