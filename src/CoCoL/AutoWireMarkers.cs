@@ -90,11 +90,11 @@ namespace CoCoL
         /// <summary>
         /// Gets the channel as a write request
         /// </summary>
-        public readonly IWriteChannel<T> ForWrite;
+        public IWriteChannel<T> ForWrite { get; private set; }
         /// <summary>
         /// Gets the channel as a read request
         /// </summary>
-        public readonly IReadChannel<T> ForRead;
+        public IReadChannel<T> ForRead { get; private set; }
 
         /// <summary>
         /// The attribute representing this marker

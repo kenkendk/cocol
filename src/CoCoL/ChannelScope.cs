@@ -105,7 +105,7 @@ namespace CoCoL
 		/// <param name="datatype">The type of data communicated through the channel.</param>
 		public IRetireAbleChannel GetOrCreate(ChannelNameAttribute attribute, Type datatype)
 		{
-			return (IRetireAbleChannel)typeof(ChannelScope).GetMethod("GetOrCreate", new Type[] { typeof(ChannelNameAttribute) })
+			return (IRetireAbleChannel)typeof(ChannelScope).GetMethod("GetOrCreate", new [] { typeof(ChannelNameAttribute) })
 			   .MakeGenericMethod(datatype)
                .Invoke(this, new object[] { attribute });
 		}
@@ -424,7 +424,7 @@ namespace CoCoL
 					{
 						ChannelScope sc;
 						if (!__scopes.TryGetValue(cur, out sc))
-							throw new InvalidOperationException(string.Format("Unable to find scope in lookup table, this may be caused by attempting to transport call contexts between AppDomains (eg. with remoting calls)"));
+							throw new InvalidOperationException("Unable to find scope in lookup table, this may be caused by attempting to transport call contexts between AppDomains (eg. with remoting calls)");
 
 						return sc;
 					}
@@ -492,7 +492,7 @@ namespace CoCoL
         /// </summary>
         /// <param name="creator">The creator method to use</param>
         /// <param name="names">The names of the channels to make profiled</param>
-        public PrefixCreateChannelScope(Func<ChannelScope, ChannelNameAttribute, Type, IUntypedChannel> creator, params INamedItem[] names)
+        protected PrefixCreateChannelScope(Func<ChannelScope, ChannelNameAttribute, Type, IUntypedChannel> creator, params INamedItem[] names)
             : this(creator, names.Where(x => x != null && !string.IsNullOrWhiteSpace(x.Name)).Select(x => x.Name).ToArray())
         {
         }

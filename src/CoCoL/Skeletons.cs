@@ -29,7 +29,7 @@ namespace CoCoL
                 async self =>
                 {
                     foreach (var n in data)
-                        await target.WriteAsync(n);
+                        await target.WriteAsync(n).ConfigureAwait(false);
                 }
            );
         }
@@ -60,7 +60,7 @@ namespace CoCoL
                     while (true)
                     {
                         // Wait for something to happen
-                        var t = await Task.WhenAny(pending.Where(x => x != null));
+                        var t = await Task.WhenAny(pending.Where(x => x != null)).ConfigureAwait(false);
 
                         // If the reader completed
                         if (t == pending[0])
@@ -74,7 +74,7 @@ namespace CoCoL
                                     pending[0] = Task.Run(() => self.Source.ReadAsync());
 
                                 // Unwrap the data
-                                var data = await (Task<T>)t;
+                                var data = await ((Task<T>)t).ConfigureAwait(false);
 
                                 // Add the handler process to the queue
                                 pending.Add(Task.Run(() => handler(data)));
@@ -82,10 +82,10 @@ namespace CoCoL
                             // Otherwise we are probably being terminated
                             else
                             {
-                                await Task.WhenAll(pending.Skip(1));
+                                await Task.WhenAll(pending.Skip(1)).ConfigureAwait(false);
 
                                 // Re-throw the error
-                                await t;
+                                await t.ConfigureAwait(false);
                             }
                         }
 
@@ -139,7 +139,7 @@ namespace CoCoL
             if (transform == null)
                 throw new ArgumentNullException(nameof(transform));
             
-            return CollectAsync(input, async data => await output.WriteAsync(await transform(data)), maxparallel);
+            return CollectAsync(input, async data => await output.WriteAsync(await transform(data).ConfigureAwait(false)).ConfigureAwait(false), maxparallel);
         }
 
         /// <summary>
@@ -179,14 +179,14 @@ namespace CoCoL
                     if (policy == ScatterGatherPolicy.Any)
                     {
                         while (true)
-                            await MultiChannelAccess.WriteToAnyAsync(await self.Input.ReadAsync(), self.Output);
+                            await MultiChannelAccess.WriteToAnyAsync(await self.Input.ReadAsync().ConfigureAwait(false), self.Output).ConfigureAwait(false);
                     }
                     else
                     {
                         var ix = 0;
                         while (true)
                         {
-                            await self.Output[ix].WriteAsync(await self.Input.ReadAsync());
+                            await self.Output[ix].WriteAsync(await self.Input.ReadAsync().ConfigureAwait(false)).ConfigureAwait(false);
                             ix = (ix + 1) % output.Length;
                         }
                     }
@@ -220,7 +220,7 @@ namespace CoCoL
                         {
                             try
                             {
-                                await self.Output.WriteAsync((await lst.ReadFromAnyAsync()).Value);
+                                await self.Output.WriteAsync((await lst.ReadFromAnyAsync().ConfigureAwait(false)).Value).ConfigureAwait(false);
                             }
                             catch (Exception ex)
                             {
@@ -229,7 +229,7 @@ namespace CoCoL
                                     var any = false;
                                     for (var i = lst.Count - 1; i >= 0; i--)
                                     {
-                                        any |= await lst[i].IsRetiredAsync;
+                                        any |= await lst[i].IsRetiredAsync.ConfigureAwait(false);
                                         if (any)
                                             lst.RemoveAt(i);
                                     }
@@ -248,7 +248,7 @@ namespace CoCoL
                             {
                                 try
                                 {
-                                    await self.Output.WriteAsync(await lst[i].ReadAsync());
+                                    await self.Output.WriteAsync(await lst[i].ReadAsync().ConfigureAwait(false)).ConfigureAwait(false);
                                 }
                                 catch (Exception ex)
                                 {
@@ -302,9 +302,9 @@ namespace CoCoL
                     {
                         var readA = self.InputA.ReadAsync();
                         var readB = self.InputB.ReadAsync();
-                        var vA = await readA;
-                        var vB = await readB;
-                        await output.WriteAsync(method(vA, vB));
+                        var vA = await readA.ConfigureAwait(false);
+                        var vB = await readB.ConfigureAwait(false);
+                        await output.WriteAsync(method(vA, vB)).ConfigureAwait(false);
                     }
                 }
             );
@@ -345,9 +345,9 @@ namespace CoCoL
                     {
                         var readA = self.InputA.ReadAsync();
                         var readB = self.InputB.ReadAsync();
-                        var vA = await readA;
-                        var vB = await readB;
-                        await output.WriteAsync(await method(vA, vB));
+                        var vA = await readA.ConfigureAwait(false);
+                        var vB = await readB.ConfigureAwait(false);
+                        await output.WriteAsync(await method(vA, vB)).ConfigureAwait(false);
                     }
                 }
             );
@@ -386,10 +386,10 @@ namespace CoCoL
                 {
                     while (true)
                     {
-                        var n = method(await self.Input.ReadAsync());
+                        var n = method(await self.Input.ReadAsync().ConfigureAwait(false));
                         var writeA = self.OutputA.WriteAsync(n.Item1);
-                        await self.OutputB.WriteAsync(n.Item2);
-                        await writeA; 
+                        await self.OutputB.WriteAsync(n.Item2).ConfigureAwait(false);
+                        await writeA.ConfigureAwait(false); 
                     }
                 }
             );
@@ -428,10 +428,10 @@ namespace CoCoL
                 {
                     while (true)
                     {
-                        var n = await method(await self.Input.ReadAsync());
+                        var n = await method(await self.Input.ReadAsync().ConfigureAwait(false)).ConfigureAwait(false);
                         var writeA = self.OutputA.WriteAsync(n.Item1);
-                        await self.OutputB.WriteAsync(n.Item2);
-                        await writeA;
+                        await self.OutputB.WriteAsync(n.Item2).ConfigureAwait(false);
+                        await writeA.ConfigureAwait(false);
                     }
                 }
             );

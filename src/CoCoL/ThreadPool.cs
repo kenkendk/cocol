@@ -113,6 +113,7 @@ namespace CoCoL
 		/// so the garbage collector can reclaim the memory that the <see cref="CoCoL.SystemThreadPoolWrapper"/> was occupying.</remarks>
 		public void Dispose()
 		{
+            // No resources need to be disposed
 		}
 	}
 
@@ -124,7 +125,7 @@ namespace CoCoL
 		/// <summary>
 		/// The list of pending work
 		/// </summary>
-		private Queue<Action> m_work = new Queue<Action>();
+		private readonly Queue<Action> m_work = new Queue<Action>();
 
 		/// <summary>
 		/// The locking object
@@ -220,18 +221,19 @@ namespace CoCoL
 		public Task QueueTask(Action a)
 		{
 			var tcs = new TaskCompletionSource<bool>();
-			return QueueTask(() =>
+			QueueItem(() => {
+				try
+				{ 
+					a();
+					tcs.SetResult(true);
+				}
+				catch(Exception ex)
 				{
-					try
-					{ 
-						a();
-						tcs.SetResult(true);
-					}
-					catch(Exception ex)
-					{
-						tcs.TrySetException(ex);
-					}
-				});
+					tcs.TrySetException(ex);
+				}
+			});
+
+            return tcs.Task;
 		}
 
 		/// <summary>
@@ -253,7 +255,7 @@ namespace CoCoL
 			var endttime = DateTime.Now + waittime;
 			while (DateTime.Now < endttime)
 			{
-                await Task.Delay(100);
+                await Task.Delay(100).ConfigureAwait(false);
 				lock (m_lock)
 					if (m_instances == 0)
 						return;
