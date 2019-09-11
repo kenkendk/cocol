@@ -208,7 +208,7 @@ namespace CoCoL
 		/// <typeparam name="T">The channel data type.</typeparam>
 		public static async Task<MultisetResult<T>> ReadFromAnyAsync<T>(Action<object> callback, IEnumerable<IReadChannel<T>> channels, TimeSpan timeout, MultiChannelPriority priority)
 		{
-			var res = await ReadOrWriteAnyAsync<T>(callback, channels.Select(x => x.RequestRead()), timeout, priority);
+			var res = await ReadOrWriteAnyAsync<T>(callback, channels.Select(x => x.RequestRead()), timeout, priority).ConfigureAwait(false);
 			return new MultisetResult<T>(res.Value, res.ReadChannel);
 		}
 		#endregion
@@ -347,7 +347,7 @@ namespace CoCoL
 		/// <typeparam name="T">The channel data type.</typeparam>
 		public static async Task<IWriteChannel<T>> WriteToAnyAsync<T>(Action<object> callback, T value, IEnumerable<IWriteChannel<T>> channels, TimeSpan timeout, MultiChannelPriority priority)
 		{
-			return (await ReadOrWriteAnyAsync<T>(callback, channels.Select(x => x.RequestWrite(value)), timeout, priority)).WriteChannel;
+			return (await ReadOrWriteAnyAsync<T>(callback, channels.Select(x => x.RequestWrite(value)), timeout, priority).ConfigureAwait(false)).WriteChannel;
 		}
 		#endregion
 

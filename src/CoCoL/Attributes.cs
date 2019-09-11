@@ -11,7 +11,7 @@ namespace CoCoL
 		/// <summary>
 		/// The number of processes
 		/// </summary>
-		public readonly long ProcessCount;
+		public long ProcessCount { get; private set; } = -1;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.ProcessAttribute"/> class.
@@ -56,44 +56,44 @@ namespace CoCoL
 		/// <summary>
 		/// The buffer size of the channel
 		/// </summary>
-		public readonly int BufferSize;
+		public int BufferSize { get; private set; }
 
 		/// <summary>
 		/// The target scope.
 		/// </summary>
-		public readonly ChannelNameScope TargetScope;
+		public ChannelNameScope TargetScope { get; private set; }
 
 		/// <summary>
 		/// The maximum number of pending readers
 		/// </summary>
-		public readonly int MaxPendingReaders;
+		public int MaxPendingReaders { get; private set; }
 
-		/// <summary>
-		/// The maximum number of pendinger writers
-		/// </summary>
-		public readonly int MaxPendingWriters;
+        /// <summary>
+        /// The maximum number of pendinger writers
+        /// </summary>
+        public int MaxPendingWriters { get; private set; }
 
-		/// <summary>
-		/// The strategy for selecting pending readers to discard on overflow
-		/// </summary>
-		public readonly QueueOverflowStrategy PendingReadersOverflowStrategy;
+        /// <summary>
+        /// The strategy for selecting pending readers to discard on overflow
+        /// </summary>
+        public QueueOverflowStrategy PendingReadersOverflowStrategy { get; private set; }
 
-		/// <summary>
-		/// The strategy for selecting pending readers to discard on overflow
-		/// </summary>
-		public readonly QueueOverflowStrategy PendingWritersOverflowStrategy;
+        /// <summary>
+        /// The strategy for selecting pending readers to discard on overflow
+        /// </summary>
+        public QueueOverflowStrategy PendingWritersOverflowStrategy { get; private set; }
 
-		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.ChannelNameAttribute"/> class.
-		/// </summary>
-		/// <param name="name">The name of the channel.</param>
-		/// <param name="buffersize">The size of the buffer on the created channel</param>
-		/// <param name="targetScope">The scope where the channel is created</param>
-		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
-		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
-		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
-		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
-		public ChannelNameAttribute(string name, int buffersize = 0, ChannelNameScope targetScope = ChannelNameScope.Local, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CoCoL.ChannelNameAttribute"/> class.
+        /// </summary>
+        /// <param name="name">The name of the channel.</param>
+        /// <param name="buffersize">The size of the buffer on the created channel</param>
+        /// <param name="targetScope">The scope where the channel is created</param>
+        /// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
+        /// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
+        /// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
+        /// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
+        public ChannelNameAttribute(string name, int buffersize = 0, ChannelNameScope targetScope = ChannelNameScope.Local, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject)
 		{
 			Name = name;
 			BufferSize = buffersize;
@@ -114,25 +114,25 @@ namespace CoCoL
 		/// <summary>
 		/// The minimum number of readers required for a broadcast to be performed
 		/// </summary>
-		public readonly int InitialBarrierSize;
-		/// <summary>
-		/// The minimum number of readers required for the first broadcast to be performed
-		/// </summary>
-		public readonly int MinimumReaders;
+		public int InitialBarrierSize { get; private set; }
+        /// <summary>
+        /// The minimum number of readers required for the first broadcast to be performed
+        /// </summary>
+        public int MinimumReaders { get; private set; }
 
-		/// <summary>
-		/// Initializes a new instance of the <see cref="CoCoL.BroadcastChannelNameAttribute"/> class.
-		/// </summary>
-		/// <param name="name">The name of the channel.</param>
-		/// <param name="buffersize">The size of the buffer on the created channel</param>
-		/// <param name="targetScope">The scope where the channel is created</param>
-		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
-		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
-		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
-		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
-		/// <param name="initialBarrierSize">The number of readers required on the channel before sending the first broadcast</param>
-		/// <param name="minimumReaders">The minimum number of readers required on the channel, before a broadcast can be performed</param>
-		public BroadcastChannelNameAttribute(string name, int buffersize = 0, ChannelNameScope targetScope = ChannelNameScope.Local, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject, int initialBarrierSize = -1, int minimumReaders = -1)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CoCoL.BroadcastChannelNameAttribute"/> class.
+        /// </summary>
+        /// <param name="name">The name of the channel.</param>
+        /// <param name="buffersize">The size of the buffer on the created channel</param>
+        /// <param name="targetScope">The scope where the channel is created</param>
+        /// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
+        /// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
+        /// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
+        /// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
+        /// <param name="initialBarrierSize">The number of readers required on the channel before sending the first broadcast</param>
+        /// <param name="minimumReaders">The minimum number of readers required on the channel, before a broadcast can be performed</param>
+        public BroadcastChannelNameAttribute(string name, int buffersize = 0, ChannelNameScope targetScope = ChannelNameScope.Local, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject, int initialBarrierSize = -1, int minimumReaders = -1)
 			: base(name, buffersize, targetScope, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy)
 		{
 			InitialBarrierSize = initialBarrierSize;

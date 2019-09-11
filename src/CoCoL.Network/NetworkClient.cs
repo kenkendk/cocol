@@ -111,7 +111,7 @@ namespace CoCoL.Network
 		/// <summary>
 		/// The TCP connection that this instance communicates over
 		/// </summary>
-		private TcpClient m_socket;
+		private readonly TcpClient m_socket;
 
 		/// <summary>
 		/// The network stream used to read and write messages
@@ -121,16 +121,16 @@ namespace CoCoL.Network
 		/// <summary>
 		/// The write request raw channel
 		/// </summary>
-		private IChannel<PendingNetworkRequest> m_writeRequests;
+		private readonly IChannel<PendingNetworkRequest> m_writeRequests;
 		/// <summary>
 		/// The read request raw channel
 		/// </summary>
-		private IChannel<PendingNetworkRequest> m_readRequests;
+		private readonly IChannel<PendingNetworkRequest> m_readRequests;
 
 		/// <summary>
 		/// An ID for this network connection, used for easy identificaiton while debugging
 		/// </summary>
-		public string SelfID = Guid.NewGuid().ToString("N");
+		public string SelfID { get; set; } = Guid.NewGuid().ToString("N");
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.Network.NetworkClient"/> class.
@@ -165,16 +165,15 @@ namespace CoCoL.Network
 			if (firstComplete.IsFaulted || firstComplete.IsCanceled)
 				await firstComplete;
 
-			await recv;
+			await recv.ConfigureAwait(false);
 
 			if (rbuf[1] != SOCKET_PROTOCOL_MAJOR_VERSION || rbuf[2] != SOCKET_PROTOCOL_MINOR_VERSION)
 				throw new InvalidDataException(string.Format("Remote socket has version {0}.{1} but {2}.{3} was expected", rbuf[1], rbuf[2], SOCKET_PROTOCOL_MAJOR_VERSION, SOCKET_PROTOCOL_MINOR_VERSION));
 
 			var headlen = rbuf[0];
-			await ForceReadAsync(m_stream, rbuf, 3, rbuf[0] - 3);
+			await ForceReadAsync(m_stream, rbuf, 3, rbuf[0] - 3).ConfigureAwait(false);
 
 			var magiclen = rbuf[3];
-			//if (!ArraysEqual(SOCKET_MAGIC_HEADER, rbuf, 4))
 			if (!rbuf.Skip(4).Take(magiclen).SequenceEqual(SOCKET_MAGIC_HEADER))
 				throw new InvalidDataException("Magic header was incorrect");
 
@@ -184,28 +183,6 @@ namespace CoCoL.Network
 
 			if (serializerlen + magiclen + 5 != headlen)
 				throw new InvalidDataException("Extra data in header not supported");
-		}
-
-		/// <summary>
-		/// Helper method to compare if a subset of two methods are equal
-		/// </summary>
-		/// <returns><c>true</c>, if the two arrays are equal, <c>false</c> otherwise.</returns>
-		/// <param name="src">The fixed length source.</param>
-		/// <param name="trg">The target array which may be larger.</param>
-		/// <param name="offset">The offset into the array.</param>
-		/// <typeparam name="T">The type of the array elements.</typeparam>
-		private static bool ArraysEqual<T>(T[] src, T[] trg, int offset)
-		{
-			var cmp = EqualityComparer<T>.Default;
-
-			if (src.Length > trg.Length + offset + src.Length)
-				return false;
-
-			for (var i = 0; i < src.Length; i++)
-				if (!(cmp.Equals(src[i], trg[i + offset])))
-					return false;
-
-			return true;
 		}
 
 		/// <summary>
@@ -221,7 +198,7 @@ namespace CoCoL.Network
 			var remain = len;
 			while (remain > 0)
 			{
-				var read = await stream.ReadAsync(buffer, offset, remain);
+				var read = await stream.ReadAsync(buffer, offset, remain).ConfigureAwait(false);
 				if (read == 0)
 					throw new System.IO.EndOfStreamException("Premature EOS");
 
@@ -241,24 +218,24 @@ namespace CoCoL.Network
 			try
 			{
 				m_stream = m_socket.GetStream();
-				await NegotiateConnection();
+				await NegotiateConnection().ConfigureAwait(false);
 			}
 			catch
 			{
 				try { m_stream.Dispose(); }
-				catch { }
+				catch { /* Ignore shutdown errors, report original error */ }
 				finally { m_stream = null; }
 
 				try { m_socket.Close(); }
-				catch { }
+                catch { /* Ignore shutdown errors, report original error */ }
 
-				try { m_readRequests.Retire(); }
-				catch { }
+                try { m_readRequests.Retire(); }
+                catch { /* Ignore shutdown errors, report original error */ }
 
-				try { m_writeRequests.Retire(); }
-				catch { }
+                try { m_writeRequests.Retire(); }
+                catch { /* Ignore shutdown errors, report original error */ }
 
-				throw;
+                throw;
 			}
 
 			ReaderProcess(m_socket, m_stream, m_readRequests.AsWriteOnly(), SelfID).FireAndForget();
@@ -287,20 +264,20 @@ namespace CoCoL.Network
 					while (true)
 					{
 						LOG.DebugFormat("{0}: Waiting for data from stream", selfid);
-						await ForceReadAsync(stream, buffer, 0, 8);
+						await ForceReadAsync(stream, buffer, 0, 8).ConfigureAwait(false);
 						LOG.DebugFormat("{0}: Not waiting for data from stream", selfid);
 
 						var streamlen = BitConverter.ToUInt64(buffer, 0);
 						if (streamlen > MAX_MESSAGE_SIZE)
 							throw new InvalidDataException("Perhaps too big data?");
 
-						await ForceReadAsync(stream, buffer, 0, 2);
+						await ForceReadAsync(stream, buffer, 0, 2).ConfigureAwait(false);
 
 						var headlen = BitConverter.ToUInt16(buffer, 0);
 						if (headlen > buffer.Length || headlen > streamlen)
 							throw new InvalidDataException("Perhaps too big data?");
 
-						await ForceReadAsync(stream, buffer, 0, headlen);
+						await ForceReadAsync(stream, buffer, 0, headlen).ConfigureAwait(false);
 
 						RequestHeader header;
 						using(var ms = new MemoryStream(buffer, 0, headlen))
@@ -310,7 +287,7 @@ namespace CoCoL.Network
 
 						LOG.DebugFormat("{4}: Got {0} - {1} request with {2} bytes from {3}", header.RequestID, header.RequestType, streamlen, client.Client.RemoteEndPoint, selfid);
 
-						await ForceReadAsync(stream, buffer, 0, 8);
+						await ForceReadAsync(stream, buffer, 0, 8).ConfigureAwait(false);
 
 						var payloadlen = BitConverter.ToUInt64(buffer, 0);
 						if (payloadlen > MAX_MESSAGE_SIZE || payloadlen > streamlen - headlen)
@@ -320,7 +297,7 @@ namespace CoCoL.Network
 						if (header.PayloadClassName != null)
 						{
 							var bf = payloadlen <= (ulong)buffer.Length ? buffer : new byte[payloadlen];
-							await ForceReadAsync(stream, bf, 0, (int)payloadlen);
+							await ForceReadAsync(stream, bf, 0, (int)payloadlen).ConfigureAwait(false);
 
 							var objtype = Type.GetType(header.PayloadClassName);
 							if (objtype == null)
@@ -344,7 +321,7 @@ namespace CoCoL.Network
 						);
 
 						LOG.DebugFormat("{2}: Forwarding {0} - {1} request", header.RequestID, header.RequestType, selfid);
-						await channel.WriteAsync(pnrq);
+						await channel.WriteAsync(pnrq).ConfigureAwait(false);
 						LOG.DebugFormat("{2}: Forwarded {0} - {1} request", header.RequestID, header.RequestType, selfid);
 					}
 				}
@@ -382,7 +359,7 @@ namespace CoCoL.Network
 				{
 					while (true)
 					{
-						var prnq = await channel.ReadAsync();
+						var prnq = await channel.ReadAsync().ConfigureAwait(false);
 						var header = new RequestHeader() {
 							ChannelID = prnq.ChannelID,
 							ChannelDataType = prnq.ChannelDataType.AssemblyQualifiedName,
@@ -406,7 +383,7 @@ namespace CoCoL.Network
 								json.Serialize(jw, header);
 
 								jw.Flush();
-								await tw.FlushAsync();
+								await tw.FlushAsync().ConfigureAwait(false);
 
 								headlen = (ushort)(ms.Position - 8 - 2);
 							}
@@ -428,7 +405,7 @@ namespace CoCoL.Network
 								json.Serialize(jw, prnq.Value);
 
 								jw.Flush();
-								await tw.FlushAsync();
+								await tw.FlushAsync().ConfigureAwait(false);
 
 								payloadlen = (ulong)ms.Length;
 								ms.Position = 0;
@@ -444,12 +421,12 @@ namespace CoCoL.Network
 							Array.Copy(BitConverter.GetBytes(payloadlen), 0, headbuffer, 8 + 2 + headlen, 8);
 
 							LOG.DebugFormat("{2}: Sending {0} - {1} request", prnq.RequestID, prnq.RequestType, selfid);
-							await stream.WriteAsync(headbuffer, 0, headlen + 8 + 2 + 8);
+							await stream.WriteAsync(headbuffer, 0, headlen + 8 + 2 + 8).ConfigureAwait(false);
 							if (payloadlen != 0)
-								await ms.CopyToAsync(stream);
+								await ms.CopyToAsync(stream).ConfigureAwait(false);
 							
 							LOG.DebugFormat("{4}: Sent {0} - {1} request with {2} bytes to {3}", prnq.RequestID, prnq.RequestType, packlen, client.Client.RemoteEndPoint, selfid);
-							await stream.FlushAsync();
+							await stream.FlushAsync().ConfigureAwait(false);
 						}
 					}
 				}
@@ -495,11 +472,11 @@ namespace CoCoL.Network
 		public void Dispose()
 		{
 			try { m_readRequests.Retire(); }
-			catch { }
+			catch { /* Ignore shutdown errors */ }
 
 			try { m_writeRequests.Retire(); }
-			catch { }
-		}
+			catch { /* Ignore shutdown errors */ }
+        }
 	}
 }
 

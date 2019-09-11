@@ -35,7 +35,7 @@ namespace CoCoL.Network
 				CustomParserName, 
 				BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.IgnoreCase, 
 				null,
-				new Type[] { typeof(string) },
+				new [] { typeof(string) },
 				null);
 
 			if (m == null)
@@ -112,8 +112,9 @@ namespace CoCoL.Network
 		/// <returns>The list of commandline arguments not parsed</returns>
 		/// <typeparam name="T">The data type of the item to parse.</typeparam>
 		public static bool Parse<T>(List<string> args, T target, bool throwonerror = true)
-		{
-			return Parse(args, target, x => Console.WriteLine(x));
+            where T : class
+        {
+            return Parse(args, target, Console.WriteLine);
 		}
 
 		/// <summary>
@@ -123,8 +124,9 @@ namespace CoCoL.Network
 		/// <param name="target">The instance target.</param>
 		/// <typeparam name="T">The type of the target.</typeparam>
 		private static Dictionary<string, FieldInfo> GetConfig<T>(T target)
-		{
-			var res = new Dictionary<string, FieldInfo>();
+            where T : class
+        {
+            var res = new Dictionary<string, FieldInfo>();
 			var type = target == null ? typeof(T) : target.GetType();
 			foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | (target == null ? BindingFlags.Static : BindingFlags.Instance) | BindingFlags.IgnoreCase))
 			{
@@ -149,63 +151,65 @@ namespace CoCoL.Network
 		/// </summary>
 		/// <returns>The string.</returns>
 		public static string AsString<T>(T self)
-		{
-			return string.Join(", ", (self == null ? typeof(T) : self.GetType()).GetFields(BindingFlags.Public | BindingFlags.NonPublic | (self == null ? BindingFlags.Static : BindingFlags.Instance)).Select(x => string.Format("{0}={1}", x.Name, x.GetValue(null))));
+            where T : class
+        {
+            return string.Join(", ", (self == null ? typeof(T) : self.GetType()).GetFields(BindingFlags.Public | BindingFlags.NonPublic | (self == null ? BindingFlags.Static : BindingFlags.Instance)).Select(x => string.Format("{0}={1}", x.Name, x.GetValue(null))));
 		}
 
-		/// <summary>
-		/// Parses the commandline args
-		/// </summary>
-		/// <param name="args">The commandline arguments.</param>
-		/// <param name="target">The instance being updated with values</param>
-		/// <param name="report">A callback method for reporting errors</param>
-		/// <param name="throwonerror">Indicates if an exception is thrown on a parsing error</param>
-		/// <returns>The list of commandline arguments not parsed</returns>
-		/// <typeparam name="T">The data type of the item to parse.</typeparam>
-		public static bool Parse<T>(List<string> args, T target, Action<string> report, bool throwonerror = true)
+        /// <summary>
+        /// Parses the commandline args
+        /// </summary>
+        /// <param name="args">The commandline arguments.</param>
+        /// <param name="target">The instance being updated with values</param>
+        /// <param name="report">A callback method for reporting errors</param>
+        /// <param name="throwonerror">Indicates if an exception is thrown on a parsing error</param>
+        /// <returns>The list of commandline arguments not parsed</returns>
+        /// <typeparam name="T">The data type of the item to parse.</typeparam>
+        public static bool Parse<T>(List<string> args, T target, Action<string> report, bool throwonerror = true)
+            where T : class
 		{
 			if (args == null)
 				return true;
 
-			if (report == null)
-				report = x => { };
-
+			var reportmethod = report ?? (x => { });
 			var type = target == null ? typeof(T) : target.GetType();
-
 			var helpmarkers = new [] { "help", "/h", "/?", "/help", "-h", "-help", "-?", "--help" };
 
 			if (args.Any(x => helpmarkers.Any(y => string.Equals(x, y, StringComparison.InvariantCultureIgnoreCase))))
 			{
-				report("Help: ");
+				reportmethod("Help: ");
 
 				foreach (var field in type.GetFields(BindingFlags.Public | (target == null ? BindingFlags.Static : BindingFlags.Instance) | BindingFlags.IgnoreCase))
 				{
 					var attr = field.GetCustomAttribute(typeof(CommandlineOptionAttribute), true) as CommandlineOptionAttribute;
 					var optname = (attr == null || string.IsNullOrWhiteSpace(attr.LongName)) ? field.Name : attr.LongName;
 					if (attr != null && !string.IsNullOrWhiteSpace(attr.ShortName))
-						report(string.Format("   -{0}", attr.ShortName));
+						reportmethod(string.Format("   -{0}", attr.ShortName));
 
-					report(string.Format("  --{0}={1}", optname, field.GetValue(target)));
+					reportmethod(string.Format("  --{0}={1}", optname, field.GetValue(target)));
 
 					if (attr != null && !string.IsNullOrWhiteSpace(attr.Description))
-						report(string.Format("    {0}", attr.Description));
+						reportmethod(string.Format("    {0}", attr.Description));
 					
-					report("");
+					reportmethod("");
 				}
 				return false;
 			}
 				
-			var dict = GetConfig<T>(target);
-			var re = new Regex("((?<key>--[^=]+)|(?<key>-[^=]+))((=\\\"(?<value>[^\"]*)\\\")|=(?<value>.*))?", RegexOptions.IgnoreCase);
-			for(var i =0; i < args.Count; i++)
+			var dict = GetConfig(target);
+            var re = new Regex("((?<key>--[^=]+)|(?<key>-[^=]+))((=\\\"(?<value>[^\"]*)\\\")|=(?<value>.*))?", RegexOptions.IgnoreCase);
+			for(var i = 0; i < args.Count; i++)
 			{
 				var n = args[i];
-				if (n != null && !n.StartsWith("-"))
+                if (n == null)
+                    continue;
+
+				if (!n.StartsWith("-", StringComparison.Ordinal))
 					continue;
 				
 				var m = re.Match(n);
 				if (!m.Success || m.Length != n.Length)
-					report(string.Format("Unmatched option: {0}", n));
+					reportmethod(string.Format("Unmatched option: {0}", n));
 				else
 				{
 					args.RemoveAt(i);
@@ -215,11 +219,11 @@ namespace CoCoL.Network
 					var value = m.Groups["value"].Value;
 
 					FieldInfo field;
-					if (!dict.TryGetValue(key, out field) && n.StartsWith("--"))
+					if (!dict.TryGetValue(key, out field) && n.StartsWith("--", StringComparison.Ordinal))
 						dict.TryGetValue(key.ToLowerInvariant(), out field);
 
 					if (field == null)
-						report(string.Format("No such option: {0}", key));
+						reportmethod(string.Format("No such option: {0}", key));
 					else
 					{
 						var attr = field.GetCustomAttribute(typeof(CommandlineOptionAttribute), true) as CommandlineOptionAttribute;
@@ -236,7 +240,7 @@ namespace CoCoL.Network
 						else if (field.FieldType.IsEnum)
 							field.SetValue(target, Enum.Parse(field.FieldType, value, true));
 						else
-							report(string.Format("Not a valid field type: {0} for option: {1}", field.FieldType.FullName, key));
+							reportmethod(string.Format("Not a valid field type: {0} for option: {1}", field.FieldType.FullName, key));
 					}
 				}
 			}

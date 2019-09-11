@@ -330,7 +330,7 @@ namespace CoCoL
 		/// Reads or writes any of the specified requests
 		/// </summary>
 		/// <param name="requests">The list of channels to call.</param>
-		public static Task<IMultisetRequestUntyped> ReadOrWriteAnyAsync<T>(this IEnumerable<IMultisetRequestUntyped> requests)
+		public static Task<IMultisetRequestUntyped> ReadOrWriteAnyAsync(this IEnumerable<IMultisetRequestUntyped> requests)
 		{
 			return ReadOrWriteAnyAsync(null, requests, Timeout.Infinite, MultiChannelPriority.Any);
 		}
@@ -340,7 +340,7 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="requests">The list of channels to call.</param>
 		/// <param name="timeout">The maximum time to wait for a value to read.</param>
-		public static Task<IMultisetRequestUntyped> ReadOrWriteAnyAsync<T>(this IEnumerable<IMultisetRequestUntyped> requests, TimeSpan timeout)
+		public static Task<IMultisetRequestUntyped> ReadOrWriteAnyAsync(this IEnumerable<IMultisetRequestUntyped> requests, TimeSpan timeout)
 		{
 			return ReadOrWriteAnyAsync(null, requests, timeout, MultiChannelPriority.Any);
 		}
@@ -350,7 +350,7 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="requests">The list of channels to call.</param>
 		/// <param name="priority">The priority used to select channels, if multiple channels have a value that can be read.</param>
-		public static Task<IMultisetRequestUntyped> ReadOrWriteAnyAsync<T>(this IEnumerable<IMultisetRequestUntyped> requests, MultiChannelPriority priority)
+		public static Task<IMultisetRequestUntyped> ReadOrWriteAnyAsync(this IEnumerable<IMultisetRequestUntyped> requests, MultiChannelPriority priority)
 		{
 			return ReadOrWriteAnyAsync(null, requests, Timeout.Infinite, priority);
 		}
@@ -361,35 +361,10 @@ namespace CoCoL
 		/// <param name="requests">The list of requests.</param>
 		/// <param name="timeout">The maximum time to wait for a value to read.</param>
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be read.</param>
-		public static Task<IMultisetRequestUntyped> ReadOrWriteAnyAsync<T>(this IEnumerable<IMultisetRequestUntyped> requests, TimeSpan timeout, MultiChannelPriority priority)
+		public static Task<IMultisetRequestUntyped> ReadOrWriteAnyAsync(this IEnumerable<IMultisetRequestUntyped> requests, TimeSpan timeout, MultiChannelPriority priority)
 		{
 			return ReadOrWriteAnyAsync(null, requests, timeout, priority);
 		}
-
-		/// <summary>
-		/// Reads or writes any of the specified requests
-		/// </summary>
-		/// <param name="callback">The method to call when the read completes, or null.</param>
-		/// <param name="requests">The list of requests.</param>
-		/// <param name="timeout">The maximum time to wait for a value to read.</param>
-		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be read.</param>
-		private static Task<IMultisetRequestUntyped> ReadOrWriteAnyAsync<T>(this IEnumerable<IMultisetRequestUntyped> requests, Action<object> callback, TimeSpan timeout, MultiChannelPriority priority)
-		{
-			return ReadOrWriteAnyAsync(callback, requests, timeout, priority);
-		}
-
-		/// <summary>
-		/// Reads or writes any of the specified requests
-		/// </summary>
-		/// <param name="callback">The method to call when the read completes, or null.</param>
-		/// <param name="requests">The list of requests.</param>
-		/// <param name="timeout">The maximum time to wait for a value to read.</param>
-		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be read.</param>
-		private static Task<IMultisetRequestUntyped> ReadOrWriteAnyAsync<T>(Action<object> callback, IEnumerable<IMultisetRequestUntyped> requests, TimeSpan timeout, MultiChannelPriority priority)
-		{
-			return ReadOrWriteAnyAsync(callback, requests, timeout, priority);
-		}
-
 		#endregion
 
 		/// <summary>

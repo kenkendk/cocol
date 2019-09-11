@@ -139,8 +139,8 @@ namespace CoCoL
 					if (autocreate)
 					{
 						// Figure out what type of channel we expect
-						var readInterface = new Type[] { channelType }.Union(channelType.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IReadChannel<>))).FirstOrDefault();
-						var writeInterface = new Type[] { channelType }.Union(channelType.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IWriteChannel<>))).FirstOrDefault();
+						var readInterface = new [] { channelType }.Union(channelType.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IReadChannel<>))).FirstOrDefault();
+						var writeInterface = new [] { channelType }.Union(channelType.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IWriteChannel<>))).FirstOrDefault();
 
 						if (readInterface == null && writeInterface == null)
 							throw new ArgumentException(string.Format("Item {0} had a channelname attribute but is not of the channel type", c.Key.Name));
@@ -172,12 +172,14 @@ namespace CoCoL
 							}
 						}
 
-						// Assign the channel to the field or property
+                        // Assign the channel to the field or property
 
-						if (c.Key is FieldInfo)
-							((FieldInfo)c.Key).SetValue(item, chan);
-						else
-							((PropertyInfo)c.Key).SetValue(item, chan);
+                        if (c.Key is FieldInfo fi)
+                            fi.SetValue(item, chan);
+                        else if (c.Key is PropertyInfo pi)
+                            pi.SetValue(item, chan);
+                        else
+                            throw new InvalidOperationException("Item is neither field nor property");
 
 						JoinChannel(chan, channelType);
 					}
@@ -185,8 +187,6 @@ namespace CoCoL
 					{
 						JoinChannel(c.Value, channelType);
 					}
-
-
 				}
 				catch(Exception ex)
 				{
@@ -201,9 +201,10 @@ namespace CoCoL
 					{
 						JoinChannel(c.Value.GetValue(i), (c.Key is FieldInfo ? ((FieldInfo)c.Key).FieldType : ((PropertyInfo)c.Key).PropertyType).GetElementType());
 					}
-					catch
+					catch(Exception ex)
 					{
-					}
+                        System.Diagnostics.Debug.WriteLine("Failed to join channel: {1}, message: {0}", ex, c.Key.Name);
+                    }
 
 			return item;
 		}
@@ -267,9 +268,8 @@ namespace CoCoL
 			else if (value is IJoinAbleChannel)
 			{
 				// Figure out what type of channel we expect
-				var channelType = definedtype;
-				var readInterface = new Type[] { definedtype }.Union(definedtype.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IReadChannel<>))).FirstOrDefault();
-				var writeInterface = new Type[] { definedtype }.Union(definedtype.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IWriteChannel<>))).FirstOrDefault();
+				var readInterface = new [] { definedtype }.Union(definedtype.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IReadChannel<>))).FirstOrDefault();
+				var writeInterface = new [] { definedtype }.Union(definedtype.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IWriteChannel<>))).FirstOrDefault();
 
 				// If the channel is read-write, we do not use join semantics, but just retire the channel
 				if ((readInterface == null) == (writeInterface == null))
@@ -330,7 +330,7 @@ namespace CoCoL
 			try
 			{
 				using(instance)
-					await method();
+					await method().ConfigureAwait(false);
 			}
 			catch(Exception ex)
 			{
@@ -359,7 +359,7 @@ namespace CoCoL
 			AutoWireChannelsDirect(channels);
 			try
 			{
-				await method(channels);
+				await method(channels).ConfigureAwait(false);
 			}
 			catch(Exception ex)
 			{

@@ -19,27 +19,27 @@ namespace CoCoL.Network
 		/// <summary>
 		/// List of active clients, key is the channelid
 		/// </summary>
-		private Dictionary<string, NetworkClient> m_clientChannelLookup = new Dictionary<string, NetworkClient>();
+		private readonly Dictionary<string, NetworkClient> m_clientChannelLookup = new Dictionary<string, NetworkClient>();
 
 		/// <summary>
 		/// List of active clients, key is hostname+port
 		/// </summary>
-		private Dictionary<string, NetworkClient> m_connectedClientLookup = new Dictionary<string, NetworkClient>();
+		private readonly Dictionary<string, NetworkClient> m_connectedClientLookup = new Dictionary<string, NetworkClient>();
 
 		/// <summary>
 		/// The channel where we get requests from
 		/// </summary>
-		private IReadChannelEnd<PendingNetworkRequest> m_requests;
+		private readonly IReadChannelEnd<PendingNetworkRequest> m_requests;
 
 		/// <summary>
 		/// List of pending network requests
 		/// </summary>
-		private Dictionary<string, Dictionary<string, PendingNetworkRequest>> m_pendingRequests = new Dictionary<string, Dictionary<string, PendingNetworkRequest>>();
+		private readonly Dictionary<string, Dictionary<string, PendingNetworkRequest>> m_pendingRequests = new Dictionary<string, Dictionary<string, PendingNetworkRequest>>();
 
 		/// <summary>
 		/// The nameserver client instance
 		/// </summary>
-		private NameServerClient m_nameserverclient;
+		private readonly NameServerClient m_nameserverclient;
 
 		/// <summary>
 		/// Gets the channel used to send network requests
@@ -52,7 +52,6 @@ namespace CoCoL.Network
 		/// <param name="hostname">The hostname for the nameserver.</param>
 		/// <param name="port">The port for the nameserver.</param>
 		public NetworkClientConnector(string hostname, int port)
-			: base()
 		{
 			using (new IsolatedChannelScope())
 			{
@@ -73,10 +72,10 @@ namespace CoCoL.Network
 				while (true)
 				{
 					// Grab the next request
-					var req = await m_requests.ReadAsync();
+					var req = await m_requests.ReadAsync().ConfigureAwait(false);
 					LOG.DebugFormat("Found request with ID: {0}, channel: {3}, type: {1}, dtype: {2}", req.RequestID, req.RequestType, req.ChannelDataType, req.ChannelID);
 
-					var nwc = await LocateChannelHandler(req.ChannelID);
+					var nwc = await LocateChannelHandler(req.ChannelID).ConfigureAwait(false);
 					lock (m_lock)
 					{
 						LOG.DebugFormat("Registered pending request with ID: {0}, channel: {3}, type: {1}, dtype: {2}", req.RequestID, req.RequestType, req.ChannelDataType, req.ChannelID);
@@ -85,7 +84,7 @@ namespace CoCoL.Network
 
 					try
 					{
-						await nwc.WriteAsync(req);
+						await nwc.WriteAsync(req).ConfigureAwait(false);
 						LOG.DebugFormat("Passed req {0}, channel: {3}, with type {1}, dtype: {2}", req.RequestID, req.RequestType, req.ChannelDataType, req.ChannelID);
 					}
 					catch(Exception ex)
@@ -102,7 +101,7 @@ namespace CoCoL.Network
 			catch(Exception ex)
 			{
                 try { Requests.Dispose(); }
-                catch { }
+                catch { /* Ignore shutdown errors, report the original error */ }
 
                 if (ex.IsRetiredException())
                 {
@@ -147,7 +146,7 @@ namespace CoCoL.Network
 		/// <param name="data">The result.</param>
 		private static void TrySetResult(object task, object data)
 		{
-			task.GetType().GetMethod("TrySetResult").Invoke(task, new object[] { data });
+			task.GetType().GetMethod("TrySetResult").Invoke(task, new[] { data });
 		}
 
 		/// <summary>
@@ -164,7 +163,7 @@ namespace CoCoL.Network
 			if (!m_pendingRequests.ContainsKey(channelid))
 				m_pendingRequests[channelid] = new Dictionary<string, PendingNetworkRequest>();
 
-			var ep = await m_nameserverclient.GetChannelHomeAsync(channelid);
+			var ep = await m_nameserverclient.GetChannelHomeAsync(channelid).ConfigureAwait(false);
 			var key = string.Format("{0}:{1}", ep.Item1, ep.Item2);
 
 			if (m_connectedClientLookup.TryGetValue(key, out nwc))
@@ -173,10 +172,10 @@ namespace CoCoL.Network
 			try
 			{
 				var tcl = new TcpClient();
-				await tcl.ConnectAsync(ep.Item1, ep.Item2);
+				await tcl.ConnectAsync(ep.Item1, ep.Item2).ConfigureAwait(false);
 				var ncl = new NetworkClient(tcl);
 				ncl.SelfID = string.Format("CLIENT:{0}", m_connectedClientLookup.Count);
-				await ncl.ConnectAsync();
+				await ncl.ConnectAsync().ConfigureAwait(false);
 
 				RunClient(ncl).FireAndForget();
 
@@ -200,7 +199,7 @@ namespace CoCoL.Network
 			{
 				while (true)
 				{
-					var req = await nwc.ReadAsync();
+					var req = await nwc.ReadAsync().ConfigureAwait(false);
 
 					LOG.DebugFormat("Processing request with ID: {0}", req.RequestID);
 
@@ -210,7 +209,7 @@ namespace CoCoL.Network
 					{
 						case NetworkMessageType.OfferRequest:
 							Task.Run(async () => {
-								var res = prq.NoOffer ? true : await prq.Offer.OfferAsync(prq.AssociatedChannel);
+								var res = prq.NoOffer ? true : await prq.Offer.OfferAsync(prq.AssociatedChannel).ConfigureAwait(false);
 								await nwc.WriteAsync(new PendingNetworkRequest(
 									prq.ChannelID,
 									prq.ChannelDataType,
@@ -220,18 +219,18 @@ namespace CoCoL.Network
 									res ? NetworkMessageType.OfferAcceptResponse : NetworkMessageType.OfferDeclineResponse,
 									null,
 									true
-								));
+								)).ConfigureAwait(false);
 							}).FireAndForget();
 							break;
 
 						case NetworkMessageType.OfferCommitRequest:
 							if (!prq.NoOffer)
-								await prq.Offer.CommitAsync(prq.AssociatedChannel);
+								await prq.Offer.CommitAsync(prq.AssociatedChannel).ConfigureAwait(false);
 							break;
 
 						case NetworkMessageType.OfferWithdrawRequest:
 							if (!prq.NoOffer)
-								await prq.Offer.WithdrawAsync(prq.AssociatedChannel);
+								await prq.Offer.WithdrawAsync(prq.AssociatedChannel).ConfigureAwait(false);
 							break;
 
 						case NetworkMessageType.CancelResponse:
@@ -274,7 +273,7 @@ namespace CoCoL.Network
 			}
 			catch (Exception ex)
 			{
-				LOG.Error(string.Format("Crashed network client"), ex);
+				LOG.Error("Crashed network client", ex);
 
 				try { nwc.Dispose(); }
 				catch(Exception ex2) { LOG.Error("Failed to close client", ex2); }
