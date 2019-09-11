@@ -117,12 +117,12 @@ namespace CoCoL
                     {
                         if (token.IsCancellationRequested)
                             throw new TaskCanceledException();
-                        await tp.Run(t, handler);
+                        await tp.Run(t, handler).ConfigureAwait(false);
                     }
                 }
                 finally
                 {
-                    await tp.ShutdownAsync();
+                    await tp.ShutdownAsync().ConfigureAwait(false);
                 }
             }
         }
@@ -137,7 +137,7 @@ namespace CoCoL
         /// <typeparam name="T">The type of data elements to handle</typeparam>
         public static Task RunParallelAsync<T>(IReadChannel<T> source, Func<T, Task> handler, Func<T, Exception, Task> errorHandler = null)
         {
-            return RunParallelAsync(source, handler, default(System.Threading.CancellationToken), 10, errorHandler);
+            return RunParallelAsync(source, handler, default(System.Threading.CancellationToken), errorHandler: errorHandler);
         }
 
         /// <summary>
@@ -183,7 +183,7 @@ namespace CoCoL
                         {
                             if (token.IsCancellationRequested)
                                 throw new TaskCanceledException();
-                            await tp.Run(await source.ReadAsync(), handler);
+                            await tp.Run(await source.ReadAsync(), handler).ConfigureAwait(false);
                         }
                 });
         }    
@@ -275,7 +275,7 @@ namespace CoCoL
             if (m_active.Count >= m_max_tasks)
             {
                 // Wait until a task has completed
-                await Task.WhenAny(m_active);
+                await Task.WhenAny(m_active).ConfigureAwait(false);
                 for (var i = m_active.Count - 1; i >= 0; i--)
                 {
                     var m = m_active[i];
@@ -322,7 +322,7 @@ namespace CoCoL
             using (await m_lock.LockAsync())
             {
                 // Make room for another task
-                await EnsureRunnerSpace();
+                await EnsureRunnerSpace().ConfigureAwait(false);
 
                 // Spin up the new task, and add it to the list
                 m_arguments.Add(value);
@@ -349,7 +349,7 @@ namespace CoCoL
             // If we are done, just use that signal
             if (m_terminate != null)
             {
-                await m_terminate.Task;
+                await m_terminate.Task.ConfigureAwait(false);
                 return;
             }
 
@@ -361,7 +361,7 @@ namespace CoCoL
                 active = new List<Task>(m_active);
 
             // Now wait for all to complete
-            await Task.WhenAll(active);
+            await Task.WhenAll(active).ConfigureAwait(false);
         }
 
         /// <summary>

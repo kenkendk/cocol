@@ -82,11 +82,13 @@ namespace CoCoL
 			}
 			else
 			{
-				// Don't throw the exception here
-				// let the caller access the task
 				try { task.Wait(); } 
-				catch {	}
-			}
+				catch
+                {
+                    // Don't throw the exception here
+                    // let the caller access the task
+                }
+            }
 
 			return task;
 		}
@@ -126,7 +128,10 @@ namespace CoCoL
 		/// Leaves the task un-awaited, supressing warnings if the task is not awaited
 		/// </summary>
 		/// <param name="task">The task to suppress.</param>
-		public static void FireAndForget(this Task task) { }
+		public static void FireAndForget(this Task task)
+        {
+            // No action needed
+        }
 
 		/// <summary>
 		/// Helper method that implements WhenAny with the NotOnCancelled flag
@@ -501,14 +506,14 @@ namespace CoCoL
 			}
 		}
 
-		/// <summary>
-		/// Read from the channel set in a blocking manner
-		/// </summary>
-		/// <param name="self">The channels to read from</param>
-		/// <param name="channel">The channel written to</param>
-		/// <typeparam name="T">The channel data type parameter.</typeparam>
-		/// <returns>The value read from a channel</returns>
-		public static T ReadFromAny<T>(this MultiChannelSetRead<T> self, out IReadChannel<T> channel)
+        /// <summary>
+        /// Read from the channel set in a blocking manner
+        /// </summary>
+        /// <param name="self">The channels to read from</param>
+        /// <param name="channel">The channel written to</param>
+        /// <typeparam name="T">The channel data type parameter.</typeparam>
+        /// <returns>The value read from a channel</returns>
+        public static T ReadFromAny<T>(this MultiChannelSetRead<T> self, out IReadChannel<T> channel)
 		{
 			try
 			{
@@ -772,8 +777,8 @@ namespace CoCoL
 		/// <typeparam name="T">The channel data type.</typeparam>
 		public static async Task RetireAsync<T>(this IEnumerable<IChannel<T>> list, bool immediate = false)
 		{
-			foreach (var c in list)
-				await c.RetireAsync(immediate);
+            foreach (var c in list)
+                await c.RetireAsync(immediate).ConfigureAwait(false);
 		}
 		/// <summary>
 		/// Retires all channels in the list
@@ -899,8 +904,8 @@ namespace CoCoL
 
 			if (res.Exception != null)
 			{
-				if (res.Exception is AggregateException && ((AggregateException)res.Exception).Flatten().InnerExceptions.Count == 1)
-					throw ((AggregateException)res.Exception).InnerException;
+				if (res.Exception.Flatten().InnerExceptions.Count == 1)
+					throw res.Exception.InnerException;
 
 				throw res.Exception;
 			}
