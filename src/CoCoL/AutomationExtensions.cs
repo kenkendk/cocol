@@ -250,6 +250,7 @@ namespace CoCoL
 						}
 						catch
 						{
+							// Ignore fields that cannot be read
 						}
 
 						yield return new KeyValuePair<MemberInfo, T>(f, val);

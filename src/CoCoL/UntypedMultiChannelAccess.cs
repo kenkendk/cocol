@@ -281,7 +281,7 @@ namespace CoCoL
 		/// <param name="priority">The priority used to select a channel, if multiple channels have a value that can be written.</param>
 		public static async Task<IUntypedChannel> WriteToAnyAsync(this IEnumerable<IMultisetRequestUntyped> requests, TimeSpan timeout, MultiChannelPriority priority)
 		{
-			return (await ReadOrWriteAnyAsync(null, requests, timeout, priority)).Channel;
+			return (await ReadOrWriteAnyAsync(null, requests, timeout, priority).ConfigureAwait(false)).Channel;
 		}
 		#endregion
 

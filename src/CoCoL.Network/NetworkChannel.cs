@@ -68,8 +68,8 @@ namespace CoCoL.Network
         public async Task WriteAsync(T value, ITwoPhaseOffer offer)
 		{
 			var tcs = new TaskCompletionSource<bool>();
-            await NetworkConfig.TransmitRequestAsync(new PendingNetworkRequest(this, typeof(T), Timeout.InfiniteDateTime, offer, tcs, value));
-			await tcs.Task;
+            await NetworkConfig.TransmitRequestAsync(new PendingNetworkRequest(this, typeof(T), Timeout.InfiniteDateTime, offer, tcs, value)).ConfigureAwait(false);
+			await tcs.Task.ConfigureAwait(false);
 		}
 
         #endregion
@@ -92,8 +92,8 @@ namespace CoCoL.Network
         public async Task<T> ReadAsync(ITwoPhaseOffer offer)
 		{
 			var tcs = new TaskCompletionSource<T>();
-			await NetworkConfig.TransmitRequestAsync(new PendingNetworkRequest(this, typeof(T), Timeout.InfiniteDateTime, offer, tcs));
-			return await tcs.Task;
+			await NetworkConfig.TransmitRequestAsync(new PendingNetworkRequest(this, typeof(T), Timeout.InfiniteDateTime, offer, tcs)).ConfigureAwait(false);
+			return await tcs.Task.ConfigureAwait(false);
 		}
 
 		#endregion

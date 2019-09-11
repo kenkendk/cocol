@@ -786,7 +786,7 @@ namespace CoCoL
                                         }
 
                                         break;
-									case QueueOverflowStrategy.Reject:
+									//case QueueOverflowStrategy.Reject:
 									default:
 										{
 											var exp = m_writerQueue[m_writerQueue.Count - 1];
@@ -808,7 +808,7 @@ namespace CoCoL
 				}
 			}
 
-			await wr.Source.Task;
+			await wr.Source.Task.ConfigureAwait(false);
 			return;
 		}
 

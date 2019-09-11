@@ -17,11 +17,11 @@ namespace CoCoL.Network
 		/// <summary>
 		/// The hostname returned by this instance
 		/// </summary>
-		private string m_hostname;
+		private readonly string m_hostname;
 		/// <summary>
 		/// The port returned by this instance
 		/// </summary>
-		private int m_port;
+		private readonly int m_port;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.Network.NameServerClient"/> class.

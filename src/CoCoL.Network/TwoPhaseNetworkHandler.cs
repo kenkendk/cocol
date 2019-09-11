@@ -11,11 +11,11 @@ namespace CoCoL.Network
 		/// <summary>
 		/// The pending request this instances is connected to
 		/// </summary>
-		private PendingNetworkRequest m_pnr;
+		private readonly PendingNetworkRequest m_pnr;
 		/// <summary>
 		/// The network client used for communication
 		/// </summary>
-		private NetworkClient m_nwc;
+		private readonly NetworkClient m_nwc;
 		/// <summary>
 		/// A task source to return an accept or deny response for an offer
 		/// </summary>

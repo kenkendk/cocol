@@ -121,7 +121,7 @@ namespace CoCoL
 		/// <summary>
 		/// Internal releaser construct which needs to be disposed to unlock
 		/// </summary>
-		public struct Releaser : IDisposable 
+		public struct Releaser : IDisposable, IEquatable<Releaser>
 		{ 
 			/// <summary>
 			/// The parent instance
@@ -159,8 +159,18 @@ namespace CoCoL
 							m_parent.m_semaphore.Release();
 							m_canDispose = false;
 						}
-			} 
-		} 
+			}
+
+			/// <summary>
+			/// Explicit disabling of compares
+			/// </summary>
+			/// <param name="other">The item comparing to</param>
+			/// <returns>Always throws an exception</returns>
+            bool IEquatable<Releaser>.Equals(Releaser other)
+            {
+                throw new NotImplementedException();
+            }
+        } 
 	}
 }
 

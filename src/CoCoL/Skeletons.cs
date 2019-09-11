@@ -254,7 +254,9 @@ namespace CoCoL
                                 {
                                     if (ex.IsRetiredException() && lst.Count > 1)
                                     {
+                                        // Remove the expired item
                                         lst.RemoveAt(i);
+                                        // Adjust the loop counter to account for the changed list
                                         i--;
                                         continue;
                                     }
@@ -347,7 +349,7 @@ namespace CoCoL
                         var readB = self.InputB.ReadAsync();
                         var vA = await readA.ConfigureAwait(false);
                         var vB = await readB.ConfigureAwait(false);
-                        await output.WriteAsync(await method(vA, vB)).ConfigureAwait(false);
+                        await output.WriteAsync(await method(vA, vB).ConfigureAwait(false)).ConfigureAwait(false);
                     }
                 }
             );

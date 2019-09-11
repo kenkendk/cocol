@@ -9,7 +9,7 @@ namespace CoCoL
 	/// <summary>
 	/// Result from a mult-channel operation
 	/// </summary>
-	public struct MultisetResult<T>
+	public struct MultisetResult<T> : IEquatable<MultisetResult<T>>
 	{
 		/// <summary>
 		/// The result value
@@ -30,7 +30,17 @@ namespace CoCoL
 			Value = value;
 			Channel = channel;
 		}
-	}
+
+        /// <summary>
+        /// Explicit disabling of compares
+        /// </summary>
+        /// <param name="other">The item being compared to</param>
+        /// <returns>Always throws an exception</returns>
+        bool IEquatable<MultisetResult<T>>.Equals(MultisetResult<T> other)
+        {
+            throw new NotImplementedException();
+        }
+    }
 		
 	/// <summary>
 	/// Helper class for performing multi-channel access

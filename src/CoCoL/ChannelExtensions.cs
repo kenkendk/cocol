@@ -387,8 +387,8 @@ namespace CoCoL
 
 			if (res.Exception != null)
 			{
-				if (res.Exception is AggregateException && ((AggregateException)res.Exception).Flatten().InnerExceptions.Count == 1)
-					throw ((AggregateException)res.Exception).InnerException;
+				if (res.Exception.Flatten().InnerExceptions.Count == 1)
+					throw res.Exception.InnerException;
 				
 				throw res.Exception;
 			}
@@ -411,8 +411,8 @@ namespace CoCoL
 
 			if (res.Exception != null)
 			{
-				if (res.Exception is AggregateException && ((AggregateException)res.Exception).Flatten().InnerExceptions.Count == 1)
-					throw ((AggregateException)res.Exception).InnerException;
+				if (res.Exception.Flatten().InnerExceptions.Count == 1)
+					throw res.Exception.InnerException;
 
 				throw res.Exception;
 			}

@@ -90,7 +90,7 @@ namespace CoCoL
 		public Task QueueTask(Action a)
 		{
 			var tcs = new TaskCompletionSource<bool>();
-			return QueueTask(() =>
+			QueueItem(() =>
 				{
 					try
 					{ 
@@ -102,6 +102,8 @@ namespace CoCoL
 						tcs.TrySetException(ex);
 					}
 				});
+
+			return tcs.Task;
 		}
 
 		/// <summary>
