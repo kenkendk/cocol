@@ -9,8 +9,14 @@ namespace CoCoL.Blocks
 	/// </summary>
 	public class Identity<T> : BlockBase
 	{
-		private IReadChannel<T> m_input;
-		private IWriteChannel<T> m_output;
+        /// <summary>
+        /// The input channel
+        /// </summary>
+		private readonly IReadChannel<T> m_input;
+        /// <summary>
+        /// The output channel
+        /// </summary>
+		private readonly IWriteChannel<T> m_output;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:CoCoL.Blocks.Identity`1"/> process.

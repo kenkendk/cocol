@@ -58,7 +58,7 @@ namespace CoCoL
 	/// <summary>
 	/// Implementation of the generic type helper
 	/// </summary>
-	internal struct GenericTypeHelper<T> : IGenericTypeHelper
+	internal struct GenericTypeHelper<T> : IGenericTypeHelper, IEquatable<GenericTypeHelper<T>>
 	{
 #if LIMITED_REFLECTION_SUPPORT
 		/// <summary>
@@ -115,7 +115,17 @@ namespace CoCoL
 		{
 			return (channel as IWriteChannel<T>).RequestWrite((T)value);
 		}
-	}
+
+        /// <summary>
+        /// Explicit disabling of compares
+        /// </summary>
+        /// <param name="other">The item to compare to</param>
+        /// <returns>Always throws an exception</returns>
+        bool IEquatable<GenericTypeHelper<T>>.Equals(GenericTypeHelper<T> other)
+        {
+            throw new NotImplementedException();
+        }
+    }
 
 	/// <summary>
 	/// Class for helping with access to untyped methods through reflection
@@ -181,42 +191,10 @@ namespace CoCoL
 		/// <returns>The implemented generic interface type.</returns>
 		/// <param name="item">The item to examine.</param>
 		/// <param name="interface">The interface type definition.</param>
-		private static Type GetImplementedGenericInterface_ProbingVersion(object item, Type @interface)
-		{
-			if (item == null)
-				throw new ArgumentNullException("item");
-
-			// In principle, a channel can be implemented non-generic, but for PCL we do not allow it
-			if (!item.GetType().IsConstructedGenericType)
-				throw new ArgumentException(string.Format("Item is not a generic type, which is required in the PCL version: {0}", item.GetType()), nameof(item));
-
-			// Normally, we should only see one generic argument, but we play it safe
-			foreach (var t in item.GetType().GenericTypeArguments)
-			{
-				var spec = @interface.MakeGenericType(t);
-
-#if LIMITED_REFLECTION_SUPPORT
-				if (spec.GetTypeInfo().IsAssignableFrom(item.GetType().GetTypeInfo()))
-#else
-				if (spec.IsAssignableFrom(item.GetType()))
-#endif
-					return spec;
-			}
-
-			throw new ArgumentException(string.Format("Given type {0} does not implement interface {1}", item.GetType(), @interface));
-		}
-
-
-		/// <summary>
-		/// Gets the implemented generic interface from an instance.
-		/// </summary>
-		/// <returns>The implemented generic interface type.</returns>
-		/// <param name="item">The item to examine.</param>
-		/// <param name="interface">The interface type definition.</param>
 		private static Type GetImplementedGenericInterface(object item, Type @interface)
 		{
 			if (item == null)
-				throw new ArgumentNullException("item");
+				throw new ArgumentNullException(nameof(item));
 
 #if LIMITED_REFLECTION_SUPPORT
 			var implementedinterface = item.GetType().GetTypeInfo().ImplementedInterfaces.Where(x => x.GetTypeInfo().IsGenericType && !x.GetTypeInfo().IsGenericTypeDefinition).Where(x => x.GetGenericTypeDefinition() == @interface).FirstOrDefault();

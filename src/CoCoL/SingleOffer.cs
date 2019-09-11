@@ -160,7 +160,7 @@ namespace CoCoL
 		/// <summary>
 		/// The lock for providing exclusive access
 		/// </summary>
-		private object m_lock = new object();
+		private readonly object m_lock = new object();
 		/// <summary>
 		/// An optional callback for reporting if the offer was taken
 		/// </summary>
@@ -192,7 +192,7 @@ namespace CoCoL
 		/// <summary>
 		/// The list of offers
 		/// </summary>
-		private Queue<KeyValuePair<TaskCompletionSource<bool>, object>> m_offers = new Queue<KeyValuePair<TaskCompletionSource<bool>, object>>();
+		private readonly Queue<KeyValuePair<TaskCompletionSource<bool>, object>> m_offers = new Queue<KeyValuePair<TaskCompletionSource<bool>, object>>();
 
 		/// <summary>
 		/// Creates a new SingleOffer instance with no expiration date
@@ -348,7 +348,7 @@ namespace CoCoL
 				return;
 
 			// If the timeout has occurred, set the timeout
-			else if (m_expires < DateTime.Now)
+			if (m_expires < DateTime.Now)
 				ExpirationCallback();
 
 			// Register the timeout callback

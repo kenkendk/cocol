@@ -12,7 +12,7 @@ namespace CoCoL
 		/// <summary>
 		/// The internal list, which is maintained sorted
 		/// </summary>
-		private List<KeyValuePair<TKey, TValue>> m_list = new List<KeyValuePair<TKey, TValue>>();
+		private readonly List<KeyValuePair<TKey, TValue>> m_list = new List<KeyValuePair<TKey, TValue>>();
 
 		/// <summary>
 		/// Find the index of the specified key, or bitwise inverted value if not found.
@@ -22,7 +22,7 @@ namespace CoCoL
 		private int Find(TKey key)
 		{
 			if (key == null)
-				throw new ArgumentNullException("key");
+				throw new ArgumentNullException(nameof(key));
 
 			if (m_list.Count == 0)
 				return -1;
@@ -56,7 +56,7 @@ namespace CoCoL
 					lb = Math.Min(m_list.Count - 1, ix + 1);
 				else
 					ub = Math.Max(0, ix - 1);
-			};
+			}
 		}
 
 		/// <summary>

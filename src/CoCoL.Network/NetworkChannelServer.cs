@@ -20,7 +20,7 @@ namespace CoCoL.Network
 		/// <summary>
 		/// The endpoint where this instance listens
 		/// </summary>
-		private IPEndPoint m_endPoint;
+		private readonly IPEndPoint m_endPoint;
 
 		/// <summary>
 		/// The socket in this instance
@@ -32,7 +32,6 @@ namespace CoCoL.Network
 		/// </summary>
 		/// <param name="listenAddr">The address to listen on.</param>
 		public NetworkChannelServer(IPEndPoint listenAddr)
-			: base()
 		{
 			m_endPoint = listenAddr;
 		}
@@ -65,7 +64,7 @@ namespace CoCoL.Network
 					nwc.SelfID = string.Format("SERVER:{0}", i++);
 					LOG.Debug("Accepted a new connection");
 					Task.Run(() => {
-						try { RunChannelHandler(nwc, sc); }
+						try { RunChannelHandler(nwc, sc).FireAndForget(); }
 						catch(Exception ex) {
 							LOG.Error("Crashed in channel handler", ex);			
 						}
@@ -79,27 +78,12 @@ namespace CoCoL.Network
 			}
 		}
 
-		/// <summary>
-		/// Converts a <see cref="System.DateTime"/> instance to a <see cref="System.TimeSpan"/>.
-		/// </summary>
-		/// <returns>The equivalent timespan.</returns>
-		/// <param name="timeout">The timeout <see cref="System.DateTime"/> instance.</param>
-		private static TimeSpan TimeoutToTimeSpan(DateTime timeout)
-		{
-			if (timeout.Ticks <= 0)
-				return Timeout.Infinite;
-			else if (timeout < DateTime.Now)
-				return Timeout.Immediate;
-			else
-				return timeout - DateTime.Now;
-		}
-
-		/// <summary>
-		/// Runs the channel handler.
-		/// </summary>
-		/// <param name="nwc">The network client used for communicating.</param>
-		/// <param name="sc">The scope where channels are created.</param>
-		protected static async void RunChannelHandler(NetworkClient nwc, ChannelScope sc)
+        /// <summary>
+        /// Runs the channel handler.
+        /// </summary>
+        /// <param name="nwc">The network client used for communicating.</param>
+        /// <param name="sc">The scope where channels are created.</param>
+        protected static async Task RunChannelHandler(NetworkClient nwc, ChannelScope sc)
 		{	
 			await nwc.ConnectAsync();
 

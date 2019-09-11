@@ -71,8 +71,8 @@ namespace CoCoL
 
 		private static void JoinChannel(object item, Type definedtype)
 		{
-			var readInterface = new Type[] { definedtype }.Union(definedtype.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IReadChannel<>))).FirstOrDefault();
-			var writeInterface = new Type[] { definedtype }.Union(definedtype.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IWriteChannel<>))).FirstOrDefault();
+			var readInterface = new [] { definedtype }.Union(definedtype.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IReadChannel<>))).FirstOrDefault();
+			var writeInterface = new [] { definedtype }.Union(definedtype.GetInterfaces()).Where(x => x.IsConstructedGenericType && x.GetGenericTypeDefinition() == (typeof(IWriteChannel<>))).FirstOrDefault();
 			var isOnlyReadOrWrite = (readInterface == null) != (writeInterface == null);
 
 			var isRetired = item is IRetireAbleChannel ? (item as IRetireAbleChannel).IsRetiredAsync.WaitForTask().Result : false;
@@ -110,12 +110,16 @@ namespace CoCoL
 				{
 					var marker = c.Value as ChannelNameMarker;
 
-					// Make sure we do not continue with a marker class instance
-					if (marker != null)
-						if (c.Key is FieldInfo)
-							((FieldInfo)c.Key).SetValue(item, null);
-						else
-							((PropertyInfo)c.Key).SetValue(item, null);
+                    // Make sure we do not continue with a marker class instance
+                    if (marker != null)
+                    {
+                        if (c.Key is FieldInfo fi)
+                            fi.SetValue(item, null);
+                        else if (c.Key is PropertyInfo pi)
+                            pi.SetValue(item, null);
+                        else
+                            throw new InvalidOperationException("Marker was neither a field nor a property");
+                    }
 
 
 					var autocreate = true;
@@ -305,6 +309,7 @@ namespace CoCoL
 				}
 				catch
 				{
+                    // Ignore retiring errors to avoid masking the real error
 				}
 
 			foreach (var c in GetAllFieldAndPropertyValuesOfType<Array>(item))
@@ -315,8 +320,9 @@ namespace CoCoL
 					}
 					catch
 					{
-					}
-		}
+                        // Ignore retiring errors to avoid masking the real error
+                    }
+        }
 
 		/// <summary>
 		/// Runs a method and disposes this instance afterwards
@@ -338,8 +344,8 @@ namespace CoCoL
 					return;
 
 				// Unwrap
-				if (ex is AggregateException && ((AggregateException)ex).Flatten().InnerExceptions.Count == 1)
-					throw ((AggregateException)ex).Flatten().InnerExceptions.First();
+				if (ex is AggregateException aex && aex.Flatten().InnerExceptions.Count == 1)
+					throw aex.Flatten().InnerExceptions.First();
 
 				throw;
 			}

@@ -30,7 +30,7 @@ namespace CoCoL
 	/// <summary>
 	/// A request for a multi-channel operation
 	/// </summary>
-	public struct MultisetRequest<T> : IMultisetRequestUntyped
+	public struct MultisetRequest<T> : IMultisetRequestUntyped, IEquatable<MultisetRequest<T>>
 	{
 		/// <summary>
 		/// The result value
@@ -83,13 +83,23 @@ namespace CoCoL
 			return new MultisetRequest<T>(value, null, channel, false);
 		}
 
-		#region IMultisetRequestUntyped implementation
+        /// <summary>
+        /// Explicit disable compares
+        /// </summary>
+        /// <param name="other">The item to compare to</param>
+        /// <returns>Always throws an exception</returns>
+        bool IEquatable<MultisetRequest<T>>.Equals(MultisetRequest<T> other)
+        {
+            throw new NotImplementedException();
+        }
 
-		/// <summary>
-		/// Gets the boxed value.
-		/// </summary>
-		/// <value>The value.</value>
-		object IMultisetRequestUntyped.Value 
+        #region IMultisetRequestUntyped implementation
+
+        /// <summary>
+        /// Gets the boxed value.
+        /// </summary>
+        /// <value>The value.</value>
+        object IMultisetRequestUntyped.Value 
 		{
 			get { return this.Value; }
 			set 

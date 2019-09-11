@@ -25,17 +25,17 @@ namespace CoCoL
 		/// <summary>
 		/// The count for the number of times each channel has been used
 		/// </summary>
-		private long[] m_usageCounts;
+		private readonly long[] m_usageCounts;
 		/// <summary>
 		/// The sorted list of channels, such that the index in
 		/// m_channels and m_usageCounts match
 		/// </summary>
-		private T[] m_channels;
+		private readonly T[] m_channels;
 
 		/// <summary>
 		/// A channel lookup for constant time mapping a channel to the index
 		/// </summary>
-		private Dictionary<object, int> m_channelLookup;
+		private readonly Dictionary<object, int> m_channelLookup;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.SortedChannelList&lt;T&gt;"/> class.
@@ -171,7 +171,7 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="priority">The priority to use when selecting a channel.</param>
 		/// <param name="channels">The channels to consider.</param>
-		public MultiChannelSetRead(IEnumerable<IReadChannel<T>> channels, MultiChannelPriority priority = MultiChannelPriority.Any)
+		public MultiChannelSetRead(IEnumerable<IReadChannel<T>> channels, MultiChannelPriority priority)
 			: this(priority, channels.ToArray())
 		{
 		}
@@ -283,7 +283,7 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="priority">The priority to use when selecting a channel.</param>
 		/// <param name="channels">The channels to consider.</param>
-		public MultiChannelSetWrite(IEnumerable<IWriteChannel<T>> channels, MultiChannelPriority priority = MultiChannelPriority.Any)
+		public MultiChannelSetWrite(IEnumerable<IWriteChannel<T>> channels, MultiChannelPriority priority)
 			: this(priority, channels.ToArray())
 		{
 		}

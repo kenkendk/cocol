@@ -29,7 +29,7 @@ namespace CoCoL
 		/// <summary>
 		/// The implementation of an expiration manager, for easy replacement
 		/// </summary>
-		private static ExpirationManagerImpl _ex = new ExpirationManagerImpl();
+		private static readonly ExpirationManagerImpl _ex = new ExpirationManagerImpl();
 
 		/// <summary>
 		/// Registers a method for callback
@@ -38,18 +38,18 @@ namespace CoCoL
 		/// <param name="callback">The method to call on expiration</param>
 		public static void AddExpirationCallback(DateTime expires, Action callback) 
 		{ 
-			_ex.AddExpirationCallback(expires, callback); 
+			_ex.AddExpirationCallbackImpl(expires, callback); 
 		}
 
 		/// <summary>
 		/// Implementation of an expiration manager
 		/// </summary>
-		private class ExpirationManagerImpl
+		private class ExpirationManagerImpl : IDisposable
 		{
 			/// <summary>
 			/// The lock that provides exclusive access to the lookup table
 			/// </summary>
-			private object m_lock = new object();
+			private readonly object m_lock = new object();
 			/// <summary>
 			/// The time at which the timer should trigger next
 			/// </summary>
@@ -57,7 +57,7 @@ namespace CoCoL
 			/// <summary>
 			/// The table of registered callbacks for timeouts
 			/// </summary>
-			private CoCoL.SortedList<DateTime, List<Action>> m_expiryTable = new CoCoL.SortedList<DateTime, List<Action>>();
+			private readonly CoCoL.SortedList<DateTime, List<Action>> m_expiryTable = new CoCoL.SortedList<DateTime, List<Action>>();
 			/// <summary>
 			/// The token that controls the timer
 			/// </summary>
@@ -72,30 +72,37 @@ namespace CoCoL
             /// </summary>
             /// <param name="expires">The time when the expiration occurs</param>
             /// <param name="callback">The method to call on expiration</param>
-            public void AddExpirationCallback(DateTime expires, Action callback)
+            public void AddExpirationCallbackImpl(DateTime expires, Action callback)
 			{
 				lock (m_lock)
 				{
 					var empty = m_expiryTable.Count == 0;
 
-					List<Action> prev;
-                    if (!m_expiryTable.TryGetValue(expires, out prev))
+                    if (!m_expiryTable.TryGetValue(expires, out var prev))
                     {
                         prev = new List<Action>(1);
                         m_expiryTable.Add(expires, prev);
                     }
-					prev.Add(callback);
+                    prev.Add(callback);
 
 					if (expires < m_nextInvoke || empty)
 						RescheduleTimer(expires);
 				}
 			}
 
-			/// <summary>
-			/// Reschedules the timer.
-			/// </summary>
-			/// <param name="next">The time when the next tick should occur</param>
-			private void RescheduleTimer(DateTime next)
+            /// <summary>
+            /// Disposes all resources allocated
+            /// </summary>
+            public void Dispose()
+            {
+                m_timerToken?.Dispose();
+            }
+
+            /// <summary>
+            /// Reschedules the timer.
+            /// </summary>
+            /// <param name="next">The time when the next tick should occur</param>
+            private void RescheduleTimer(DateTime next)
 			{
 				lock (m_lock)
 				{
@@ -106,10 +113,14 @@ namespace CoCoL
 						RunTimer(null);
 					else
 					{
-						if (m_timerToken != null && !m_timerToken.IsCancellationRequested)
-							m_timerToken.Cancel();
+                        if (m_timerToken != null && !m_timerToken.IsCancellationRequested)
+                        {
+                            m_timerToken.Cancel();
+                            m_timerToken.Dispose();
+                        }
 
-                        m_timerTask = Task.Delay(TimeSpan.FromTicks(Math.Max(duration, MIN_ALLOWED_WAIT)), (m_timerToken = new CancellationTokenSource()).Token);
+                        m_timerToken = new CancellationTokenSource();
+                        m_timerTask = Task.Delay(TimeSpan.FromTicks(Math.Max(duration, MIN_ALLOWED_WAIT)), m_timerToken.Token);
                         m_timerTask.ContinueWith(RunTimer, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnRanToCompletion);
 					}
 				}

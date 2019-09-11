@@ -9,9 +9,18 @@ namespace CoCoL.Blocks
 	/// </summary>
 	public class Delta<T> : BlockBase
 	{
-		private IReadChannel<T> m_input;
-		private IWriteChannel<T> m_outputA;
-		private IWriteChannel<T> m_outputB;
+        /// <summary>
+        /// The input channel
+        /// </summary>
+		private readonly IReadChannel<T> m_input;
+        /// <summary>
+        /// One output channel
+        /// </summary>
+		private readonly IWriteChannel<T> m_outputA;
+        /// <summary>
+        /// Another output channel
+        /// </summary>
+		private readonly IWriteChannel<T> m_outputB;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:CoCoL.Blocks.Delta`1"/> process.

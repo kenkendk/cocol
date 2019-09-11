@@ -16,7 +16,7 @@ namespace CoCoL
         /// <summary>
         /// The name of the channel that is retired
         /// </summary>
-        public readonly string ChannelName;
+        public string ChannelName { get; private set; }
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CoCoL.RetiredException"/> class.

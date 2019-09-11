@@ -27,12 +27,12 @@ namespace CoCoL
         /// <summary>
         /// The maximum number of reads pr. second
         /// </summary>
-        private double m_maxreads;
+        private readonly double m_maxreads;
 
         /// <summary>
         /// The maximum number of writes pr. second
         /// </summary>
-        private double m_maxwrites;
+        private readonly double m_maxwrites;
 
         /// <summary>
         /// The ticks for the last read clearing
@@ -99,7 +99,7 @@ namespace CoCoL
                     if (m_reads > m_maxreads)
                     {
                         // Prevent others from entering
-                        await Task.Delay(new TimeSpan(Math.Max(0, TimeSpan.TicksPerSecond - (DateTime.Now.Ticks - m_last_read_update))));
+                        await Task.Delay(new TimeSpan(Math.Max(0, TimeSpan.TicksPerSecond - (DateTime.Now.Ticks - m_last_read_update)))).ConfigureAwait(false);
 
                         // Clear our attempt
                         m_reads = 1;
@@ -143,7 +143,7 @@ namespace CoCoL
                     if (m_writes > m_maxwrites)
                     {
                         // Prevent others from entering
-                        await Task.Delay(new TimeSpan(Math.Max(0, TimeSpan.TicksPerSecond - (DateTime.Now.Ticks - m_last_write_update))));
+                        await Task.Delay(new TimeSpan(Math.Max(0, TimeSpan.TicksPerSecond - (DateTime.Now.Ticks - m_last_write_update)))).ConfigureAwait(false);
 
                         // Clear our attempt
                         m_writes = 1;
