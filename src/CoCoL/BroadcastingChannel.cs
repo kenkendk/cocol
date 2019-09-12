@@ -63,11 +63,19 @@ namespace CoCoL
 					if (m_readerQueue.Count < (requiredreaders - acceptedreaders) || m_writerQueue.Count == 0)
 					{
 						// Withdraw all offered reads
-						await Task.WhenAll(m_readerQueue.Take(acceptedreaders).Select(x => x.Offer == null ? Task.FromResult(true) : x.Offer.WithdrawAsync(this)));
+						await Task.WhenAll(
+							m_readerQueue
+								.Take(acceptedreaders)
+								.Select(x => 
+									x.Offer == null 
+									? Task.FromResult(true) 
+									: x.Offer.WithdrawAsync(this)
+								)
+						).ConfigureAwait(false);
 
-						if (await acceptedwriter)
+						if (await acceptedwriter.ConfigureAwait(false))
 							if (m_writerQueue.Count > 0 && m_writerQueue[0].Offer != null)
-								await m_writerQueue[0].Offer.WithdrawAsync(this);
+								await m_writerQueue[0].Offer.WithdrawAsync(this).ConfigureAwait(false);
 
 						return processed;
 					}
@@ -83,8 +91,8 @@ namespace CoCoL
 						return x.Offer.OfferAsync(this);
 					}).ToArray();
 
-					await Task.WhenAll(successlist);
-					if (!await acceptedwriter)
+					await Task.WhenAll(successlist).ConfigureAwait(false);
+					if (!await acceptedwriter.ConfigureAwait(false))
 						acceptedwriter = Offer(m_writerQueue[0]);
 					else
 						haswriter = true;
@@ -143,11 +151,11 @@ namespace CoCoL
 		/// <param name="asReader"><c>true</c> if leaving as a reader, <c>false</c> otherwise</param>
 		public override async Task LeaveAsync(bool asReader)
 		{
-			await base.LeaveAsync(asReader);
+			await base.LeaveAsync(asReader).ConfigureAwait(false);
 			if (asReader)
 				using (await m_asynclock.LockAsync())
 					if (m_joinedReaderCount >= Math.Max(m_initialBarrierSize, m_minimumReaders))
-						await MatchReadersAndWriters(true, null);
+						await MatchReadersAndWriters(true, null).ConfigureAwait(false);
 				
 		}
 
