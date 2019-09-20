@@ -19,6 +19,29 @@ namespace UnitTest
 	public class ChannelOverflowTests
 	{
         [TEST_METHOD]
+        public void TestInfiniteReadTimeout()
+        {
+            using (new IsolatedChannelScope())
+            {
+                var c = ChannelManager.CreateChannel<int>(maxPendingWriters: 2, pendingWritersOverflowStrategy: QueueOverflowStrategy.LIFO);
+                var t = c.ReadAsync(Timeout.Infinite);
+                Task.Delay(500).WaitForTaskOrThrow();
+                if (t.IsFaulted)
+                    throw new UnittestException("Infinite timeout timed out?");
+                var ct = new System.Threading.CancellationTokenSource();
+                var t2 = c.ReadAsync(Timeout.Infinite, ct.Token);
+                Task.Delay(500).WaitForTaskOrThrow();
+                if (t2.IsFaulted)
+                    throw new UnittestException("Infinite timeout timed out?");
+                c.Retire(true);
+                Task.Delay(500).WaitForTaskOrThrow();
+                if (!t2.IsFaulted)
+                    throw new UnittestException("Read cancellation failed");
+            }
+        }
+
+
+        [TEST_METHOD]
 		public void TestReaderReject()
 		{
 			TestReaderOverflow(QueueOverflowStrategy.Reject);

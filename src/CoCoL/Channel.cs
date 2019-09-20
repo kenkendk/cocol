@@ -181,17 +181,17 @@ namespace CoCoL
             /// <summary>
             /// Gets a value indicating whether this <see cref="T:CoCoL.Channel`1.ReaderEntry"/> is timed out.
             /// </summary>
-            public bool IsTimeout => Offer is IExpiringOffer && ((IExpiringOffer)Offer).Expires < DateTime.Now;
+            public bool IsTimeout => Offer is IExpiringOffer expOffer && expOffer.IsExpired;
 
             /// <summary>
             /// Gets a value indicating whether this <see cref="T:CoCoL.Channel`1.ReaderEntry"/> is cancelled.
             /// </summary>
-            public bool IsCancelled => Offer is ICancelAbleOffer && ((ICancelAbleOffer)Offer).CancelToken.IsCancellationRequested;
+            public bool IsCancelled => Offer is ICancelAbleOffer canOffer && canOffer.CancelToken.IsCancellationRequested;
 
             /// <summary>
             /// Gets a value representing the expiration time of this entry
             /// </summary>
-            public DateTime Expires => Offer is IExpiringOffer ? ((IExpiringOffer)Offer).Expires : new DateTime(0);
+            public DateTime Expires => Offer is IExpiringOffer expOffer ? expOffer.Expires : new DateTime(0);
 
             /// <summary>
             /// Signals that the probe phase has finished
