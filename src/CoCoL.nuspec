@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>CoCoL</id>
-    <version>1.7.0</version>
+    <version>1.7.1</version>
     <title>CoCoL</title>
     <authors>Kenneth Skovhede</authors>
     <owners>Kenneth Skovhede</owners>
@@ -10,8 +10,8 @@
     <projectUrl>https://github.com/kenkendk/cocol</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Concurrent Communications Library</description>
-    <releaseNotes>Improved support for timeouts and cancellation tokens.</releaseNotes>
-    <copyright>Copyright 2017, Kenneth Skovhede</copyright>
+    <releaseNotes>Fixed a case where infinite timeout was treated as immediate.</releaseNotes>
+    <copyright>Copyright 2019, Kenneth Skovhede</copyright>
     <tags>Multithreading Multiprocessing Concurrency CSP Go Golang Actor</tags>
   </metadata>
   <files>
