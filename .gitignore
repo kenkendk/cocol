@@ -1,6 +1,0 @@
-bin
-obj
-*.userprefs
-src/packages
-CoCoL.*.nupkg
-src/.vs
