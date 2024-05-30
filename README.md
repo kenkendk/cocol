@@ -1,7 +1,5 @@
 # CoCoL - Concurrent Communications Library
 
-[![Build Status on Travis-CI](https://travis-ci.org/kenkendk/cocol.svg?branch=master)](https://travis-ci.org/kenkendk/cocol)
-[![Build status on AppVeyor](https://ci.appveyor.com/api/projects/status/v72maima8o12vsn6/branch/master?svg=true)](https://ci.appveyor.com/project/kenkendk/cocol/branch/master)
 [![Nuget count](https://img.shields.io/nuget/v/CoCoL.svg)](https://www.nuget.org/packages/CoCoL/)
 [![License](https://img.shields.io/github/license/kenkendk/cocol.svg)](https://github.com/kenkendk/cocol/blob/master/LICENSE)
 [![Issues open](https://img.shields.io/github/issues-raw/kenkendk/cocol.svg)](https://github.com/kenkendk/cocol/issues/)
