@@ -83,35 +83,31 @@ namespace CoCoL
 			return new MultisetRequest<T>(value, null, channel, false);
 		}
 
-        /// <summary>
-        /// Explicit disable compares
-        /// </summary>
-        /// <param name="other">The item to compare to</param>
-        /// <returns>Always throws an exception</returns>
-        bool IEquatable<MultisetRequest<T>>.Equals(MultisetRequest<T> other)
-        {
-            throw new NotImplementedException();
-        }
+		/// <summary>
+		/// Explicit disable compares
+		/// </summary>
+		/// <param name="other">The item to compare to</param>
+		/// <returns>Always throws an exception</returns>
+		bool IEquatable<MultisetRequest<T>>.Equals(MultisetRequest<T> other)
+		{
+			throw new NotImplementedException();
+		}
 
-        #region IMultisetRequestUntyped implementation
+		#region IMultisetRequestUntyped implementation
 
-        /// <summary>
-        /// Gets the boxed value.
-        /// </summary>
-        /// <value>The value.</value>
-        object IMultisetRequestUntyped.Value 
+		/// <summary>
+		/// Gets the boxed value.
+		/// </summary>
+		/// <value>The value.</value>
+		object IMultisetRequestUntyped.Value
 		{
 			get { return this.Value; }
-			set 
-			{ 
-#if LIMITED_REFLECTION_SUPPORT
-				if ( System.Reflection.IntrospectionExtensions.GetTypeInfo(typeof(T)).IsValueType && value == null)
-#else
+			set
+			{
 				if (typeof(T).IsValueType && value == null)
-#endif
 					this.Value = default(T);
 				else
-					this.Value = (T)value; 
+					this.Value = (T)value;
 			}
 		}
 

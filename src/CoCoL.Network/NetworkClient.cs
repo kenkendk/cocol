@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.Json;
 
 namespace CoCoL.Network
 {
@@ -54,14 +55,14 @@ namespace CoCoL.Network
 		/// </summary>
 		static NetworkClient()
 		{
-			INITIAL_MESSAGE = new [] {
+			INITIAL_MESSAGE = new[] {
 				(byte)0, //Header length
 				SOCKET_PROTOCOL_MAJOR_VERSION,
 				SOCKET_PROTOCOL_MINOR_VERSION,
 				(byte)SOCKET_MAGIC_HEADER.Length
 			}
 				.Concat(SOCKET_MAGIC_HEADER)
-				.Concat(new [] { (byte)SOCKET_SERIALIZER.Length })
+				.Concat(new[] { (byte)SOCKET_SERIALIZER.Length })
 				.Concat(SOCKET_SERIALIZER)
 				.ToArray();
 
@@ -206,7 +207,7 @@ namespace CoCoL.Network
 				offset += read;
 			}
 		}
-			
+
 		/// <summary>
 		/// Connect this instance to the other end.
 		/// </summary>
@@ -227,21 +228,21 @@ namespace CoCoL.Network
 				finally { m_stream = null; }
 
 				try { m_socket.Close(); }
-                catch { /* Ignore shutdown errors, report original error */ }
+				catch { /* Ignore shutdown errors, report original error */ }
 
-                try { m_readRequests.Retire(); }
-                catch { /* Ignore shutdown errors, report original error */ }
+				try { m_readRequests.Retire(); }
+				catch { /* Ignore shutdown errors, report original error */ }
 
-                try { m_writeRequests.Retire(); }
-                catch { /* Ignore shutdown errors, report original error */ }
+				try { m_writeRequests.Retire(); }
+				catch { /* Ignore shutdown errors, report original error */ }
 
-                throw;
+				throw;
 			}
 
 			ReaderProcess(m_socket, m_stream, m_readRequests.AsWriteOnly(), SelfID).FireAndForget();
 			WriterProcess(m_socket, m_stream, m_writeRequests.AsReadOnly(), SelfID).FireAndForget();
 		}
-	
+
 		/// <summary>
 		/// The process that reads data from the underlying stream and parses it into a <see cref="CoCoL.Network.PendingNetworkRequest" />.
 		/// </summary>
@@ -255,11 +256,10 @@ namespace CoCoL.Network
 			try
 			{
 				var buffer = new byte[SMALL_MESSAGE_SIZE];
-				var json = new Newtonsoft.Json.JsonSerializer();
 
-				using(client)
-				using(stream)
-				using(channel)
+				using (client)
+				using (stream)
+				using (channel)
 				{
 					while (true)
 					{
@@ -280,10 +280,8 @@ namespace CoCoL.Network
 						await ForceReadAsync(stream, buffer, 0, headlen).ConfigureAwait(false);
 
 						RequestHeader header;
-						using(var ms = new MemoryStream(buffer, 0, headlen))
-						using(var sr = new StreamReader(ms))
-						using(var jr = new Newtonsoft.Json.JsonTextReader(sr))
-							header = json.Deserialize<RequestHeader>(jr);
+						using (var ms = new MemoryStream(buffer, 0, headlen))
+							header = JsonSerializer.Deserialize<RequestHeader>(ms);
 
 						LOG.DebugFormat("{4}: Got {0} - {1} request with {2} bytes from {3}", header.RequestID, header.RequestType, streamlen, client.Client.RemoteEndPoint, selfid);
 
@@ -303,10 +301,8 @@ namespace CoCoL.Network
 							if (objtype == null)
 								throw new ArgumentException(string.Format("Unable to determine the target type to create for {0}", header.PayloadClassName));
 
-							using(var ms = new MemoryStream(bf, 0, (int)payloadlen))
-							using(var sr = new StreamReader(ms))
-							using(var jr = new Newtonsoft.Json.JsonTextReader(sr))
-								payload = json.Deserialize(jr, objtype);
+							using (var ms = new MemoryStream(bf, 0, (int)payloadlen))
+								payload = JsonSerializer.Deserialize(ms, objtype);
 						}
 
 						var pnrq = new PendingNetworkRequest(
@@ -326,7 +322,7 @@ namespace CoCoL.Network
 					}
 				}
 			}
-			catch(Exception ex)
+			catch (Exception ex)
 			{
 				if (!ex.IsRetiredException())
 				{
@@ -351,16 +347,16 @@ namespace CoCoL.Network
 			try
 			{
 				var headbuffer = new byte[SMALL_MESSAGE_SIZE];
-				var json = new Newtonsoft.Json.JsonSerializer();
 
-				using(client)
-				using(stream)
-				using(channel)
+				using (client)
+				using (stream)
+				using (channel)
 				{
 					while (true)
 					{
 						var prnq = await channel.ReadAsync().ConfigureAwait(false);
-						var header = new RequestHeader() {
+						var header = new RequestHeader()
+						{
 							ChannelID = prnq.ChannelID,
 							ChannelDataType = prnq.ChannelDataType.AssemblyQualifiedName,
 							RequestID = prnq.RequestID,
@@ -372,17 +368,14 @@ namespace CoCoL.Network
 						};
 
 						ushort headlen;
-						using(var ms = new MemoryStream(headbuffer, true))
+						using (var ms = new MemoryStream(headbuffer, true))
 						{
 							// Make space for the size fields
 							ms.Write(headbuffer, 0, 8 + 2);
 
-							using(var tw = new StreamWriter(ms))
-							using(var jw = new Newtonsoft.Json.JsonTextWriter(tw))
+							using (var tw = new StreamWriter(ms))
 							{
-								json.Serialize(jw, header);
-
-								jw.Flush();
+								JsonSerializer.Serialize(ms, header);
 								await tw.FlushAsync().ConfigureAwait(false);
 
 								headlen = (ushort)(ms.Position - 8 - 2);
@@ -394,18 +387,14 @@ namespace CoCoL.Network
 							throw new InvalidDataException("Too larger header");
 
 						// Make a memory stream for the payload
-						using(var ms = new MemoryStream())
-						using(var tw = new StreamWriter(ms))
-						using(var jw = new Newtonsoft.Json.JsonTextWriter(tw))
+						using (var ms = new MemoryStream())
 						{
 							ulong payloadlen = 0;
 
 							if (prnq.Value != null)
 							{
-								json.Serialize(jw, prnq.Value);
-
-								jw.Flush();
-								await tw.FlushAsync().ConfigureAwait(false);
+								JsonSerializer.Serialize(ms, prnq.Value);
+								await ms.FlushAsync().ConfigureAwait(false);
 
 								payloadlen = (ulong)ms.Length;
 								ms.Position = 0;
@@ -424,14 +413,14 @@ namespace CoCoL.Network
 							await stream.WriteAsync(headbuffer, 0, headlen + 8 + 2 + 8).ConfigureAwait(false);
 							if (payloadlen != 0)
 								await ms.CopyToAsync(stream).ConfigureAwait(false);
-							
+
 							LOG.DebugFormat("{4}: Sent {0} - {1} request with {2} bytes to {3}", prnq.RequestID, prnq.RequestType, packlen, client.Client.RemoteEndPoint, selfid);
 							await stream.FlushAsync().ConfigureAwait(false);
 						}
 					}
 				}
 			}
-			catch(Exception ex)
+			catch (Exception ex)
 			{
 				if (!ex.IsRetiredException())
 				{
@@ -476,7 +465,7 @@ namespace CoCoL.Network
 
 			try { m_writeRequests.Retire(); }
 			catch { /* Ignore shutdown errors */ }
-        }
+		}
 	}
 }
 

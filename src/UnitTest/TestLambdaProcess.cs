@@ -1,23 +1,16 @@
 ﻿using System;
 using CoCoL;
 using System.Threading.Tasks;
-
-#if NETCOREAPP2_0
-using TOP_LEVEL = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
-using TEST_METHOD = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-using TOP_LEVEL = NUnit.Framework.TestFixtureAttribute;
-using TEST_METHOD = NUnit.Framework.TestAttribute;
-#endif
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace UnitTest
 {
-    [TOP_LEVEL]
+	[TestClass]
 	public class TestLambdaProcess
 	{
 		private const string CHANNEL_NAME = "SomeChannel";
 
-        [TEST_METHOD]
+		[TestMethod]
 		public void TestRetireWithoutLoss()
 		{
 			Task[] tasks;
@@ -68,7 +61,7 @@ namespace UnitTest
 			if (all.IsFaulted || !all.IsCompleted)
 				throw new UnittestException("Unexpected task state");
 
-		}		
+		}
 	}
 }
 

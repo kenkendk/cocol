@@ -3,26 +3,19 @@ using System.Threading.Tasks;
 using CoCoL;
 using System.Collections.Generic;
 using System.Linq;
-
-#if NETCOREAPP2_0
-using TOP_LEVEL = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
-using TEST_METHOD = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-using TOP_LEVEL = NUnit.Framework.TestFixtureAttribute;
-using TEST_METHOD = NUnit.Framework.TestAttribute;
-#endif
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace UnitTest
 {
-    [TOP_LEVEL]
+	[TestClass]
 	public class TimeoutTests
 	{
-        [TEST_METHOD]
+		[TestMethod]
 		public void TestTimeoutSimple()
 		{
 			var c = ChannelManager.CreateChannel<int>();
 
-			Func<Task> p = async() =>
+			Func<Task> p = async () =>
 			{
 				try
 				{
@@ -39,14 +32,14 @@ namespace UnitTest
 				throw new UnittestException("Failed to get timeout");
 		}
 
-        [TEST_METHOD]
+		[TestMethod]
 		public void TestTimeoutMultiple()
 		{
 			var c1 = ChannelManager.CreateChannel<int>();
 			var c2 = ChannelManager.CreateChannel<int>();
 			var c3 = ChannelManager.CreateChannel<int>();
 
-			Func<Task> p = async() =>
+			Func<Task> p = async () =>
 				{
 					try
 					{
@@ -64,7 +57,7 @@ namespace UnitTest
 
 		}
 
-        [TEST_METHOD]
+		[TestMethod]
 		public void TestTimeoutMultipleTimes()
 		{
 			var c1 = ChannelManager.CreateChannel<int>();
@@ -72,7 +65,7 @@ namespace UnitTest
 			var c3 = ChannelManager.CreateChannel<int>();
 			var c4 = ChannelManager.CreateChannel<int>();
 
-			Func<Task> p = async() =>
+			Func<Task> p = async () =>
 				{
 					try
 					{
@@ -96,10 +89,10 @@ namespace UnitTest
 
 			if (!p().Wait(TimeSpan.FromSeconds(3)))
 				throw new UnittestException("Failed to get timeout");
-			
+
 		}
 
-        [TEST_METHOD]
+		[TestMethod]
 		public void TestTimeoutMultipleTimesSuccession()
 		{
 			var c1 = ChannelManager.CreateChannel<int>();
@@ -107,11 +100,11 @@ namespace UnitTest
 			var c3 = ChannelManager.CreateChannel<int>();
 			var c4 = ChannelManager.CreateChannel<int>();
 
-			Func<Task> p = async() =>
+			Func<Task> p = async () =>
 				{
 					try
 					{
-						var tasks = new List<Task>(new [] {
+						var tasks = new List<Task>(new[] {
 							c1.ReadAsync(TimeSpan.FromSeconds(7)),
 							c2.ReadAsync(TimeSpan.FromSeconds(3)),
 							c3.ReadAsync(TimeSpan.FromSeconds(2)),
@@ -130,7 +123,7 @@ namespace UnitTest
 							for (var i = 0; i < tasks.Count; i++)
 								if (tasks[i].IsFaulted && i != 2)
 									throw new UnittestException(string.Format("Timeout happened on c{0}, but should have happened on c3?", i + 1));
-							
+
 							throw new UnittestException("Timeout happened on another channel than c3?");
 						}
 
@@ -158,7 +151,7 @@ namespace UnitTest
 
 						if (tasks.Any(x => x.IsFaulted))
 							throw new UnittestException("Unexpected task fault?");
-						
+
 						//Console.WriteLine("Completed");
 					}
 					catch (TimeoutException)
@@ -171,16 +164,16 @@ namespace UnitTest
 					throw new UnittestException("Failed to get timeout");
 		}
 
-        [TEST_METHOD]
+		[TestMethod]
 		public void TestMixedTimeout()
 		{
 			var c = ChannelManager.CreateChannel<int>();
 
-			Func<Task> p = async() =>
+			Func<Task> p = async () =>
 				{
 					try
 					{
-						var tasks = new List<Task>(new [] {
+						var tasks = new List<Task>(new[] {
 							c.ReadAsync(),
 							c.ReadAsync(TimeSpan.FromSeconds(1)),
 							c.ReadAsync(TimeSpan.FromSeconds(2))
@@ -227,16 +220,16 @@ namespace UnitTest
 					throw new UnittestException("Failed to get timeout");
 		}
 
-        [TEST_METHOD]
+		[TestMethod]
 		public void TestTimeoutWithBuffers()
 		{
 			var c = ChannelManager.CreateChannel<int>(buffersize: 1);
 
-			Func<Task> p = async() =>
+			Func<Task> p = async () =>
 				{
 					try
 					{
-						var tasks = new List<Task>(new [] {
+						var tasks = new List<Task>(new[] {
 							c.WriteAsync(4),
 							c.WriteAsync(5, TimeSpan.FromSeconds(1)),
 							c.WriteAsync(6, TimeSpan.FromSeconds(2))

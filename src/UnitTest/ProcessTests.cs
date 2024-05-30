@@ -1,18 +1,11 @@
 ﻿using System;
 using CoCoL;
 using System.Threading.Tasks;
-
-#if NETCOREAPP2_0
-using TOP_LEVEL = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
-using TEST_METHOD = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-using TOP_LEVEL = NUnit.Framework.TestFixtureAttribute;
-using TEST_METHOD = NUnit.Framework.TestAttribute;
-#endif
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace UnitTest
 {
-    [TOP_LEVEL]
+	[TestClass]
 	public class ProcessTests
 	{
 		[Process(10)]
@@ -31,7 +24,7 @@ namespace UnitTest
 		private class Consumer : ProcessHelper
 		{
 			public int Sum { get; private set; }
-			
+
 			[ChannelName("work")]
 			private IReadChannelEnd<int> m_channel = null;
 
@@ -42,7 +35,7 @@ namespace UnitTest
 			}
 		}
 
-        [TEST_METHOD]
+		[TestMethod]
 		public void TestSimple()
 		{
 			Consumer c;
@@ -58,7 +51,7 @@ namespace UnitTest
 
 			if (c.Sum != 100)
 				throw new UnittestException(string.Format("Autowire or loader failed, sum was supposed to be {0} but was {1}", 100, c.Sum));
-		}	
+		}
 	}
 }
 

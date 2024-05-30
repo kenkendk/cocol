@@ -7,112 +7,112 @@ using System.Threading;
 
 namespace CoCoL
 {
-    /// <summary>
-    /// Static helper class to create channels
-    /// </summary>
-    public static class Channel
-    {
-        /// <summary>
-        /// Gets or creates a named channel.
-        /// </summary>
-        /// <returns>The named channel.</returns>
-        /// <param name="name">The name of the channel to find.</param>
-        /// <param name="buffersize">The number of buffers in the channel.</param>
-        /// <param name="scope">The scope to create a named channel in, defaults to null which means the current scope</param>
-        /// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
-        /// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
-        /// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
-        /// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
-        /// <param name="broadcast"><c>True</c> will create the channel as a broadcast channel, the default <c>false</c> will create a normal channel</param>
-        /// <param name="initialBroadcastBarrier">The number of readers required on the channel before sending the first broadcast, can only be used with broadcast channels</param>
-        /// <param name="broadcastMinimum">The minimum number of readers required on the channel, before a broadcast can be performed, can only be used with broadcast channels</param>
-        /// <typeparam name="T">The channel type.</typeparam>
-        public static IChannel<T> Get<T>(string name, int buffersize = 0, ChannelScope scope = null, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject, bool broadcast = false, int initialBroadcastBarrier = -1, int broadcastMinimum = -1)
-        {
-            return ChannelManager.GetChannel<T>(name, buffersize, scope, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy, broadcast, initialBroadcastBarrier, broadcastMinimum);
-        }
+	/// <summary>
+	/// Static helper class to create channels
+	/// </summary>
+	public static class Channel
+	{
+		/// <summary>
+		/// Gets or creates a named channel.
+		/// </summary>
+		/// <returns>The named channel.</returns>
+		/// <param name="name">The name of the channel to find.</param>
+		/// <param name="buffersize">The number of buffers in the channel.</param>
+		/// <param name="scope">The scope to create a named channel in, defaults to null which means the current scope</param>
+		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
+		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
+		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
+		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
+		/// <param name="broadcast"><c>True</c> will create the channel as a broadcast channel, the default <c>false</c> will create a normal channel</param>
+		/// <param name="initialBroadcastBarrier">The number of readers required on the channel before sending the first broadcast, can only be used with broadcast channels</param>
+		/// <param name="broadcastMinimum">The minimum number of readers required on the channel, before a broadcast can be performed, can only be used with broadcast channels</param>
+		/// <typeparam name="T">The channel type.</typeparam>
+		public static IChannel<T> Get<T>(string name, int buffersize = 0, ChannelScope scope = null, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject, bool broadcast = false, int initialBroadcastBarrier = -1, int broadcastMinimum = -1)
+		{
+			return ChannelManager.GetChannel<T>(name, buffersize, scope, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy, broadcast, initialBroadcastBarrier, broadcastMinimum);
+		}
 
-        /// <summary>
-        /// Gets or creates a named channel.
-        /// </summary>
-        /// <returns>The named channel.</returns>
-        /// <param name="attr">The attribute describing the channel.</param>
-        /// <param name="scope">The scope to create a named channel in, defaults to null which means the current scope</param>
-        /// <typeparam name="T">The channel type.</typeparam>
-        public static IChannel<T> Get<T>(ChannelNameAttribute attr, ChannelScope scope = null)
-        {
-            return ChannelManager.GetChannel<T>(attr, scope);
-        }
+		/// <summary>
+		/// Gets or creates a named channel.
+		/// </summary>
+		/// <returns>The named channel.</returns>
+		/// <param name="attr">The attribute describing the channel.</param>
+		/// <param name="scope">The scope to create a named channel in, defaults to null which means the current scope</param>
+		/// <typeparam name="T">The channel type.</typeparam>
+		public static IChannel<T> Get<T>(ChannelNameAttribute attr, ChannelScope scope = null)
+		{
+			return ChannelManager.GetChannel<T>(attr, scope);
+		}
 
-        /// <summary>
-        /// Gets or creates a named channel from a marker setup
-        /// </summary>
-        /// <returns>The named channel.</returns>
-        /// <param name="marker">The channel marker instance that describes the channel.</param>
-        /// <typeparam name="T">The channel type.</typeparam>
-        public static IChannel<T> Get<T>(ChannelMarkerWrapper<T> marker)
-        {
-            return ChannelManager.GetChannel<T>(marker);
-        }
+		/// <summary>
+		/// Gets or creates a named channel from a marker setup
+		/// </summary>
+		/// <returns>The named channel.</returns>
+		/// <param name="marker">The channel marker instance that describes the channel.</param>
+		/// <typeparam name="T">The channel type.</typeparam>
+		public static IChannel<T> Get<T>(ChannelMarkerWrapper<T> marker)
+		{
+			return ChannelManager.GetChannel<T>(marker);
+		}
 
-        /// <summary>
-        /// Gets a write channel from a marker interface.
-        /// </summary>
-        /// <returns>The requested channel.</returns>
-        /// <param name="channel">The marker interface, or a real channel instance.</param>
-        /// <typeparam name="T">The channel type.</typeparam>
-        public static IWriteChannelEnd<T> Get<T>(IWriteChannel<T> channel)
-        {
-            return ChannelManager.GetChannel<T>(channel);
-        }
+		/// <summary>
+		/// Gets a write channel from a marker interface.
+		/// </summary>
+		/// <returns>The requested channel.</returns>
+		/// <param name="channel">The marker interface, or a real channel instance.</param>
+		/// <typeparam name="T">The channel type.</typeparam>
+		public static IWriteChannelEnd<T> Get<T>(IWriteChannel<T> channel)
+		{
+			return ChannelManager.GetChannel<T>(channel);
+		}
 
-        /// <summary>
-        /// Gets a read channel from a marker interface.
-        /// </summary>
-        /// <returns>The requested channel.</returns>
-        /// <param name="channel">The marker interface, or a real channel instance.</param>
-        /// <typeparam name="T">The channel type.</typeparam>
-        public static IReadChannelEnd<T> Get<T>(IReadChannel<T> channel)
-        {
-            return ChannelManager.GetChannel<T>(channel);
-        }
+		/// <summary>
+		/// Gets a read channel from a marker interface.
+		/// </summary>
+		/// <returns>The requested channel.</returns>
+		/// <param name="channel">The marker interface, or a real channel instance.</param>
+		/// <typeparam name="T">The channel type.</typeparam>
+		public static IReadChannelEnd<T> Get<T>(IReadChannel<T> channel)
+		{
+			return ChannelManager.GetChannel<T>(channel);
+		}
 
-        /// <summary>
-        /// Creates a channel, possibly unnamed.
-        /// If a channel name is provided, the channel is created in the supplied scope.
-        /// If a channel with the given name is already found in the supplied scope, the named channel is returned.
-        /// </summary>
-        /// <returns>The channel.</returns>
-        /// <param name="name">The name of the channel, or null.</param>
-        /// <param name="buffersize">The number of buffers in the channel.</param>
-        /// <param name="scope">The scope to create a named channel in, defaults to null which means the current scope</param>
-        /// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
-        /// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
-        /// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
-        /// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
-        /// <param name="broadcast"><c>True</c> will create the channel as a broadcast channel, the default <c>false</c> will create a normal channel</param>
-        /// <param name="initialBroadcastBarrier">The number of readers required on the channel before sending the first broadcast, can only be used with broadcast channels</param>
-        /// <param name="broadcastMinimum">The minimum number of readers required on the channel, before a broadcast can be performed, can only be used with broadcast channels</param>
-        /// <typeparam name="T">The channel type.</typeparam>
-        public static IChannel<T> Create<T>(string name = null, int buffersize = 0, ChannelScope scope = null, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject, bool broadcast = false, int initialBroadcastBarrier = -1, int broadcastMinimum = -1)
-        {
-            return ChannelManager.CreateChannel<T>(name, buffersize, scope, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy, broadcast, initialBroadcastBarrier, broadcastMinimum);
-        }
+		/// <summary>
+		/// Creates a channel, possibly unnamed.
+		/// If a channel name is provided, the channel is created in the supplied scope.
+		/// If a channel with the given name is already found in the supplied scope, the named channel is returned.
+		/// </summary>
+		/// <returns>The channel.</returns>
+		/// <param name="name">The name of the channel, or null.</param>
+		/// <param name="buffersize">The number of buffers in the channel.</param>
+		/// <param name="scope">The scope to create a named channel in, defaults to null which means the current scope</param>
+		/// <param name="maxPendingReaders">The maximum number of pending readers. A negative value indicates infinite</param>
+		/// <param name="maxPendingWriters">The maximum number of pending writers. A negative value indicates infinite</param>
+		/// <param name="pendingReadersOverflowStrategy">The strategy for dealing with overflow for read requests</param>
+		/// <param name="pendingWritersOverflowStrategy">The strategy for dealing with overflow for write requests</param>
+		/// <param name="broadcast"><c>True</c> will create the channel as a broadcast channel, the default <c>false</c> will create a normal channel</param>
+		/// <param name="initialBroadcastBarrier">The number of readers required on the channel before sending the first broadcast, can only be used with broadcast channels</param>
+		/// <param name="broadcastMinimum">The minimum number of readers required on the channel, before a broadcast can be performed, can only be used with broadcast channels</param>
+		/// <typeparam name="T">The channel type.</typeparam>
+		public static IChannel<T> Create<T>(string name = null, int buffersize = 0, ChannelScope scope = null, int maxPendingReaders = -1, int maxPendingWriters = -1, QueueOverflowStrategy pendingReadersOverflowStrategy = QueueOverflowStrategy.Reject, QueueOverflowStrategy pendingWritersOverflowStrategy = QueueOverflowStrategy.Reject, bool broadcast = false, int initialBroadcastBarrier = -1, int broadcastMinimum = -1)
+		{
+			return ChannelManager.CreateChannel<T>(name, buffersize, scope, maxPendingReaders, maxPendingWriters, pendingReadersOverflowStrategy, pendingWritersOverflowStrategy, broadcast, initialBroadcastBarrier, broadcastMinimum);
+		}
 
-        /// <summary>
-        /// Creates a channel, possibly unnamed.
-        /// If a channel name is provided, the channel is created in the supplied scope.
-        /// If a channel with the given name is already found in the supplied scope, the named channel is returned.
-        /// </summary>
-        /// <returns>The named channel.</returns>
-        /// <param name="attr">The attribute describing the channel.</param>
-        /// <param name="scope">The scope to create a named channel in, defaults to null which means the current scope</param>
-        /// <typeparam name="T">The channel type.</typeparam>
-        public static IChannel<T> Create<T>(ChannelNameAttribute attr, ChannelScope scope = null)
-        {
-            return ChannelManager.CreateChannel<T>(attr, scope);
-        }
-    }
+		/// <summary>
+		/// Creates a channel, possibly unnamed.
+		/// If a channel name is provided, the channel is created in the supplied scope.
+		/// If a channel with the given name is already found in the supplied scope, the named channel is returned.
+		/// </summary>
+		/// <returns>The named channel.</returns>
+		/// <param name="attr">The attribute describing the channel.</param>
+		/// <param name="scope">The scope to create a named channel in, defaults to null which means the current scope</param>
+		/// <typeparam name="T">The channel type.</typeparam>
+		public static IChannel<T> Create<T>(ChannelNameAttribute attr, ChannelScope scope = null)
+		{
+			return ChannelManager.CreateChannel<T>(attr, scope);
+		}
+	}
 
 	/// <summary>
 	/// A channel that uses continuation callbacks
@@ -149,12 +149,10 @@ namespace CoCoL
 			/// The callback method for reporting progress
 			/// </summary>
 			public readonly TaskCompletionSource<T> Source;
-#if !NO_TASK_ASYNCCONTINUE
 			/// <summary>
 			/// A flag indicating if signalling task completion must be enqued on the task pool
 			/// </summary>
 			public readonly bool EnqueueContinuation;
-#endif
 			/// <summary>
 			/// Initializes a new instance of the <see cref="CoCoL.Channel&lt;T&gt;.ReaderEntry"/> struct.
 			/// </summary>
@@ -162,15 +160,11 @@ namespace CoCoL
 			public ReaderEntry(ITwoPhaseOffer offer)
 			{
 				Offer = offer;
-#if NO_TASK_ASYNCCONTINUE
-                Source = new TaskCompletionSource<T>();
-#else
 				EnqueueContinuation = ExecutionScope.Current.IsLimitingPool;
 				Source = new TaskCompletionSource<T>(
 					EnqueueContinuation
 					? TaskCreationOptions.None
 					: TaskCreationOptions.RunContinuationsAsynchronously);
-#endif
 			}
 
 			/// <summary>
@@ -178,40 +172,40 @@ namespace CoCoL
 			/// </summary>
 			ITwoPhaseOffer IEntry.Offer { get { return Offer; } }
 
-            /// <summary>
-            /// Gets a value indicating whether this <see cref="T:CoCoL.Channel`1.ReaderEntry"/> is timed out.
-            /// </summary>
-            public bool IsTimeout => Offer is IExpiringOffer expOffer && expOffer.IsExpired;
+			/// <summary>
+			/// Gets a value indicating whether this <see cref="T:CoCoL.Channel`1.ReaderEntry"/> is timed out.
+			/// </summary>
+			public bool IsTimeout => Offer is IExpiringOffer expOffer && expOffer.IsExpired;
 
-            /// <summary>
-            /// Gets a value indicating whether this <see cref="T:CoCoL.Channel`1.ReaderEntry"/> is cancelled.
-            /// </summary>
-            public bool IsCancelled => Offer is ICancelAbleOffer canOffer && canOffer.CancelToken.IsCancellationRequested;
+			/// <summary>
+			/// Gets a value indicating whether this <see cref="T:CoCoL.Channel`1.ReaderEntry"/> is cancelled.
+			/// </summary>
+			public bool IsCancelled => Offer is ICancelAbleOffer canOffer && canOffer.CancelToken.IsCancellationRequested;
 
-            /// <summary>
-            /// Gets a value representing the expiration time of this entry
-            /// </summary>
-            public DateTime Expires => Offer is IExpiringOffer expOffer ? expOffer.Expires : new DateTime(0);
+			/// <summary>
+			/// Gets a value representing the expiration time of this entry
+			/// </summary>
+			public DateTime Expires => Offer is IExpiringOffer expOffer ? expOffer.Expires : new DateTime(0);
 
-            /// <summary>
-            /// Signals that the probe phase has finished
-            /// </summary>
-            public void ProbeCompleted()
-            {
-                if (Offer is IExpiringOffer offer)
-                    offer.ProbeComplete();                    
-            }
+			/// <summary>
+			/// Signals that the probe phase has finished
+			/// </summary>
+			public void ProbeCompleted()
+			{
+				if (Offer is IExpiringOffer offer)
+					offer.ProbeComplete();
+			}
 
-            /// <summary>
-            /// Explict disable of compares
-            /// </summary>
-            /// <param name="other">The item to compare with</param>
-            /// <returns>Always throws an exception to avoid compares</returns>
-            public bool Equals(ReaderEntry other)
-            {
-                throw new NotImplementedException();
-            }
-        }
+			/// <summary>
+			/// Explict disable of compares
+			/// </summary>
+			/// <param name="other">The item to compare with</param>
+			/// <returns>Always throws an exception to avoid compares</returns>
+			public bool Equals(ReaderEntry other)
+			{
+				throw new NotImplementedException();
+			}
+		}
 
 		/// <summary>
 		/// Structure for keeping a write request
@@ -226,21 +220,18 @@ namespace CoCoL
 			/// The callback method for reporting progress
 			/// </summary>
 			public readonly TaskCompletionSource<bool> Source;
-            /// <summary>
-            /// The cancellation token
-            /// </summary>
-            public readonly CancellationToken CancelToken;
+			/// <summary>
+			/// The cancellation token
+			/// </summary>
+			public readonly CancellationToken CancelToken;
 			/// <summary>
 			/// The value being written
 			/// </summary>
 			public readonly T Value;
-
-#if !NO_TASK_ASYNCCONTINUE
 			/// <summary>
 			/// A flag indicating if signalling task completion must be enqued on the task pool
 			/// </summary>
 			public readonly bool EnqueueContinuation;
-#endif
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="CoCoL.Channel&lt;T&gt;.WriterEntry"/> struct.
@@ -250,76 +241,69 @@ namespace CoCoL
 			public WriterEntry(ITwoPhaseOffer offer, T value)
 			{
 				Offer = offer;
-#if NO_TASK_ASYNCCONTINUE
-                Source = new TaskCompletionSource<bool>();
-#else
 				EnqueueContinuation = ExecutionScope.Current.IsLimitingPool;
 				Source = new TaskCompletionSource<bool>(
-                    EnqueueContinuation
-                    ? TaskCreationOptions.None
-                    : TaskCreationOptions.RunContinuationsAsynchronously);
-#endif
-                Value = value;
+					EnqueueContinuation
+					? TaskCreationOptions.None
+					: TaskCreationOptions.RunContinuationsAsynchronously);
+				Value = value;
 			}
 
-            /// <summary>
-            /// Initializes a new empty instance of the <see cref="CoCoL.Channel&lt;T&gt;.WriterEntry"/> struct.
-            /// </summary>
-            /// <param name="value">The value being written.</param>
-            public WriterEntry(T value)
-            {
-                Offer = null;
-                Source = null;
-                Value = value;
-#if !NO_TASK_ASYNCCONTINUE
+			/// <summary>
+			/// Initializes a new empty instance of the <see cref="CoCoL.Channel&lt;T&gt;.WriterEntry"/> struct.
+			/// </summary>
+			/// <param name="value">The value being written.</param>
+			public WriterEntry(T value)
+			{
+				Offer = null;
+				Source = null;
+				Value = value;
 				EnqueueContinuation = false;
-#endif
-
 			}
 
-            /// <summary>
-            /// The offer handler for the request
-            /// </summary>
-            ITwoPhaseOffer IEntry.Offer { get { return Offer; } }
+			/// <summary>
+			/// The offer handler for the request
+			/// </summary>
+			ITwoPhaseOffer IEntry.Offer { get { return Offer; } }
 
 			/// <summary>
 			/// Gets a value indicating whether this <see cref="T:CoCoL.Channel`1.ReaderEntry"/> is timed out.
 			/// </summary>
 			public bool IsTimeout => Offer is IExpiringOffer && ((IExpiringOffer)Offer).IsExpired;
 
-            /// <summary>
-            /// Gets a value indicating whether this <see cref="T:CoCoL.Channel`1.ReaderEntry"/> is cancelled.
-            /// </summary>
-            public bool IsCancelled => Offer is ICancelAbleOffer && ((ICancelAbleOffer)Offer).CancelToken.IsCancellationRequested;
+			/// <summary>
+			/// Gets a value indicating whether this <see cref="T:CoCoL.Channel`1.ReaderEntry"/> is cancelled.
+			/// </summary>
+			public bool IsCancelled => Offer is ICancelAbleOffer && ((ICancelAbleOffer)Offer).CancelToken.IsCancellationRequested;
 
-            /// <summary>
-            /// Gets a value representing the expiration time of this entry
-            /// </summary>
-            public DateTime Expires => Offer is IExpiringOffer ? ((IExpiringOffer)Offer).Expires : new DateTime(0);
+			/// <summary>
+			/// Gets a value representing the expiration time of this entry
+			/// </summary>
+			public DateTime Expires => Offer is IExpiringOffer ? ((IExpiringOffer)Offer).Expires : new DateTime(0);
 
-            /// <summary>
-            /// Signals that the probe phase has finished
-            /// </summary>
-            public void ProbeCompleted()
-            {
-                if (Offer is IExpiringOffer offer)
-                    offer.ProbeComplete();
-            }
-            /// <summary>
-            /// Explict disable of compares
-            /// </summary>
-            /// <param name="other">The item to compare with</param>
-            /// <returns>Always throws an exception to avoid compares</returns>
-            public bool Equals(WriterEntry other)
-            {
-                throw new NotImplementedException();
-            }
-        }
+			/// <summary>
+			/// Signals that the probe phase has finished
+			/// </summary>
+			public void ProbeCompleted()
+			{
+				if (Offer is IExpiringOffer offer)
+					offer.ProbeComplete();
+			}
+			/// <summary>
+			/// Explict disable of compares
+			/// </summary>
+			/// <param name="other">The item to compare with</param>
+			/// <returns>Always throws an exception to avoid compares</returns>
+			public bool Equals(WriterEntry other)
+			{
+				throw new NotImplementedException();
+			}
+		}
 
-        /// <summary>
-        /// The queue with pending readers
-        /// </summary>
-        protected List<ReaderEntry> m_readerQueue = new List<ReaderEntry>(1);
+		/// <summary>
+		/// The queue with pending readers
+		/// </summary>
+		protected List<ReaderEntry> m_readerQueue = new List<ReaderEntry>(1);
 
 		/// <summary>
 		/// The queue with pending writers
@@ -442,9 +426,9 @@ namespace CoCoL
 			try
 			{
 				accept =
-                    (wr.Source == null || wr.Source.Task.Status == TaskStatus.WaitingForActivation)
-                    &&
-                    (wr.Offer == null || await wr.Offer.OfferAsync(this).ConfigureAwait(false));
+					(wr.Source == null || wr.Source.Task.Status == TaskStatus.WaitingForActivation)
+					&&
+					(wr.Offer == null || await wr.Offer.OfferAsync(this).ConfigureAwait(false));
 			}
 			catch (Exception ex)
 			{
@@ -484,9 +468,9 @@ namespace CoCoL
 			try
 			{
 				accept =
-                    (rd.Source == null || rd.Source.Task.Status == TaskStatus.WaitingForActivation)
-                    &&
-                    (rd.Offer == null || await rd.Offer.OfferAsync(this).ConfigureAwait(false));
+					(rd.Source == null || rd.Source.Task.Status == TaskStatus.WaitingForActivation)
+					&&
+					(rd.Offer == null || await rd.Offer.OfferAsync(this).ConfigureAwait(false));
 			}
 			catch (Exception ex)
 			{
@@ -536,18 +520,18 @@ namespace CoCoL
 				// is a writer
 				if (asReader)
 				{
-                    offerWriter = await Offer(wr).ConfigureAwait(false);
-                    if (!offerWriter)
+					offerWriter = await Offer(wr).ConfigureAwait(false);
+					if (!offerWriter)
 						continue;
-					
+
 					offerReader = await Offer(rd).ConfigureAwait(false);
 				}
 				else
 				{
-                    offerReader = await Offer(rd).ConfigureAwait(false);
-                    if (!offerReader)
+					offerReader = await Offer(rd).ConfigureAwait(false);
+					if (!offerReader)
 						continue;
-					
+
 					offerWriter = await Offer(wr).ConfigureAwait(false);
 				}
 
@@ -581,11 +565,11 @@ namespace CoCoL
 					if (caller == rd.Source.Task || (wr.Source != null && caller == wr.Source.Task))
 						processed = true;
 
-                    SetResult(rd, wr.Value);
-                    SetResult(wr, true);
+					SetResult(rd, wr.Value);
+					SetResult(wr, true);
 
-                    // Release items if there is space in the buffer
-                    await ProcessWriteQueueBufferAfterReadAsync(true).ConfigureAwait(false);
+					// Release items if there is space in the buffer
+					await ProcessWriteQueueBufferAfterReadAsync(true).ConfigureAwait(false);
 
 					// Adjust the cleanup threshold
 					if (m_writerQueue.Count <= m_writerQueueCleanup - MIN_QUEUE_CLEANUP_THRESHOLD)
@@ -604,90 +588,90 @@ namespace CoCoL
 			return processed || caller.Status != TaskStatus.WaitingForActivation;
 		}
 
-        /// <summary>
-        /// Registers a desire to read from the channel
-        /// </summary>
-        public Task<T> ReadAsync()
-        {
-            return ReadAsync(null);
-        }
-
-        /// <summary>
-        /// Registers a desire to read from the channel
-        /// </summary>
-        /// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
-        public async Task<T> ReadAsync(ITwoPhaseOffer offer)
+		/// <summary>
+		/// Registers a desire to read from the channel
+		/// </summary>
+		public Task<T> ReadAsync()
 		{
-            var rd = new ReaderEntry(offer);
-            if (rd.IsCancelled)
-                throw new TaskCanceledException();
+			return ReadAsync(null);
+		}
+
+		/// <summary>
+		/// Registers a desire to read from the channel
+		/// </summary>
+		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
+		public async Task<T> ReadAsync(ITwoPhaseOffer offer)
+		{
+			var rd = new ReaderEntry(offer);
+			if (rd.IsCancelled)
+				throw new TaskCanceledException();
 
 			using (await m_asynclock.LockAsync())
 			{
 				if (m_isRetired)
 				{
 					TrySetException(rd, new RetiredException(this.Name));
-                    return await rd.Source.Task.ConfigureAwait(false);
-                }
+					return await rd.Source.Task.ConfigureAwait(false);
+				}
 
 				m_readerQueue.Add(rd);
 				if (!await MatchReadersAndWriters(true, rd.Source.Task).ConfigureAwait(false))
 				{
-                    rd.ProbeCompleted();
+					rd.ProbeCompleted();
 					System.Diagnostics.Debug.Assert(m_readerQueue[m_readerQueue.Count - 1].Source == rd.Source);
 
-                    // If this was a probe call, return a timeout now
-                    if (rd.IsTimeout)
-                    {
-                        m_readerQueue.RemoveAt(m_readerQueue.Count - 1);
-                        TrySetException(rd, new TimeoutException());
-                    }
-                    else if (rd.IsCancelled)
-                    {
-                        m_readerQueue.RemoveAt(m_readerQueue.Count - 1);
-                        TrySetException(rd, new TaskCanceledException());
-                    }
-                    else
+					// If this was a probe call, return a timeout now
+					if (rd.IsTimeout)
+					{
+						m_readerQueue.RemoveAt(m_readerQueue.Count - 1);
+						TrySetException(rd, new TimeoutException());
+					}
+					else if (rd.IsCancelled)
+					{
+						m_readerQueue.RemoveAt(m_readerQueue.Count - 1);
+						TrySetException(rd, new TaskCanceledException());
+					}
+					else
 					{
 						// Make room if we have too many
 						if (m_maxPendingReaders > 0 && (m_readerQueue.Count - 1) >= m_maxPendingReaders)
 						{
 							switch (m_pendingReadersOverflowStrategy)
 							{
-							    case QueueOverflowStrategy.FIFO:
-								{
-									var exp = m_readerQueue[0];
-								    m_readerQueue.RemoveAt(0);
-                                    TrySetException(exp, new ChannelOverflowException(this.Name));
-                                }
-                                break;
+								case QueueOverflowStrategy.FIFO:
+									{
+										var exp = m_readerQueue[0];
+										m_readerQueue.RemoveAt(0);
+										TrySetException(exp, new ChannelOverflowException(this.Name));
+									}
+									break;
 
-							    case QueueOverflowStrategy.LIFO:
-								{
-									var exp = m_readerQueue[m_readerQueue.Count - 2];
-									m_readerQueue.RemoveAt(m_readerQueue.Count - 2);
-                                    TrySetException(exp, new ChannelOverflowException(this.Name));
-                                }
+								case QueueOverflowStrategy.LIFO:
+									{
+										var exp = m_readerQueue[m_readerQueue.Count - 2];
+										m_readerQueue.RemoveAt(m_readerQueue.Count - 2);
+										TrySetException(exp, new ChannelOverflowException(this.Name));
+									}
 
-                                break;
+									break;
 
-							    //case QueueOverflowStrategy.Reject:
-							    default:
-								{
-									var exp = m_readerQueue[m_readerQueue.Count - 1];
-									m_readerQueue.RemoveAt(m_readerQueue.Count - 1);
-                                    TrySetException(exp, new ChannelOverflowException(this.Name));
-								}
+								//case QueueOverflowStrategy.Reject:
+								default:
+									{
+										var exp = m_readerQueue[m_readerQueue.Count - 1];
+										m_readerQueue.RemoveAt(m_readerQueue.Count - 1);
+										TrySetException(exp, new ChannelOverflowException(this.Name));
+									}
 
-                                break;
+									break;
 							}
 						}
 
 						// If we have expanded the queue with a new batch, see if we can purge old entries
 						m_readerQueueCleanup = await PerformQueueCleanupAsync(m_readerQueue, true, m_readerQueueCleanup).ConfigureAwait(false);
 
-                        if (rd.Offer is IExpiringOffer && ((IExpiringOffer)rd.Offer).Expires != Timeout.InfiniteDateTime)
-                            ExpirationManager.AddExpirationCallback(((IExpiringOffer)rd.Offer).Expires, () => ExpireItemsAsync().FireAndForget());
+						if (rd.Offer is IExpiringOffer && ((IExpiringOffer)rd.Offer).Expires != Timeout.InfiniteDateTime)
+							ExpirationManager.AddExpirationCallback(((IExpiringOffer)rd.Offer).Expires, () => ExpireItemsAsync().FireAndForget());
 					}
 				}
 			}
@@ -695,32 +679,32 @@ namespace CoCoL
 			return await rd.Source.Task.ConfigureAwait(false);
 		}
 
-        /// <summary>
-        /// Registers a desire to write to the channel
-        /// </summary>
-        /// <param name="value">The value to write to the channel.</param>
-        public Task WriteAsync(T value)
-        {
-            return WriteAsync(value, null);
-        }
+		/// <summary>
+		/// Registers a desire to write to the channel
+		/// </summary>
+		/// <param name="value">The value to write to the channel.</param>
+		public Task WriteAsync(T value)
+		{
+			return WriteAsync(value, null);
+		}
 
 		/// <summary>
 		/// Registers a desire to write to the channel
 		/// </summary>
 		/// <param name="offer">A callback method for offering an item, use null to unconditionally accept</param>
 		/// <param name="value">The value to write to the channel.</param>
-        public async Task WriteAsync(T value, ITwoPhaseOffer offer)
+		public async Task WriteAsync(T value, ITwoPhaseOffer offer)
 		{
 			var wr = new WriterEntry(offer, value);
-            if (wr.IsCancelled)
-                throw new TaskCanceledException();
+			if (wr.IsCancelled)
+				throw new TaskCanceledException();
 
 			using (await m_asynclock.LockAsync())
 			{
 				if (m_isRetired)
 				{
-                    TrySetException(wr, new RetiredException(this.Name));
-                    await wr.Source.Task.ConfigureAwait(false);
+					TrySetException(wr, new RetiredException(this.Name));
+					await wr.Source.Task.ConfigureAwait(false);
 					return;
 				}
 
@@ -737,7 +721,7 @@ namespace CoCoL
 							if (offer != null)
 								await offer.CommitAsync(this).ConfigureAwait(false);
 
-                            m_writerQueue[m_writerQueue.Count - 1] = new WriterEntry(value);
+							m_writerQueue[m_writerQueue.Count - 1] = new WriterEntry(value);
 							TrySetResult(wr, true);
 						}
 						else
@@ -745,25 +729,25 @@ namespace CoCoL
 							TrySetCancelled(wr);
 						}
 
-                        // For good measure, we also make sure the probe phase is completed
-                        wr.ProbeCompleted();
-                    }
-                    else
+						// For good measure, we also make sure the probe phase is completed
+						wr.ProbeCompleted();
+					}
+					else
 					{
-                        wr.ProbeCompleted();
+						wr.ProbeCompleted();
 
-                        // If this was a probe call, return a timeout now
-                        if (wr.IsTimeout)
-                        {
-                            m_writerQueue.RemoveAt(m_writerQueue.Count - 1);
-                            TrySetException(wr, new TimeoutException());
-                        }
-                        else if (wr.IsCancelled)
-                        {
-                            m_writerQueue.RemoveAt(m_writerQueue.Count - 1);
-                            TrySetException(wr, new TaskCanceledException());
-                        }
-                        else
+						// If this was a probe call, return a timeout now
+						if (wr.IsTimeout)
+						{
+							m_writerQueue.RemoveAt(m_writerQueue.Count - 1);
+							TrySetException(wr, new TimeoutException());
+						}
+						else if (wr.IsCancelled)
+						{
+							m_writerQueue.RemoveAt(m_writerQueue.Count - 1);
+							TrySetException(wr, new TaskCanceledException());
+						}
+						else
 						{
 							// Make room if we have too many
 							if (m_maxPendingWriters > 0 && (m_writerQueue.Count - m_bufferSize - 1) >= m_maxPendingWriters)
@@ -774,24 +758,24 @@ namespace CoCoL
 										{
 											var exp = m_writerQueue[m_bufferSize];
 											m_writerQueue.RemoveAt(m_bufferSize);
-                                            TrySetException(exp, new ChannelOverflowException(this.Name));
-                                        }
+											TrySetException(exp, new ChannelOverflowException(this.Name));
+										}
 
-                                        break;
+										break;
 									case QueueOverflowStrategy.LIFO:
 										{
 											var exp = m_writerQueue[m_writerQueue.Count - 2];
 											m_writerQueue.RemoveAt(m_writerQueue.Count - 2);
-                                            TrySetException(exp, new ChannelOverflowException(this.Name));
-                                        }
+											TrySetException(exp, new ChannelOverflowException(this.Name));
+										}
 
-                                        break;
+										break;
 									//case QueueOverflowStrategy.Reject:
 									default:
 										{
 											var exp = m_writerQueue[m_writerQueue.Count - 1];
 											m_writerQueue.RemoveAt(m_writerQueue.Count - 1);
-                                            TrySetException(exp, new ChannelOverflowException(this.Name));
+											TrySetException(exp, new ChannelOverflowException(this.Name));
 										}
 
 										break;
@@ -801,8 +785,8 @@ namespace CoCoL
 							// If we have expanded the queue with a new batch, see if we can purge old entries
 							m_writerQueueCleanup = await PerformQueueCleanupAsync(m_writerQueue, true, m_writerQueueCleanup).ConfigureAwait(false);
 
-                            if (wr.Offer is IExpiringOffer && ((IExpiringOffer)wr.Offer).Expires != Timeout.InfiniteDateTime)
-                                ExpirationManager.AddExpirationCallback(((IExpiringOffer)wr.Offer).Expires, () => ExpireItemsAsync().FireAndForget());
+							if (wr.Offer is IExpiringOffer && ((IExpiringOffer)wr.Offer).Expires != Timeout.InfiniteDateTime)
+								ExpirationManager.AddExpirationCallback(((IExpiringOffer)wr.Offer).Expires, () => ExpireItemsAsync().FireAndForget());
 						}
 					}
 				}
@@ -822,21 +806,21 @@ namespace CoCoL
 		private async Task<int> PerformQueueCleanupAsync<Tx>(List<Tx> queue, bool isLocked, int queueCleanup)
 			where Tx : IEntry
 		{
-            var res = queueCleanup;
-			using(isLocked ? default(AsyncLock.Releaser) : await m_asynclock.LockAsync())
+			var res = queueCleanup;
+			using (isLocked ? default(AsyncLock.Releaser) : await m_asynclock.LockAsync())
 			{
 				if (queue.Count > queueCleanup)
 				{
 					for (var i = queue.Count - 1; i >= 0; i--)
 					{
 						if (queue[i].Offer != null)
-						if (await queue[i].Offer.OfferAsync(this).ConfigureAwait(false))
-							await queue[i].Offer.WithdrawAsync(this).ConfigureAwait(false);
-						else
-						{
-							TrySetCancelled(queue[i]);
-							queue.RemoveAt(i);
-						}
+							if (await queue[i].Offer.OfferAsync(this).ConfigureAwait(false))
+								await queue[i].Offer.WithdrawAsync(this).ConfigureAwait(false);
+							else
+							{
+								TrySetCancelled(queue[i]);
+								queue.RemoveAt(i);
+							}
 					}
 
 					// Prevent repeated cleanup requests
@@ -846,14 +830,14 @@ namespace CoCoL
 
 			return res;
 		}
-			
+
 		/// <summary>
 		/// Helper method for dequeueing write requests after space has been allocated in the writer queue
 		/// </summary>
 		/// <param name="isLocked"><c>True</c> if we are already holding the lock, <c>false</c> otherwise</param>
 		private async Task ProcessWriteQueueBufferAfterReadAsync(bool isLocked)
 		{
-			using(isLocked ? default(AsyncLock.Releaser) : await m_asynclock.LockAsync())
+			using (isLocked ? default(AsyncLock.Releaser) : await m_asynclock.LockAsync())
 			{
 				// If there is now a buffer slot in the queue, trigger a callback to a waiting item
 				while (m_retireCount < 0 && m_bufferSize > 0 && m_writerQueue.Count >= m_bufferSize)
@@ -868,7 +852,7 @@ namespace CoCoL
 						SetResult(nextItem, true);
 
 						// Now that the transaction has completed for the writer, record it as waiting forever
-                        m_writerQueue[m_bufferSize - 1] = new WriterEntry(nextItem.Value);
+						m_writerQueue[m_bufferSize - 1] = new WriterEntry(nextItem.Value);
 
 						// We can have at most one, since we process at most one read
 						break;
@@ -919,12 +903,12 @@ namespace CoCoL
 						while (m_retireCount > 1)
 						{
 							if (m_writerQueue[0].Source != null)
-                            TrySetException(m_writerQueue[0], new RetiredException(this.Name));
+								TrySetException(m_writerQueue[0], new RetiredException(this.Name));
 							m_writerQueue.RemoveAt(0);
 							m_retireCount--;
 						}
 				}
-				
+
 				await EmptyQueueIfRetiredAsync(true).ConfigureAwait(false);
 			}
 		}
@@ -939,7 +923,7 @@ namespace CoCoL
 			{
 				// Do not allow anyone to join after we retire the channel
 				if (m_isRetired)
-                    throw new RetiredException(this.Name);
+					throw new RetiredException(this.Name);
 
 				if (asReader)
 					m_joinedReaderCount++;
@@ -1005,15 +989,15 @@ namespace CoCoL
 			// If there are pending retire messages, send them
 			if (readers != null || writers != null)
 			{
-                if (readers != null)
-                    foreach (var r in readers)
-                        TrySetException(r, new RetiredException(this.Name));
+				if (readers != null)
+					foreach (var r in readers)
+						TrySetException(r, new RetiredException(this.Name));
 
-                if (writers != null)
-                    foreach (var w in writers)
-                        TrySetException(w, new RetiredException(this.Name));
-            }
-        }
+				if (writers != null)
+					foreach (var w in writers)
+						TrySetException(w, new RetiredException(this.Name));
+			}
+		}
 
 
 		/// <summary>
@@ -1030,7 +1014,7 @@ namespace CoCoL
 				// If the channel is retired, there is nothing to do here
 				if (m_readerQueue == null || m_writerQueue == null)
 					return;
-				
+
 				var now = DateTime.Now;
 				expiredReaders = m_readerQueue.Zip(Enumerable.Range(0, m_readerQueue.Count), (n, i) => new KeyValuePair<int, ReaderEntry>(i, n)).Where(x => x.Value.Expires.Ticks != 0 && (x.Value.Expires - now).Ticks <= ExpirationManager.ALLOWED_ADVANCE_EXPIRE_TICKS).ToArray();
 				expiredWriters = m_writerQueue.Zip(Enumerable.Range(0, m_writerQueue.Count), (n, i) => new KeyValuePair<int, WriterEntry>(i, n)).Where(x => x.Value.Expires.Ticks != 0 && (x.Value.Expires - now).Ticks <= ExpirationManager.ALLOWED_ADVANCE_EXPIRE_TICKS).ToArray();
@@ -1050,48 +1034,40 @@ namespace CoCoL
 				TrySetException(w.Value, new TimeoutException());
 		}
 
-        #region Task continuation support methods
-        /// <summary>
-        /// Sets the task to be failed
-        /// </summary>
-        /// <param name="entry">The task to set</param>
-        /// <param name="ex">The exception to set</param>
-        private static void TrySetException(ReaderEntry entry, Exception ex)
+		#region Task continuation support methods
+		/// <summary>
+		/// Sets the task to be failed
+		/// </summary>
+		/// <param name="entry">The task to set</param>
+		/// <param name="ex">The exception to set</param>
+		private static void TrySetException(ReaderEntry entry, Exception ex)
 		{
-#if NO_TASK_ASYNCCONTINUE
-			ThreadPool.QueueItem(() => entry.Source.TrySetException(ex));
-#else
 			if (entry.EnqueueContinuation)
 				ThreadPool.QueueItem(() => entry.Source.TrySetException(ex));
 			else
 				entry.Source.TrySetException(ex);
-#endif
-        }
+		}
 
-        /// <summary>
-        /// Sets the task to be failed
-        /// </summary>
-        /// <param name="entry">The task to set</param>
-        /// <param name="ex">The exception to set</param>
-        private static void TrySetException(WriterEntry entry, Exception ex)
+		/// <summary>
+		/// Sets the task to be failed
+		/// </summary>
+		/// <param name="entry">The task to set</param>
+		/// <param name="ex">The exception to set</param>
+		private static void TrySetException(WriterEntry entry, Exception ex)
 		{
 			if (entry.Source != null)
 			{
-#if NO_TASK_ASYNCCONTINUE
-			    ThreadPool.QueueItem(() => entry.Source.TrySetException(ex));
-#else
 				if (entry.EnqueueContinuation)
 					ThreadPool.QueueItem(() => entry.Source.TrySetException(ex));
 				else
 					entry.Source.TrySetException(ex);
-#endif
-            }
-        }
+			}
+		}
 
 		/// <summary>
 		/// Tries to set the source to Cancelled
 		/// </summary>
-        /// <param name="entry">The entry to signal</param>
+		/// <param name="entry">The entry to signal</param>
 		private static void TrySetCancelled(IEntry entry)
 		{
 			if (entry is ReaderEntry re)
@@ -1102,98 +1078,78 @@ namespace CoCoL
 				throw new InvalidOperationException("No such type");
 		}
 
-        /// <summary>
-        /// Tries to set the source to Cancelled
-        /// </summary>
-        /// <param name="entry">The entry to signal</param>
-        private static void TrySetCancelled(ReaderEntry entry)
+		/// <summary>
+		/// Tries to set the source to Cancelled
+		/// </summary>
+		/// <param name="entry">The entry to signal</param>
+		private static void TrySetCancelled(ReaderEntry entry)
 		{
-#if NO_TASK_ASYNCCONTINUE
-            ThreadPool.QueueItem(() => entry.Source.TrySetCanceled());
-#else
 			if (entry.EnqueueContinuation)
 				ThreadPool.QueueItem(() => entry.Source.TrySetCanceled());
 			else
 				entry.Source.TrySetCanceled();
-#endif
 		}
 
-        /// <summary>
-        /// Tries to set the source to Cancelled
-        /// </summary>
-        /// <param name="entry">The entry to signal</param>
-        private static void TrySetCancelled(WriterEntry entry)
+		/// <summary>
+		/// Tries to set the source to Cancelled
+		/// </summary>
+		/// <param name="entry">The entry to signal</param>
+		private static void TrySetCancelled(WriterEntry entry)
 		{
 			if (entry.Source != null)
 			{
-#if NO_TASK_ASYNCCONTINUE
-                    ThreadPool.QueueItem(() => entry.Source.TrySetCanceled());
-#else
 				if (entry.EnqueueContinuation)
 					ThreadPool.QueueItem(() => entry.Source.TrySetCanceled());
 				else
 					entry.Source.TrySetCanceled();
-#endif
-            }
-        }
+			}
+		}
 
-        /// <summary>
-        /// Tries to set the source result
-        /// </summary>
-        /// <param name="entry">The entry to signal</param>
-        /// <param name="value">The value to signal</param>
-        private static void TrySetResult(WriterEntry entry, bool value)
+		/// <summary>
+		/// Tries to set the source result
+		/// </summary>
+		/// <param name="entry">The entry to signal</param>
+		/// <param name="value">The value to signal</param>
+		private static void TrySetResult(WriterEntry entry, bool value)
 		{
 			if (entry.Source != null)
 			{
-#if NO_TASK_ASYNCCONTINUE
-                    ThreadPool.QueueItem(() => entry.Source.TrySetResult(value));
-#else
 				if (entry.EnqueueContinuation)
 					ThreadPool.QueueItem(() => entry.Source.TrySetResult(value));
 				else
 					entry.Source.TrySetResult(value);
-#endif
-            }
-        }
+			}
+		}
 
-        /// <summary>
-        /// Sets the source result
-        /// </summary>
-        /// <param name="entry">The entry to signal</param>
-        /// <param name="value">The value to signal</param>
-        private static void SetResult(WriterEntry entry, bool value)
-        {
-            if (entry.Source != null)
-            {
-#if NO_TASK_ASYNCCONTINUE
-                ThreadPool.QueueItem(() => entry.Source.SetResult(value));
-#else
+		/// <summary>
+		/// Sets the source result
+		/// </summary>
+		/// <param name="entry">The entry to signal</param>
+		/// <param name="value">The value to signal</param>
+		private static void SetResult(WriterEntry entry, bool value)
+		{
+			if (entry.Source != null)
+			{
 				if (entry.EnqueueContinuation)
 					ThreadPool.QueueItem(() => entry.Source.SetResult(value));
 				else
 					entry.Source.SetResult(value);
-#endif
-            }
-        }
+			}
+		}
 
-        /// <summary>
-        /// Sets the source result
-        /// </summary>
-        /// <param name="entry">The entry to signal</param>
-        /// <param name="value">The value to signal</param>
-        private static void SetResult(ReaderEntry entry, T value)
-        {
-#if NO_TASK_ASYNCCONTINUE
-            ThreadPool.QueueItem(() => entry.Source.SetResult(value));
-#else
+		/// <summary>
+		/// Sets the source result
+		/// </summary>
+		/// <param name="entry">The entry to signal</param>
+		/// <param name="value">The value to signal</param>
+		private static void SetResult(ReaderEntry entry, T value)
+		{
 			if (entry.EnqueueContinuation)
 				ThreadPool.QueueItem(() => entry.Source.SetResult(value));
 			else
 				entry.Source.SetResult(value);
-#endif
-        }
-        #endregion
-    }
+		}
+		#endregion
+	}
 }
 

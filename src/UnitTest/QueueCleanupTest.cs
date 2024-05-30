@@ -2,24 +2,17 @@
 using CoCoL;
 using System.Linq;
 using System.Threading.Tasks;
-
-#if NETCOREAPP2_0
-using TOP_LEVEL = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
-using TEST_METHOD = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-using TOP_LEVEL = NUnit.Framework.TestFixtureAttribute;
-using TEST_METHOD = NUnit.Framework.TestAttribute;
-#endif
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace UnitTest
 {
-    [TOP_LEVEL]
+	[TestClass]
 	public class QueueCleanupTest
 	{
 		private class TestableTwoPhase : ITwoPhaseOffer
 		{
 			public bool AllowPass { get; set; }
-			public bool HasOffered { get; private set;}
+			public bool HasOffered { get; private set; }
 			public bool HasWithdrawn { get; private set; }
 			public bool HasComitted { get; private set; }
 
@@ -54,7 +47,7 @@ namespace UnitTest
 			}
 		}
 
-        [TEST_METHOD]
+		[TestMethod]
 		public void TestBufferCleanup()
 		{
 			var c = ChannelManager.CreateChannel<int>();

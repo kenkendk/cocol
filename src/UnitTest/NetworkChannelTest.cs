@@ -3,18 +3,11 @@ using CoCoL;
 using CoCoL.Network;
 using System.Threading.Tasks;
 using System.Threading;
-
-#if NETCOREAPP2_0
-using TOP_LEVEL = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
-using TEST_METHOD = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-using TOP_LEVEL = NUnit.Framework.TestFixtureAttribute;
-using TEST_METHOD = NUnit.Framework.TestAttribute;
-#endif
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace UnitTest
 {
-    //[TOP_LEVEL]
+	//[TestClass]
 	public class NetworkChannelTest
 	{
 		private class SelfHoster : IDisposable
@@ -27,7 +20,8 @@ namespace UnitTest
 				var channelserver = new NetworkChannelServer(new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, 8888));
 				NetworkConfig.Configure("localhost", 8888, true);
 
-				m_source.Token.Register(() => {
+				m_source.Token.Register(() =>
+				{
 					channelserver.Dispose();
 				});
 
@@ -53,7 +47,7 @@ namespace UnitTest
 			#endregion
 		}
 
-        //[TEST_METHOD]
+		//[TestMethod]
 		public void SimpleNetwork()
 		{
 			using (new SelfHoster())
@@ -70,7 +64,7 @@ namespace UnitTest
 			}
 		}
 
-        //[TEST_METHOD]
+		//[TestMethod]
 		public void SimpleNetworkTimeout()
 		{
 			using (new SelfHoster())
@@ -88,12 +82,12 @@ namespace UnitTest
 
 				if (networkchannel.AsRead().Read(TimeSpan.FromSeconds(1)) != 42)
 					throw new UnittestException("Broken network channel");
-			
+
 				wrtask.WaitForTaskOrThrow();
 			}
 		}
 
-        //[TEST_METHOD]
+		//[TestMethod]
 		public void MixedOperationOnNetwork()
 		{
 			using (new SelfHoster())
@@ -101,7 +95,7 @@ namespace UnitTest
 				new MixedOperationTest().TestMultiTypeReadWrite();
 		}
 
-        //[TEST_METHOD]
+		//[TestMethod]
 		public void TestMultiAccessOperationOnNetwork()
 		{
 			using (new SelfHoster())

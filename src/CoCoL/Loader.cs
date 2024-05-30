@@ -27,7 +27,7 @@ namespace CoCoL
 		public static void StartFromAssembly(IEnumerable<Assembly> asm)
 		{
 			var c = (from a in asm
-			         select StartFromTypes(a.GetTypes())).Sum();
+					 select StartFromTypes(a.GetTypes())).Sum();
 
 			if (c == 0)
 				throw new ArgumentException("No process found in given assemblies", nameof(asm));
@@ -62,26 +62,20 @@ namespace CoCoL
 		/// <param name="types">The types to examine</param>
 		public static int StartFromTypes(IEnumerable<Type> types)
 		{
-			Func<Type, bool> isClass = 
-#if LIMITED_REFLECTION_SUPPORT
-				t => t.IsClass();
-#else
-				t => t.IsClass;
-#endif
 			var count = 0;
-			foreach (var c in 
+			foreach (var c in
 				from n in types
 				let isRunable = typeof(IProcess).IsAssignableFrom(n)
 				let decorator = n.GetCustomAttributes(typeof(ProcessAttribute), true).FirstOrDefault() as ProcessAttribute
-				where isClass(n) && isRunable && n.GetConstructor(new Type[0]) != null
+				where n.IsClass && isRunable && n.GetConstructor(new Type[0]) != null
 				select new { Class = n, Decorator = decorator ?? new ProcessAttribute() })
 			{
-				if (typeof(IAsyncProcess).IsAssignableFrom(c.Class)) 
+				if (typeof(IAsyncProcess).IsAssignableFrom(c.Class))
 					count += StartFromProcesses(Each(c.Decorator.ProcessCount, x => ((IAsyncProcess)Activator.CreateInstance(c.Class))));
 				else
 					count += StartFromProcesses(Each(c.Decorator.ProcessCount, x => ((IProcess)Activator.CreateInstance(c.Class))));
-			}	
-				
+			}
+
 			return count;
 		}
 

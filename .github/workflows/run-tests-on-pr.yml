@@ -1,0 +1,45 @@
+name: Run tests on PR
+
+on: [push]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dotnet-version: ["8.0.x"]
+
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@main
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@main
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+
+      - name: Setup caching Nuget packages
+        uses: actions/cache@main
+        with:
+          path: ~/.nuget/packages
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget
+
+      - name: Install dependencies
+        run: dotnet restore src/CoCoL.sln
+
+      - name: Build
+        run: dotnet build --no-restore src/CoCoL.sln
+
+      - name: Test with the dotnet CLI
+        run: dotnet test src/CoCoL.sln --no-build --logger trx --results-directory "TestResults-${{ matrix.dotnet-version }}"
+
+      - name: Upload dotnet test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-results-${{ matrix.dotnet-version }}
+          path: TestResults-${{ matrix.dotnet-version }}
+        # Use always() to always run this step to publish test results when there are test failures
+        if: ${{ always() }}

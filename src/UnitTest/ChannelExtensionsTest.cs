@@ -1,23 +1,14 @@
 ﻿using CoCoL;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Threading.Tasks;
 
-#if NETCOREAPP2_0
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using TOP_LEVEL = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
-using TEST_METHOD = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-using NUnit.Framework;
-using TOP_LEVEL = NUnit.Framework.TestFixtureAttribute;
-using TEST_METHOD = NUnit.Framework.TestAttribute;
-#endif
-
 namespace UnitTest
 {
-    [TOP_LEVEL]
+    [TestClass]
     public class ChannelExtensionsTest
     {
-        [TEST_METHOD]
+        [TestMethod]
         public void TestWaitForTaskOrThrow_propagatesStackTrace()
         {
             Task t = Task.Factory.StartNew(() => ThrowingMethod());
@@ -26,7 +17,8 @@ namespace UnitTest
             {
                 t.WaitForTaskOrThrow();
                 Assert.Fail("Exception expected!");
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 // Unfortunately the method we want is missing in Mono
                 if (!(ex is NotImplementedException))

@@ -12,31 +12,22 @@ namespace CoCoL
 	/// </summary>
 	internal interface IGenericTypeHelper
 	{
-#if LIMITED_REFLECTION_SUPPORT
-		/// <summary>
-		/// True if the given item is, or derives from, the type parameter T
-		/// </summary>
-		/// <returns><c>true</c> if the given item is, or derives from, the type parameter T; otherwise, <c>false</c>.</returns>
-		/// <param name="item">The instance to check.</param>
-		bool IsTypeT(object item);
-#endif
-
 		/// <summary>
 		/// Reads from the channel and returns the task
 		/// </summary>
 		/// <returns>The async task.</returns>
 		/// <param name="channel">The channel to read from.</param>
 		/// <param name="offer">The two-phase offer.</param>
-        Task<object> ReadAsync(IUntypedChannel channel, ITwoPhaseOffer offer);
+		Task<object> ReadAsync(IUntypedChannel channel, ITwoPhaseOffer offer);
 
-        /// <summary>
-        /// Writes the channel and returns the task
-        /// </summary>
-        /// <returns>The async task.</returns>
-        /// <param name="channel">The channel to write to.</param>
-        /// <param name="value">The value to write.</param>
-        /// <param name="offer">The two-phase offer.</param>
-        Task WriteAsync(IUntypedChannel channel, object value, ITwoPhaseOffer offer);
+		/// <summary>
+		/// Writes the channel and returns the task
+		/// </summary>
+		/// <returns>The async task.</returns>
+		/// <param name="channel">The channel to write to.</param>
+		/// <param name="value">The value to write.</param>
+		/// <param name="offer">The two-phase offer.</param>
+		Task WriteAsync(IUntypedChannel channel, object value, ITwoPhaseOffer offer);
 
 		/// <summary>
 		/// Requests a read on the channel.
@@ -60,27 +51,15 @@ namespace CoCoL
 	/// </summary>
 	internal struct GenericTypeHelper<T> : IGenericTypeHelper, IEquatable<GenericTypeHelper<T>>
 	{
-#if LIMITED_REFLECTION_SUPPORT
-		/// <summary>
-		/// True if the given item is, or derives from, the type parameter T
-		/// </summary>
-		/// <returns><c>true</c> if the given item is, or derives from, the type parameter T; otherwise, <c>false</c>.</returns>
-		/// <param name="item">The instance to check.</param>
-		public bool IsTypeT(object item)
-		{
-			return item is T;
-		}
-#endif
-
 		/// <summary>
 		/// Reads from the channel and returns the task
 		/// </summary>
 		/// <returns>The async task.</returns>
 		/// <param name="channel">The channel to read from.</param>
 		/// <param name="offer">The two-phase offer.</param>
-        public async Task<object> ReadAsync(IUntypedChannel channel, ITwoPhaseOffer offer)
+		public async Task<object> ReadAsync(IUntypedChannel channel, ITwoPhaseOffer offer)
 		{
-            return (await (channel as IReadChannel<T>).ReadAsync(offer));
+			return (await (channel as IReadChannel<T>).ReadAsync(offer));
 		}
 
 		/// <summary>
@@ -90,7 +69,7 @@ namespace CoCoL
 		/// <param name="channel">The channel to write to.</param>
 		/// <param name="value">The value to write.</param>
 		/// <param name="offer">The two-phase offer.</param>
-        public Task WriteAsync(IUntypedChannel channel, object value, ITwoPhaseOffer offer)
+		public Task WriteAsync(IUntypedChannel channel, object value, ITwoPhaseOffer offer)
 		{
 			return (channel as IWriteChannel<T>).WriteAsync((T)value, offer);
 		}
@@ -116,16 +95,16 @@ namespace CoCoL
 			return (channel as IWriteChannel<T>).RequestWrite((T)value);
 		}
 
-        /// <summary>
-        /// Explicit disabling of compares
-        /// </summary>
-        /// <param name="other">The item to compare to</param>
-        /// <returns>Always throws an exception</returns>
-        bool IEquatable<GenericTypeHelper<T>>.Equals(GenericTypeHelper<T> other)
-        {
-            throw new NotImplementedException();
-        }
-    }
+		/// <summary>
+		/// Explicit disabling of compares
+		/// </summary>
+		/// <param name="other">The item to compare to</param>
+		/// <returns>Always throws an exception</returns>
+		bool IEquatable<GenericTypeHelper<T>>.Equals(GenericTypeHelper<T> other)
+		{
+			throw new NotImplementedException();
+		}
+	}
 
 	/// <summary>
 	/// Class for helping with access to untyped methods through reflection
@@ -196,17 +175,12 @@ namespace CoCoL
 			if (item == null)
 				throw new ArgumentNullException(nameof(item));
 
-#if LIMITED_REFLECTION_SUPPORT
-			var implementedinterface = item.GetType().GetTypeInfo().ImplementedInterfaces.Where(x => x.GetTypeInfo().IsGenericType && !x.GetTypeInfo().IsGenericTypeDefinition).Where(x => x.GetGenericTypeDefinition() == @interface).FirstOrDefault();
-#else
 			var implementedinterface = item.GetType().GetInterfaces().Where(x => x.IsGenericType && !x.IsGenericTypeDefinition).Where(x => x.GetGenericTypeDefinition() == @interface).FirstOrDefault();
-#endif
-
 			if (implementedinterface == null)
 				throw new ArgumentException(string.Format("Given type {0} does not implement interface {1}", item.GetType(), @interface));
 
 			return implementedinterface;
-		}			
+		}
 	}
 }
 

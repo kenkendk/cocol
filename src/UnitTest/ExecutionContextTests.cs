@@ -2,45 +2,38 @@
 using System.Linq;
 using CoCoL;
 using System.Threading.Tasks;
-
-#if NETCOREAPP2_0
-using TOP_LEVEL = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
-using TEST_METHOD = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-using TOP_LEVEL = NUnit.Framework.TestFixtureAttribute;
-using TEST_METHOD = NUnit.Framework.TestAttribute;
-#endif
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace UnitTest
 {
-    [TOP_LEVEL]
+	[TestClass]
 	public class ExecutionContextTests
 	{
-        [TEST_METHOD]
+		[TestMethod]
 		public void TestSingleThreadPool()
 		{
 			TestCappedPool(1, 10, 50);
 		}
 
-        [TEST_METHOD]
+		[TestMethod]
 		public void TestDualThreadPool()
 		{
 			TestCappedPool(2, 20, 100);
 		}
 
-        [TEST_METHOD]
+		[TestMethod]
 		public void TestQuadThreadPool()
 		{
 			TestCappedPool(4, 40, 200);
 		}
 
-        [TEST_METHOD]
+		[TestMethod]
 		public void TestOctoThreadPool()
 		{
 			TestCappedPool(8, 20, 400);
 		}
 
-        [TEST_METHOD]
+		[TestMethod]
 		public void TestUnlimitedThreadPool()
 		{
 			TestCappedPool(-1, 200, 800);
@@ -54,10 +47,11 @@ namespace UnitTest
 			var earlyRetire = new TaskCompletionSource<bool>();
 
 			using (new IsolatedChannelScope())
-			using(new ExecutionScope(poolsize <= 0 ? ThreadPool.DEFAULT_THREADPOOL : new CappedThreadedThreadPool(poolsize)))
+			using (new ExecutionScope(poolsize <= 0 ? ThreadPool.DEFAULT_THREADPOOL : new CappedThreadedThreadPool(poolsize)))
 			{
 				var readertasks = Task.WhenAll(Enumerable.Range(0, readers).Select(count =>
-					AutomationExtensions.RunTask(new {
+					AutomationExtensions.RunTask(new
+					{
 						Input = ChannelMarker.ForRead<int>("channel")
 					},
 						async x =>
@@ -93,11 +87,13 @@ namespace UnitTest
 						})
 				));
 
-				var writetask = AutomationExtensions.RunTask(new {
+				var writetask = AutomationExtensions.RunTask(new
+				{
 					Output = ChannelMarker.ForWrite<int>("channel")
 				},
-				async x => {
-					foreach(var i in Enumerable.Range(0, writes))
+				async x =>
+				{
+					foreach (var i in Enumerable.Range(0, writes))
 					{
 						//Console.WriteLine("Writing {0}", i);
 						await x.Output.WriteAsync(i);
@@ -110,11 +106,11 @@ namespace UnitTest
 
 				Console.WriteLine("Threads at shutdown: {0}", concurrent);
 
-                ExecutionScope.Current.EnsureFinishedAsync(TimeSpan.FromSeconds(5)).WaitForTaskOrThrow();
+				ExecutionScope.Current.EnsureFinishedAsync(TimeSpan.FromSeconds(5)).WaitForTaskOrThrow();
 				Console.WriteLine("Max concurrent threads: {0}, should be {1}", max_concurrent, poolsize <= 0 ? "unlimited" : poolsize.ToString());
 
-                if (poolsize > 0 && max_concurrent > poolsize)
-                    throw new UnittestException($"The pool allowed {max_concurrent} concurrent threads, but should be limited to {poolsize}");
+				if (poolsize > 0 && max_concurrent > poolsize)
+					throw new UnittestException($"The pool allowed {max_concurrent} concurrent threads, but should be limited to {poolsize}");
 
 			}
 
