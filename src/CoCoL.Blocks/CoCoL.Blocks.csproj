@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net8</TargetFramework>
     <ReleaseVersion>1.7.1</ReleaseVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CoCoL-NetStd20\CoCoL-NetStd20.csproj" />
+    <ProjectReference Include="..\CoCoL\CoCoL.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Properties\AssemblyInfo.cs" />

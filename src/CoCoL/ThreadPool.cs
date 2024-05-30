@@ -2,12 +2,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-#if DISABLE_WAITCALLBACK
-using WAITCALLBACK = System.Action<object>;
-#else
-using WAITCALLBACK = System.Threading.WaitCallback;
-#endif
-
 namespace CoCoL
 {
 	/// <summary>
@@ -34,7 +28,7 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="a">The work item.</param>
 		/// <param name="item">An optional callback parameter.</param>
-		public static void QueueItem(WAITCALLBACK a, object item = null)
+		public static void QueueItem(System.Threading.WaitCallback a, object item = null)
 		{
 			ExecutionScope.Current.QueueItem(a, item);
 		}
@@ -59,13 +53,9 @@ namespace CoCoL
 		/// Puts an item into the work queue
 		/// </summary>
 		/// <param name="a">The work item.</param>
-		public void QueueItem(Action a) 
+		public void QueueItem(Action a)
 		{
-#if DISABLE_WAITCALLBACK
-			System.Threading.Tasks.Task.Run(a);
-#else
 			System.Threading.ThreadPool.QueueUserWorkItem((x) => a());
-#endif
 		}
 
 		/// <summary>
@@ -73,13 +63,9 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="a">The work item.</param>
 		/// <param name="item">An optional callback parameter.</param>
-		public void QueueItem(WAITCALLBACK a, object item) 
+		public void QueueItem(System.Threading.WaitCallback a, object item)
 		{
-#if DISABLE_WAITCALLBACK
-			System.Threading.Tasks.Task.Run(() => a(item));
-#else
 			System.Threading.ThreadPool.QueueUserWorkItem(a, item);
-#endif
 		}
 
 		/// <summary>
@@ -93,11 +79,11 @@ namespace CoCoL
 			QueueItem(() =>
 				{
 					try
-					{ 
+					{
 						a();
 						tcs.SetResult(true);
 					}
-					catch(Exception ex)
+					catch (Exception ex)
 					{
 						tcs.TrySetException(ex);
 					}
@@ -115,7 +101,7 @@ namespace CoCoL
 		/// so the garbage collector can reclaim the memory that the <see cref="CoCoL.SystemThreadPoolWrapper"/> was occupying.</remarks>
 		public void Dispose()
 		{
-            // No resources need to be disposed
+			// No resources need to be disposed
 		}
 	}
 
@@ -123,7 +109,7 @@ namespace CoCoL
 	/// A thread pool that puts a cap on the number of concurrent requests
 	/// </summary>
 	public class CappedThreadedThreadPool : IFinishAbleThreadPool, ILimitingThreadPool
-    {
+	{
 		/// <summary>
 		/// The list of pending work
 		/// </summary>
@@ -186,13 +172,13 @@ namespace CoCoL
 		/// Puts an item into the work queue
 		/// </summary>
 		/// <param name="a">The work item.</param>
-		public void QueueItem(Action a) 
+		public void QueueItem(Action a)
 		{
 			lock (m_lock)
 			{
 				if (m_shutdown)
 					throw new ObjectDisposedException("ThreadPool is in shutdown phase, and does not support new requests");
-				
+
 				if (m_instances < m_maxThreads)
 				{
 					m_instances++;
@@ -210,11 +196,11 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="a">The work item.</param>
 		/// <param name="item">An optional callback parameter.</param>
-		public void QueueItem(WAITCALLBACK a, object item) 
+		public void QueueItem(System.Threading.WaitCallback a, object item)
 		{
 			QueueItem(() => { a(item); });
 		}
-			
+
 		/// <summary>
 		/// Puts an item into the work queue
 		/// </summary>
@@ -223,19 +209,20 @@ namespace CoCoL
 		public Task QueueTask(Action a)
 		{
 			var tcs = new TaskCompletionSource<bool>();
-			QueueItem(() => {
+			QueueItem(() =>
+			{
 				try
-				{ 
+				{
 					a();
 					tcs.SetResult(true);
 				}
-				catch(Exception ex)
+				catch (Exception ex)
 				{
 					tcs.TrySetException(ex);
 				}
 			});
 
-            return tcs.Task;
+			return tcs.Task;
 		}
 
 		/// <summary>
@@ -257,7 +244,7 @@ namespace CoCoL
 			var endttime = DateTime.Now + waittime;
 			while (DateTime.Now < endttime)
 			{
-                await Task.Delay(100).ConfigureAwait(false);
+				await Task.Delay(100).ConfigureAwait(false);
 				lock (m_lock)
 					if (m_instances == 0)
 						return;

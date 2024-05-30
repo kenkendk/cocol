@@ -1,17 +1,11 @@
 ﻿using System;
 using CoCoL;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-#if NETCOREAPP2_0
-using TOP_LEVEL = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
-using TEST_METHOD = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-using TOP_LEVEL = NUnit.Framework.TestFixtureAttribute;
-using TEST_METHOD = NUnit.Framework.TestAttribute;
-#endif
 
 namespace UnitTest
 {
-    [TOP_LEVEL]
+	[TestClassAttribute]
 	public class AutoWireTests
 	{
 		private class Reader
@@ -54,7 +48,7 @@ namespace UnitTest
 			public bool IsChannelRetired { get { return m_write.IsRetiredAsync.WaitForTask().Result; } }
 		}
 
-        [TEST_METHOD]
+		[TestMethod]
 		public void TestChannelWire()
 		{
 			Reader x1, x2;
@@ -96,7 +90,7 @@ namespace UnitTest
 
 		}
 
-        [TEST_METHOD]
+		[TestMethod]
 		public void TestChannelEndWire()
 		{
 			ReaderEnd x1, x2;

@@ -1,6 +1,5 @@
 ﻿using System;
 using CoCoL;
-using System.Collections;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Threading.Tasks;
@@ -13,26 +12,6 @@ using Pixel = System.Tuple<int, int, int>;
 
 namespace MandelbrotDynamic
 {
-	/*
-	/// <summary>
-	/// The pixel output
-	/// </summary>
-	struct Pixel
-	{
-		/// <summary>
-		/// The pixel x coordinate
-		/// </summary>
-		public int x;
-		/// <summary>
-		/// The pixel y coordinate
-		/// </summary>
-		public int y;
-		/// <summary>
-		/// The iteration count
-		/// </summary>
-		public int value;
-	}*/
-
 	/// <summary>
 	/// The render process is responsible for spawning the workers
 	/// </summary>
@@ -76,30 +55,32 @@ namespace MandelbrotDynamic
 				from y in Enumerable.Range(0, m_height)
 				select new Worker(
 					worker_channel,
-					m_left + x, 
-					m_top + y, 
+					m_left + x,
+					m_top + y,
 					m_iterations
 				)
 			);
 
-			var result_channel = 
+			var result_channel =
 				Config.NetworkedChannels && Config.NetworkChannelLatencyBufferSize > 0
 				? new LatencyHidingReader<Pixel>(worker_channel, Config.NetworkChannelLatencyBufferSize)
 				: worker_channel.AsReadOnly();
 
+			var imagesSupported = OperatingSystem.IsWindowsVersionAtLeast(6, 1);
+
 			// Set up an image buffer
 			var pixels = m_width * m_height;
-			using(var img = Config.DisableImages ? null : new Bitmap(m_width, m_height))
+			using (var img = imagesSupported && !Config.DisableImages ? new Bitmap(m_width, m_height) : null)
 			{
 				// Collect all pixels
-				for(var i = 0; i < pixels; i++)
+				for (var i = 0; i < pixels; i++)
 				{
 					var px = await result_channel.ReadAsync();
-					if (img != null)
+					if (imagesSupported && img != null)
 						img.SetPixel(px.Item1 - m_left, px.Item2 - m_top, ColorMap(px.Item3, m_iterations));
 				}
 
-				if (img != null)
+				if (imagesSupported && img != null)
 					img.Save(string.Format("{0}-{1}x{2}-{3}.png", DateTime.Now.Ticks, m_width, m_height, m_iterations), ImageFormat.Png);
 			}
 
@@ -112,7 +93,7 @@ namespace MandelbrotDynamic
 		public static Color ColorMap(int value, int max)
 		{
 			var v = Math.Max(0, Math.Min(255, (int)(255.0 / max * value)));
-			return Color.FromArgb(255, v, v, v);			
+			return Color.FromArgb(255, v, v, v);
 		}
 	}
 
@@ -142,7 +123,7 @@ namespace MandelbrotDynamic
 				n = 0;
 
 			// Write the result, and terminate before completion
-			m_channel.WriteAsync(new Pixel( m_x, m_y, n ));
+			m_channel.WriteAsync(new Pixel(m_x, m_y, n));
 		}
 
 		private const double RADIUS_SQUARED = 4.0;
@@ -154,7 +135,8 @@ namespace MandelbrotDynamic
 			var y = b;
 			var xSquared = x * x;
 			var ySquared = y * y;
-			while ((n < maxIterations) && ((xSquared + ySquared) < RADIUS_SQUARED)) {
+			while ((n < maxIterations) && ((xSquared + ySquared) < RADIUS_SQUARED))
+			{
 				double tmp = (xSquared - ySquared) + a;
 				y = ((2 * x) * y) + b;
 				x = tmp;
@@ -226,7 +208,7 @@ namespace MandelbrotDynamic
 		/// <summary>
 		/// Disables all image operations
 		/// </summary>
-		[CommandlineOption("Disable writing images, prevents loading GDK+", longname: "noimages")]
+		[CommandlineOption("Disable writing images, as the drawing only works on Windows", longname: "noimages")]
 		public static bool DisableImages = false;
 
 		/// <summary>
@@ -269,7 +251,7 @@ namespace MandelbrotDynamic
 				NetworkConfig.Configure(Config.ChannelServerHostname, Config.ChannelServerPort, true);
 
 			using (Config.NetworkedChannels ? new NetworkChannelScope(redirectunnamed: true) : null)
-				foreach(var job in Enumerable.Range(0, Config.Repeats).Select(x => new Render(Config.Width, Config.Height, Config.Iterations)))
+				foreach (var job in Enumerable.Range(0, Config.Repeats).Select(x => new Render(Config.Width, Config.Height, Config.Iterations)))
 					job.Run();
 
 			servertoken.Cancel();

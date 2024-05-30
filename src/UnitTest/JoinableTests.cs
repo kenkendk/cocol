@@ -1,25 +1,18 @@
 ﻿using System;
 using CoCoL;
 using System.Threading.Tasks;
-
-#if NETCOREAPP2_0
-using TOP_LEVEL = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
-using TEST_METHOD = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-using TOP_LEVEL = NUnit.Framework.TestFixtureAttribute;
-using TEST_METHOD = NUnit.Framework.TestAttribute;
-#endif
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace UnitTest
 {
-    [TOP_LEVEL]
+	[TestClass]
 	public class JoinableTest
 	{
-        [TEST_METHOD]
+		[TestMethod]
 		public void TestRetireWithLostItem()
 		{
 			var c = ChannelManager.CreateChannel<int>();
-			Func<Task> p1 = async() =>
+			Func<Task> p1 = async () =>
 				{
 					try
 					{
@@ -35,7 +28,7 @@ namespace UnitTest
 					}
 				};
 
-			Func<Task> p2 = async() =>
+			Func<Task> p2 = async () =>
 				{
 					try
 					{
@@ -51,20 +44,20 @@ namespace UnitTest
 						c.Retire();
 					}
 				};
-			
+
 
 			int count = 0;
-			Func<Task> p3 = async() =>
+			Func<Task> p3 = async () =>
 				{
 					try
 					{
-						while(true)
+						while (true)
 						{
 							await c.ReadAsync();
 							count++;
 						}
 					}
-					catch(RetiredException)
+					catch (RetiredException)
 					{
 					}
 					finally
@@ -82,13 +75,13 @@ namespace UnitTest
 
 		}
 
-        [TEST_METHOD]
+		[TestMethod]
 		public void TestRetireWithoutLoss()
 		{
 			var c = ChannelManager.CreateChannel<int>();
 			// Manually access the joinable features of the channel
 			var rt = c as IJoinAbleChannel;
-			Func<Task> p1 = async() =>
+			Func<Task> p1 = async () =>
 				{
 					try
 					{
@@ -106,7 +99,7 @@ namespace UnitTest
 					}
 				};
 
-			Func<Task> p2 = async() =>
+			Func<Task> p2 = async () =>
 				{
 					try
 					{
@@ -126,18 +119,18 @@ namespace UnitTest
 
 
 			int count = 0;
-			Func<Task> p3 = async() =>
+			Func<Task> p3 = async () =>
 				{
 					try
 					{
 						rt.Join(false);
-						while(true)
+						while (true)
 						{
 							await c.ReadAsync();
 							count++;
 						}
 					}
-					catch(RetiredException)
+					catch (RetiredException)
 					{
 					}
 					finally
@@ -155,16 +148,16 @@ namespace UnitTest
 
 		}
 
-        [TEST_METHOD]
+		[TestMethod]
 		public void TestRetireWithEnds()
 		{
 			var c = ChannelManager.CreateChannel<int>();
-			Func<Task> p1 = async() =>
+			Func<Task> p1 = async () =>
 				{
 					try
 					{
 						// Used protected access to the channel end
-						using(var w = c.AsWriteOnly())
+						using (var w = c.AsWriteOnly())
 						{
 							await Task.Delay(500);
 							await w.WriteAsync(1);
@@ -175,12 +168,12 @@ namespace UnitTest
 					}
 				};
 
-			Func<Task> p2 = async() =>
+			Func<Task> p2 = async () =>
 				{
 					try
 					{
 						// Used protected access to the channel end
-						using(var w = c.AsWriteOnly())
+						using (var w = c.AsWriteOnly())
 						{
 							await Task.Delay(1000);
 							await w.WriteAsync(1);
@@ -193,21 +186,21 @@ namespace UnitTest
 
 
 			int count = 0;
-			Func<Task> p3 = async() =>
+			Func<Task> p3 = async () =>
 				{
 					try
 					{
 						// Used protected access to the channel end
-						using(var r = c.AsReadOnly())
+						using (var r = c.AsReadOnly())
 						{
-							while(true)
+							while (true)
 							{
 								await c.ReadAsync();
 								count++;
 							}
 						}
 					}
-					catch(RetiredException)
+					catch (RetiredException)
 					{
 					}
 				};

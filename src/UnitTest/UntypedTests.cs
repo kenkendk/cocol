@@ -1,20 +1,13 @@
 ﻿using System;
 using CoCoL;
-
-#if NETCOREAPP2_0
-using TOP_LEVEL = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
-using TEST_METHOD = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-using TOP_LEVEL = NUnit.Framework.TestFixtureAttribute;
-using TEST_METHOD = NUnit.Framework.TestAttribute;
-#endif
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace UnitTest
 {
-    [TOP_LEVEL]
+	[TestClass]
 	public class UntypedTests
 	{
-        [TEST_METHOD]
+		[TestMethod]
 		public void Simple()
 		{
 			var chan = (IUntypedChannel)ChannelManager.CreateChannel<int>();

@@ -2,12 +2,6 @@
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
-#if DISABLE_WAITCALLBACK
-using WAITCALLBACK = System.Action<object>;
-#else
-using WAITCALLBACK = System.Threading.WaitCallback;
-#endif
-
 namespace CoCoL
 {
 	/// <summary>
@@ -56,10 +50,10 @@ namespace CoCoL
 		/// <value>The parent scope.</value>
 		public ExecutionScope ParentScope { get; private set; }
 
-        /// <summary>
-        /// A flag indicating if the currently active thread pool is a limiting thread pool
-        /// </summary>
-        public bool IsLimitingPool => m_threadPool is ILimitingThreadPool;
+		/// <summary>
+		/// A flag indicating if the currently active thread pool is a limiting thread pool
+		/// </summary>
+		public bool IsLimitingPool => m_threadPool is ILimitingThreadPool;
 
 		/// <summary>
 		/// Static initializer to control the creation order
@@ -112,7 +106,7 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="a">The work item.</param>
 		/// <param name="item">An optional callback parameter.</param>
-		public void QueueItem(WAITCALLBACK a, object item = null)
+		public void QueueItem(System.Threading.WaitCallback a, object item = null)
 		{
 			m_threadPool.QueueItem(a, item);
 		}
@@ -126,7 +120,7 @@ namespace CoCoL
 		{
 			return m_threadPool.QueueTask(a);
 		}
-			
+
 		/// <summary>
 		/// Ensures that the threadpool is finished or throws an exception.
 		/// If the underlying threadpool does not support finishing, this call does nothing
@@ -137,7 +131,7 @@ namespace CoCoL
 			if (m_threadPool is IFinishAbleThreadPool)
 				return ((IFinishAbleThreadPool)m_threadPool).EnsureFinishedAsync(waittime);
 
-            return Task.FromResult(true);
+			return Task.FromResult(true);
 		}
 
 
@@ -173,98 +167,29 @@ namespace CoCoL
 
 		#endregion
 
-#if PCL_BUILD
-		private static bool __IsFirstUsage = true;
-		private static ExecutionScope __Current = null;
+		/// <summary>
+		/// The scope data, using AsyncLocal
+		/// </summary>
+		private static System.Threading.AsyncLocal<string> local_state = new System.Threading.AsyncLocal<string>();
 
-        /// <summary>
-        /// Gets the current execution scope.
-        /// </summary>
-        /// <value>The current scope.</value>
-		public static ExecutionScope Current
-		{
-			get
-			{
-				lock (__lock)
-				{
-					// TODO: Use AsyncLocal if targeting 4.6
-					//var cur = new System.Threading.AsyncLocal<ExecutionScope>();
-					if (__IsFirstUsage)
-					{
-						__IsFirstUsage = false;
-						System.Diagnostics.Debug.WriteLine("*Warning*: PCL does not provide a call context, so channel scoping does not work correctly for multithreaded use!");
-					}
-
-					var cur = __Current;
-					if (cur == null)
-						return Current = Root;
-					else
-						return cur;
-				}
-			}
-			private set
-			{
-				lock (__lock)
-				{
-					__Current = value;
-				}
-			}
-		}
-#elif NETCOREAPP2_0 || NETSTANDARD2_0 || NETSTANDARD1_6
-
-        /// <summary>
-        /// The scope data, using AsyncLocal
-        /// </summary>
-        private static System.Threading.AsyncLocal<string> local_state = new System.Threading.AsyncLocal<string>();
-
-        /// <summary>
-        /// Gets the current execution scope.
-        /// </summary>
-        /// <value>The current scope.</value>
-        public static ExecutionScope Current
-        {
-            get
-            {
-                lock (__lock)
-                {
-                    var cur = local_state?.Value;
-                    if (cur == null)
-                        return Current = Root;
-                    else
-                    {
-                        ExecutionScope sc;
-                        if (!__scopes.TryGetValue(cur, out sc))
-                            throw new InvalidOperationException(string.Format("Unable to find scope in lookup table, this may be caused by attempting to transport call contexts between AppDomains (eg. with remoting calls)"));
-
-                        return sc;
-                    }
-                }
-            }
-            private set
-            {
-                lock (__lock)
-                    local_state.Value = value.m_instancekey;
-            }
-        }
-#else
 		/// <summary>
 		/// Gets the current execution scope.
 		/// </summary>
 		/// <value>The current scope.</value>
 		public static ExecutionScope Current
 		{
-			get 
+			get
 			{
 				lock (__lock)
 				{
-					var cur = System.Runtime.Remoting.Messaging.CallContext.LogicalGetData(LOGICAL_CONTEXT_KEY) as string;
+					var cur = local_state?.Value;
 					if (cur == null)
 						return Current = Root;
 					else
 					{
 						ExecutionScope sc;
 						if (!__scopes.TryGetValue(cur, out sc))
-							throw new InvalidOperationException("Unable to find scope in lookup table, this may be caused by attempting to transport call contexts between AppDomains (eg. with remoting calls)");
+							throw new InvalidOperationException(string.Format("Unable to find scope in lookup table, this may be caused by attempting to transport call contexts between AppDomains (eg. with remoting calls)"));
 
 						return sc;
 					}
@@ -273,11 +198,9 @@ namespace CoCoL
 			private set
 			{
 				lock (__lock)
-					System.Runtime.Remoting.Messaging.CallContext.LogicalSetData(LOGICAL_CONTEXT_KEY, value.m_instancekey);
+					local_state.Value = value.m_instancekey;
 			}
 		}
-
-#endif
 	}
 }
 

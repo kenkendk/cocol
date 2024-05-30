@@ -1,19 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <ReleaseVersion>1.7.1</ReleaseVersion>
+    <TargetFramework>net8</TargetFramework>
+    <ReleaseVersion>1.8.0</ReleaseVersion>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CoCoL-NetStd20\CoCoL-NetStd20.csproj" />
+    <ProjectReference Include="..\CoCoL\CoCoL.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="log4net" Version="2.0.10" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="Newtonsoft.Json, Version=13.0.3.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
-      <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\netstandard2.0\Newtonsoft.Json.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
   </ItemGroup>
 </Project>

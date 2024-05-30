@@ -1,10 +1,10 @@
 ﻿using System;
 using CoCoL;
 using System.Drawing;
-using System.Drawing.Imaging;
 using CoCoL.Network;
 using System.Collections.Generic;
 using System.Linq;
+using System.Drawing.Imaging;
 
 namespace Mandelbrot
 {
@@ -68,7 +68,7 @@ namespace Mandelbrot
 		/// </summary>
 		public int value;
 	}
-		
+
 	/// <summary>
 	/// The farmer process is responsible for spawning the workers
 	/// </summary>
@@ -94,12 +94,12 @@ namespace Mandelbrot
 					await harvester_channel.WriteAsync(task);
 
 					// Emit the individual pixels
-					for(var x = 0; x < task.width; x++)
-						for(var y = 0; y < task.height; y++)
+					for (var x = 0; x < task.width; x++)
+						for (var y = 0; y < task.height; y++)
 							await worker_channel.WriteAsync(new Pixel() { x = task.left + x, y = task.top + y, value = task.iterations });
 				}
-			} 
-			catch(RetiredException)
+			}
+			catch (RetiredException)
 			{
 				farmer_channel.Retire();
 				worker_channel.Retire();
@@ -123,6 +123,8 @@ namespace Mandelbrot
 			var harvester_channel = ChannelManager.GetChannel<RenderTask>(Harvester.HARVESTER_CHANNEL).AsRead();
 			var shutdown_channel = ChannelManager.GetChannel<bool>(Harvester.SHUTDOWN_CHANNEL).AsWrite();
 
+			var imagesSupported = OperatingSystem.IsWindowsVersionAtLeast(6, 1);
+
 			try
 			{
 				while (true)
@@ -133,24 +135,24 @@ namespace Mandelbrot
 
 					// Set up an image buffer
 					var pixels = task.width * task.height;
-					using(var img = Config.DisableImages ? null : new Bitmap(task.width, task.height))
+					using (var img = imagesSupported && !Config.DisableImages ? new Bitmap(task.width, task.height) : null)
 					{
 						// Collect all pixels
-						for(var i = 0; i < pixels; i++)
+						for (var i = 0; i < pixels; i++)
 						{
 							var px = await worker_channel.ReadAsync();
-							if (img != null)
+							if (imagesSupported && img != null)
 								img.SetPixel(px.x - task.left, px.y - task.top, ColorMap(px.value, task.iterations));
 						}
 
-						if (img != null)
+						if (imagesSupported && img != null)
 							img.Save(string.Format("{0}-{1}x{2}-{3}.png", DateTime.Now.Ticks, task.width, task.height, task.iterations), ImageFormat.Png);
-						
+
 						Console.WriteLine("Rendered a {0}x{1}:{2} image in {3}", task.width, task.height, task.iterations, DateTime.Now - starttime);
 					}
 				}
-			} 
-			catch(RetiredException)
+			}
+			catch (RetiredException)
 			{
 				worker_channel.Retire();
 				harvester_channel.Retire();
@@ -161,7 +163,7 @@ namespace Mandelbrot
 		public static Color ColorMap(int value, int max)
 		{
 			var v = Math.Max(0, Math.Min(255, (int)(255.0 / max * value)));
-			return Color.FromArgb(255, v, v, v);			
+			return Color.FromArgb(255, v, v, v);
 		}
 	}
 
@@ -184,7 +186,7 @@ namespace Mandelbrot
 
 			try
 			{
-				while(true)
+				while (true)
 				{
 					// Grab work
 					var px = await input_channel.ReadAsync();
@@ -198,7 +200,7 @@ namespace Mandelbrot
 					await output_channel.WriteAsync(new Pixel() { x = px.x, y = px.y, value = n });
 				}
 			}
-			catch(RetiredException)
+			catch (RetiredException)
 			{
 				input_channel.Retire();
 				output_channel.Retire();
@@ -214,7 +216,8 @@ namespace Mandelbrot
 			var y = b;
 			var xSquared = x * x;
 			var ySquared = y * y;
-			while ((n < maxIterations) && ((xSquared + ySquared) < RADIUS_SQUARED)) {
+			while ((n < maxIterations) && ((xSquared + ySquared) < RADIUS_SQUARED))
+			{
 				double tmp = (xSquared - ySquared) + a;
 				y = ((2 * x) * y) + b;
 				x = tmp;
@@ -256,7 +259,7 @@ namespace Mandelbrot
 		/// <summary>
 		/// Disables all image operations
 		/// </summary>
-		[CommandlineOption("Disable writing images, prevents loading GDK+", longname: "noimages")]
+		[CommandlineOption("Disable writing images, as the drawing only works on Windows", longname: "noimages")]
 		public static bool DisableImages = false;
 
 		/// <summary>
@@ -320,7 +323,7 @@ namespace Mandelbrot
 				// Block main thread until all jobs complete
 				shutdown_channel.Read();
 			}
-			catch(RetiredException)
+			catch (RetiredException)
 			{
 			}
 		}

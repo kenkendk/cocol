@@ -1,51 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <ProjectGuid>{EE02049C-4D9E-4FF1-87D6-D07BA33AE2CB}</ProjectGuid>
+    <TargetFramework>net8.0</TargetFramework>
     <OutputType>Exe</OutputType>
-    <RootNamespace>CommsTimeBlocks</RootNamespace>
-    <AssemblyName>CommsTimeBlocks</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
-    <ReleaseVersion>1.0</ReleaseVersion>
-    <SynchReleaseVersion>false</SynchReleaseVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug</OutputPath>
-    <DefineConstants>DEBUG;</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <ConsolePause>false</ConsolePause>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>full</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release</OutputPath>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <ConsolePause>false</ConsolePause>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <ItemGroup>
-    <ProjectReference Include="..\..\CoCoL-NetStd20\CoCoL-NetStd20.csproj">
-      <Project>{B8459E87-76CF-4B5B-B96A-922686A8DC3D}</Project>
-      <Name>CoCoL-NetStd20</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\CoCoL.Blocks\CoCoL.Blocks.csproj">
-      <Project>{85BEBBEF-B3C2-429A-A845-CACB87F17716}</Project>
-      <Name>CoCoL.Blocks</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\..\CoCoL\CoCoL.csproj" />
+    <ProjectReference Include="..\..\CoCoL.Blocks\CoCoL.Blocks.csproj" />
   </ItemGroup>
 </Project>

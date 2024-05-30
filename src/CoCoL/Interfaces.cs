@@ -2,12 +2,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-#if DISABLE_WAITCALLBACK
-using WAITCALLBACK = System.Action<object>;
-#else
-using WAITCALLBACK = System.Threading.WaitCallback;
-#endif
-
 namespace CoCoL
 {
 	/// <summary>
@@ -69,7 +63,7 @@ namespace CoCoL
 	/// <summary>
 	/// Represents and interface that is retire-able
 	/// </summary>
-    public interface IRetireAbleChannel : IUntypedChannel
+	public interface IRetireAbleChannel : IUntypedChannel
 	{
 		/// <summary>
 		/// Stops this channel from processing messages
@@ -128,22 +122,22 @@ namespace CoCoL
 		/// <returns>An awaitable task</returns>
 		Task LeaveAsync();
 	}
-		
+
 	/// <summary>
 	/// Interface for the read-end of a channel that supports continuation
 	/// </summary>
 	public interface IReadChannel<T> : IRetireAbleChannel
 	{
-        /// <summary>
-        /// Registers a desire to read from the channel
-        /// </summary>
-        Task<T> ReadAsync();
+		/// <summary>
+		/// Registers a desire to read from the channel
+		/// </summary>
+		Task<T> ReadAsync();
 
-        /// <summary>
-        /// Registers a desire to read from the channel
-        /// </summary>
-        /// <param name="offer">A two-phase offer, use null to unconditionally accept</param>
-        Task<T> ReadAsync(ITwoPhaseOffer offer);
+		/// <summary>
+		/// Registers a desire to read from the channel
+		/// </summary>
+		/// <param name="offer">A two-phase offer, use null to unconditionally accept</param>
+		Task<T> ReadAsync(ITwoPhaseOffer offer);
 	}
 
 	/// <summary>
@@ -151,18 +145,18 @@ namespace CoCoL
 	/// </summary>
 	public interface IWriteChannel<T> : IRetireAbleChannel
 	{
-        /// <summary>
-        /// Registers a desire to write to the channel
-        /// </summary>
-        /// <param name="value">The value to write to the channel.</param>
-        Task WriteAsync(T value);
+		/// <summary>
+		/// Registers a desire to write to the channel
+		/// </summary>
+		/// <param name="value">The value to write to the channel.</param>
+		Task WriteAsync(T value);
 
-        /// <summary>
+		/// <summary>
 		/// Registers a desire to write to the channel
 		/// </summary>
 		/// <param name="offer">A two-phase offer, use null to unconditionally accept</param>
 		/// <param name="value">The value to write to the channel.</param>
-        Task WriteAsync(T value, ITwoPhaseOffer offer );
+		Task WriteAsync(T value, ITwoPhaseOffer offer);
 	}
 
 	/// <summary>
@@ -242,44 +236,44 @@ namespace CoCoL
 		Task WithdrawAsync(object caller);
 	}
 
-    /// <summary>
-    /// Represents an offer that needs notification once the initial match has failed
-    /// </summary>
-    public interface IProbeAbleOffer
-    {
-        /// <summary>
-        /// Signals the instance that the probe phase is completed
-        /// </summary>
-        void ProbeComplete();
-    }
+	/// <summary>
+	/// Represents an offer that needs notification once the initial match has failed
+	/// </summary>
+	public interface IProbeAbleOffer
+	{
+		/// <summary>
+		/// Signals the instance that the probe phase is completed
+		/// </summary>
+		void ProbeComplete();
+	}
 
-    /// <summary>
-    /// Represents an offer that can expire
-    /// </summary>
-    public interface IExpiringOffer : ITwoPhaseOffer, IProbeAbleOffer
-    {
-        /// <summary>
-        /// The time the offer expires
-        /// </summary>
-        DateTime Expires { get; }
+	/// <summary>
+	/// Represents an offer that can expire
+	/// </summary>
+	public interface IExpiringOffer : ITwoPhaseOffer, IProbeAbleOffer
+	{
+		/// <summary>
+		/// The time the offer expires
+		/// </summary>
+		DateTime Expires { get; }
 
-        /// <summary>
-        /// Gets a value indicating whether this <see cref="T:CoCoL.ITimeoutAbleOffer"/> is expired.
-        /// </summary>
-        bool IsExpired { get; }
-    }
+		/// <summary>
+		/// Gets a value indicating whether this <see cref="T:CoCoL.ITimeoutAbleOffer"/> is expired.
+		/// </summary>
+		bool IsExpired { get; }
+	}
 
-    /// <summary>
-    /// Represents an offer that can be cancelled
-    /// </summary>
-    public interface ICancelAbleOffer : ITwoPhaseOffer
-    {
-        /// <summary>
-        /// The cancellation token
-        /// </summary>
-        /// <value>The cancel token.</value>
-        CancellationToken CancelToken { get; }            
-    }
+	/// <summary>
+	/// Represents an offer that can be cancelled
+	/// </summary>
+	public interface ICancelAbleOffer : ITwoPhaseOffer
+	{
+		/// <summary>
+		/// The cancellation token
+		/// </summary>
+		/// <value>The cancel token.</value>
+		CancellationToken CancelToken { get; }
+	}
 
 	/// <summary>
 	/// Interface for a thread pool implementation
@@ -297,7 +291,7 @@ namespace CoCoL
 		/// </summary>
 		/// <param name="a">The work item.</param>
 		/// <param name="item">An optional callback parameter.</param>
-		void QueueItem(WAITCALLBACK a, object item);
+		void QueueItem(System.Threading.WaitCallback a, object item);
 
 		/// <summary>
 		/// Puts an item into the work queue
@@ -319,7 +313,7 @@ namespace CoCoL
 		Task EnsureFinishedAsync(TimeSpan waittime = default(TimeSpan));
 	}
 
-    /// <summary>
+	/// <summary>
 	/// A marker interface that signals that all continuations must be enqueued
 	/// </summary>
 	public interface ILimitingThreadPool : IThreadPool

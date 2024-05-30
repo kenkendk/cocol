@@ -1,21 +1,14 @@
 ﻿using System;
 using System.Linq;
-
-#if NETCOREAPP2_0
-using TOP_LEVEL = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
-using TEST_METHOD = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-using TOP_LEVEL = NUnit.Framework.TestFixtureAttribute;
-using TEST_METHOD = NUnit.Framework.TestAttribute;
-#endif
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace UnitTest
 {
-    [TOP_LEVEL]
+	[TestClass]
 	public class SortedListTest
 	{
 
-        [TEST_METHOD]
+		[TestMethod]
 		public void TestListSimple()
 		{
 			TestAndCompare(new[] { 4, 3, 2, 1 });
@@ -28,14 +21,14 @@ namespace UnitTest
 			TestAndCompare(new[] { 1, 2, 5, 4, 3, 6, 7, 8, 9, 10 });
 		}
 
-        [TEST_METHOD]
+		[TestMethod]
 		public void TestList()
 		{
 			for (var rp = 0; rp < 100; rp++)
 			{
 				var rnd = new Random();
 				TestAndCompare((from x in Enumerable.Range(0, 1000)
-					select rnd.Next()).Distinct().ToArray());
+								select rnd.Next()).Distinct().ToArray());
 			}
 		}
 
@@ -43,8 +36,8 @@ namespace UnitTest
 			where T : IComparable<T>
 		{
 			var sorted = from n in numbers
-				orderby n
-				select n;
+						 orderby n
+						 select n;
 
 			var sl = new CoCoL.SortedList<T, T>();
 			foreach (var n in numbers)
@@ -55,7 +48,7 @@ namespace UnitTest
 			foreach (var x in cmp)
 				if (x.Real.CompareTo(x.SL.Key) != 0 || x.Real.CompareTo(x.SL.Value) != 0)
 				{
-					foreach(var y in cmp)
+					foreach (var y in cmp)
 						Console.WriteLine("{0}: ({1}, {2})", y.Real, y.SL.Key, y.SL.Value);
 					throw new UnittestException("Sorted sequence was incorrect!");
 				}
