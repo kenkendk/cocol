@@ -3,8 +3,6 @@
 [![Nuget count](https://img.shields.io/nuget/v/CoCoL.svg)](https://www.nuget.org/packages/CoCoL/)
 [![License](https://img.shields.io/github/license/kenkendk/cocol.svg)](https://github.com/kenkendk/cocol/blob/master/LICENSE)
 [![Issues open](https://img.shields.io/github/issues-raw/kenkendk/cocol.svg)](https://github.com/kenkendk/cocol/issues/)
-[![Coverage Status](https://coveralls.io/repos/github/kenkendk/cocol/badge.svg)](https://coveralls.io/github/kenkendk/cocol)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/3083acd7b35d47538e27465d24c12326)](https://www.codacy.com/manual/kenneth/cocol?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=kenkendk/cocol&amp;utm_campaign=Badge_Grade)
 
 CoCoL is a fresh multi-programming approach, leveraging the C# `await` keyword to produce sequential and easily understandable multithreading code. With a shared-nothing approach and explicit communication, programs written with CoCoL are automatically free from race conditions and other threading hazards.
 
