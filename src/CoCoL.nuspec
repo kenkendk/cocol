@@ -2,20 +2,23 @@
 <package >
   <metadata>
     <id>CoCoL</id>
-    <version>1.7.1</version>
+    <version>1.8.0</version>
     <title>CoCoL</title>
     <authors>Kenneth Skovhede</authors>
     <owners>Kenneth Skovhede</owners>
-    <licenseUrl>https://github.com/kenkendk/cocol/blob/master/LICENSE</licenseUrl>
+    
+    <license type="expression">MIT</license>
     <projectUrl>https://github.com/kenkendk/cocol</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Concurrent Communications Library</description>
-    <releaseNotes>Fixed a case where infinite timeout was treated as immediate.</releaseNotes>
+    <releaseNotes>Updated to .NET8.</releaseNotes>
     <copyright>Copyright 2024, Kenneth Skovhede</copyright>
     <tags>Multithreading Multiprocessing Concurrency CSP Go Golang Actor</tags>
+    <readme>docs\README.md</readme>
   </metadata>
   <files>
     <file src="CoCoL/bin/Release/net8/CoCoL.dll" target="lib/net8" />
     <file src="CoCoL/bin/Release/net8/CoCoL.xml" target="lib/net8" />
+    <file src="../README-nuspec.md" target="docs/README.md" />
   </files>
 </package>
