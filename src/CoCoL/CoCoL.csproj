@@ -2,15 +2,33 @@
 
   <PropertyGroup>
     <TargetFramework>net8</TargetFramework>
-    <AssemblyName>CoCoL</AssemblyName>
-    <RootNamespace>CoCoL</RootNamespace>
-    <ReleaseVersion>1.8.0</ReleaseVersion>
+
+    <PackageId>CoCoL</PackageId>
+    <Version>1.8.0</Version>
+    <Title>CoCoL</Title>
+    <Authors>kenkendk</Authors>
+    <Owners>kenkendk</Owners>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/kenkendk/cocol</PackageProjectUrl>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <Description>Concurrent Communications Library</Description>
+    <PackageReleaseNotes>Updated to .NET8.</PackageReleaseNotes>
+    <Copyright>Copyright 2024, Kenneth Skovhede</Copyright>
+    <PackageTags>Multithreading Multiprocessing Concurrency CSP Go Golang Actor</PackageTags>
+    <PackageReadmeFile>docs\README.md</PackageReadmeFile>
   </PropertyGroup>
 
-<ItemGroup>
+  <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-        <_Parameter1>UnitTest</_Parameter1>
+      <_Parameter1>UnitTest</_Parameter1>
     </AssemblyAttribute>
-</ItemGroup>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="./README-nuspec.md">
+      <Pack>true</Pack>
+      <PackagePath>docs/README.md</PackagePath>
+    </Content>
+  </ItemGroup>
 
 </Project>

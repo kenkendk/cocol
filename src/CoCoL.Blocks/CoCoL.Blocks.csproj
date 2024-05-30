@@ -2,13 +2,9 @@
 
   <PropertyGroup>
     <TargetFramework>net8</TargetFramework>
-    <ReleaseVersion>1.7.1</ReleaseVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CoCoL\CoCoL.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Remove="Properties\AssemblyInfo.cs" />
   </ItemGroup>
 </Project>

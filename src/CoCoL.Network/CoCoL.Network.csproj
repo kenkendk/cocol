@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8</TargetFramework>
-    <ReleaseVersion>1.8.0</ReleaseVersion>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\CoCoL\CoCoL.csproj" />
