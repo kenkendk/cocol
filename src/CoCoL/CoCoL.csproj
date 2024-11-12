@@ -4,7 +4,7 @@
     <TargetFramework>net8</TargetFramework>
 
     <PackageId>CoCoL</PackageId>
-    <Version>1.8.0</Version>
+    <Version>1.8.1</Version>
     <Title>CoCoL</Title>
     <Authors>kenkendk</Authors>
     <Owners>kenkendk</Owners>
@@ -12,7 +12,7 @@
     <PackageProjectUrl>https://github.com/kenkendk/cocol</PackageProjectUrl>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Description>Concurrent Communications Library</Description>
-    <PackageReleaseNotes>Updated to .NET8.</PackageReleaseNotes>
+    <PackageReleaseNotes>Removed Mono support.</PackageReleaseNotes>
     <Copyright>Copyright 2024, Kenneth Skovhede</Copyright>
     <PackageTags>Multithreading Multiprocessing Concurrency CSP Go Golang Actor</PackageTags>
     <PackageReadmeFile>docs\README.md</PackageReadmeFile>
