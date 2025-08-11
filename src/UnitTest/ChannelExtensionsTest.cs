@@ -26,6 +26,45 @@ namespace UnitTest
             }
         }
 
+        [TestMethod]
+        public async Task TestReadCanBeCancelled()
+        {
+            var cts = new System.Threading.CancellationTokenSource();
+            var channel = ChannelManager.CreateChannel<int>(buffersize: 0);
+            var task = channel.ReadAsync(cts.Token);
+            cts.Cancel();
+
+            try
+            {
+                await task;
+                Assert.Fail("Exception expected!");
+            }
+            catch (TaskCanceledException)
+            {
+                // Expected result.
+            }
+        }
+
+        [TestMethod]
+        public async Task TestWriteCanBeCancelled()
+        {
+            var cts = new System.Threading.CancellationTokenSource();
+            var channel = ChannelManager.CreateChannel<int>(buffersize: 0);
+
+            var task = channel.WriteAsync(1, cts.Token);
+            cts.Cancel();
+
+            try
+            {
+                await task;
+                Assert.Fail("Exception expected!");
+            }
+            catch (TaskCanceledException)
+            {
+                // Expected result.
+            }
+        }
+
         private void ThrowingMethod()
         {
             throw new NotImplementedException("This method is not implemented.");
