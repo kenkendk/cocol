@@ -165,6 +165,11 @@ namespace CoCoL
 					EnqueueContinuation
 					? TaskCreationOptions.None
 					: TaskCreationOptions.RunContinuationsAsynchronously);
+				if (offer is ICancelAbleOffer cao)
+				{
+					var src = Source; // Lambda functions doesn't capture class variables.
+					cao.CancelToken.Register(() => src.TrySetCanceled());
+				}
 			}
 
 			/// <summary>
@@ -246,6 +251,11 @@ namespace CoCoL
 					EnqueueContinuation
 					? TaskCreationOptions.None
 					: TaskCreationOptions.RunContinuationsAsynchronously);
+				if (offer is ICancelAbleOffer cao)
+				{
+					var src = Source; // Lambda functions doesn't capture class variables.
+					cao.CancelToken.Register(() => src.TrySetCanceled());
+				}
 				Value = value;
 			}
 
