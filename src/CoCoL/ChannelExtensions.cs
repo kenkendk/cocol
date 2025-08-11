@@ -942,6 +942,18 @@ namespace CoCoL
 		}
 
 		/// <summary>
+		/// Writes the channel asynchronously with a cancellation token.
+		/// </summary>
+		/// <param name="self">The channel to write.</param>
+		/// <param name="value">The value to write.</param>
+		/// <param name="cancelToken">The cancellation token</param>
+		/// <returns></returns>
+		public static Task WriteAsync(this IUntypedChannel self, object value, CancellationToken cancelToken)
+		{
+			return self.WriteAsync(value, Timeout.Infinite, cancelToken);
+		}
+
+		/// <summary>
 		/// Writes the channel asynchronously
 		/// </summary>
 		/// <returns>The task for awaiting completion.</returns>
