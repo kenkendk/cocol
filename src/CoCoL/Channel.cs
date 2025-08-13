@@ -672,6 +672,8 @@ namespace CoCoL
 
 						if (rd.Offer is IExpiringOffer && ((IExpiringOffer)rd.Offer).Expires != Timeout.InfiniteDateTime)
 							ExpirationManager.AddExpirationCallback(((IExpiringOffer)rd.Offer).Expires, () => ExpireItemsAsync().FireAndForget());
+						if (rd.Offer is ICancelAbleOffer cancelAbleOffer && cancelAbleOffer.CancelToken.CanBeCanceled)
+							cancelAbleOffer.CancelToken.Register(() => ExpireItemsAsync().FireAndForget());
 					}
 				}
 			}
@@ -787,6 +789,9 @@ namespace CoCoL
 
 							if (wr.Offer is IExpiringOffer && ((IExpiringOffer)wr.Offer).Expires != Timeout.InfiniteDateTime)
 								ExpirationManager.AddExpirationCallback(((IExpiringOffer)wr.Offer).Expires, () => ExpireItemsAsync().FireAndForget());
+
+							if (wr.Offer is ICancelAbleOffer cancelAbleOffer && cancelAbleOffer.CancelToken.CanBeCanceled)
+								cancelAbleOffer.CancelToken.Register(() => ExpireItemsAsync().FireAndForget());
 						}
 					}
 				}
@@ -1016,8 +1021,14 @@ namespace CoCoL
 					return;
 
 				var now = DateTime.Now;
-				expiredReaders = m_readerQueue.Zip(Enumerable.Range(0, m_readerQueue.Count), (n, i) => new KeyValuePair<int, ReaderEntry>(i, n)).Where(x => x.Value.Expires.Ticks != 0 && (x.Value.Expires - now).Ticks <= ExpirationManager.ALLOWED_ADVANCE_EXPIRE_TICKS).ToArray();
-				expiredWriters = m_writerQueue.Zip(Enumerable.Range(0, m_writerQueue.Count), (n, i) => new KeyValuePair<int, WriterEntry>(i, n)).Where(x => x.Value.Expires.Ticks != 0 && (x.Value.Expires - now).Ticks <= ExpirationManager.ALLOWED_ADVANCE_EXPIRE_TICKS).ToArray();
+				expiredReaders = m_readerQueue
+					.Zip(Enumerable.Range(0, m_readerQueue.Count), (n, i) => new KeyValuePair<int, ReaderEntry>(i, n))
+					.Where(x => (x.Value.Expires.Ticks != 0 && (x.Value.Expires - now).Ticks <= ExpirationManager.ALLOWED_ADVANCE_EXPIRE_TICKS) || x.Value.IsCancelled)
+					.ToArray();
+				expiredWriters = m_writerQueue
+					.Zip(Enumerable.Range(0, m_writerQueue.Count), (n, i) => new KeyValuePair<int, WriterEntry>(i, n))
+					.Where(x => (x.Value.Expires.Ticks != 0 && (x.Value.Expires - now).Ticks <= ExpirationManager.ALLOWED_ADVANCE_EXPIRE_TICKS) || x.Value.IsCancelled)
+					.ToArray();
 
 				foreach (var r in expiredReaders.OrderByDescending(x => x.Key))
 					m_readerQueue.RemoveAt(r.Key);
@@ -1027,11 +1038,17 @@ namespace CoCoL
 
 			// Send the notifications
 			foreach (var r in expiredReaders.OrderBy(x => x.Value.Expires))
-				TrySetException(r.Value, new TimeoutException());
+				if (r.Value.IsCancelled)
+					TrySetCancelled(r.Value);
+				else
+					TrySetException(r.Value, new TimeoutException());
 
 			// Send the notifications
 			foreach (var w in expiredWriters.OrderBy(x => x.Value.Expires))
-				TrySetException(w.Value, new TimeoutException());
+				if (w.Value.IsCancelled)
+					TrySetCancelled(w.Value);
+				else
+					TrySetException(w.Value, new TimeoutException());
 		}
 
 		#region Task continuation support methods
