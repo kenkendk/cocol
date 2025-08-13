@@ -170,7 +170,7 @@ namespace UnitTest
 						break;
 				}
 
-				Assert.IsTrue(writertasks[discard].IsFaulted);
+				Assert.IsTrue(writertasks[discard].IsFaulted, $"Task state was {writertasks[discard].Status}, but expected faulted");
 				TestAssert.IsInstanceOf<ChannelOverflowException>(writertasks[discard].Exception.Flatten().InnerExceptions.First());
 
 				writertasks.RemoveAt(discard);
