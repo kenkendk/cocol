@@ -195,6 +195,7 @@ namespace CoCoL
 		{
 			return TryWriteAsync(self, value, Timeout.Immediate);
 		}
+
 		/// <summary>
 		/// Write to the channel in a probing and asynchronous manner
 		/// </summary>
@@ -207,6 +208,34 @@ namespace CoCoL
 		{
 			return self.WriteAsync(value, new TimeoutOffer(waittime)).ContinueWith(x => x.IsCompleted);
 		}
+
+		/// <summary>
+		/// Write to the channel in a probing and asynchronous manner with a cancellation token
+		/// </summary>
+		/// <param name="self">The channel to read from</param>
+		/// <param name="value">The value to write into the channel</param>
+		/// <param name="cancelToken">The cancellation token</param>
+		/// <typeparam name="T">The channel data type parameter.</typeparam>
+		/// <returns>True if the write succeeded, false otherwise</returns>
+		public static Task<bool> TryWriteAsync<T>(this IWriteChannel<T> self, T value, CancellationToken cancelToken)
+		{
+			return self.WriteAsync(value, new CancellationOffer(cancelToken)).ContinueWith(x => x.IsCompleted && !x.IsFaulted && !x.IsCanceled);
+		}
+
+		/// <summary>
+		/// Write to the channel in a probing and asynchronous manner with a timeout and cancellation token
+		/// </summary>
+		/// <param name="self">The channel to read from</param>
+		/// <param name="value">The value to write into the channel</param>
+		/// <param name="waittime">The time to wait before cancelling</param>
+		/// <param name="cancelToken">The cancellation token</param>
+		/// <typeparam name="T">The channel data type parameter.</typeparam>
+		/// <returns>True if the write succeeded, false otherwise</returns>
+		public static Task<bool> TryWriteAsync<T>(this IWriteChannel<T> self, T value, TimeSpan waittime, CancellationToken cancelToken)
+		{
+			return self.WriteAsync(value, new TimeoutOffer(waittime, cancelToken)).ContinueWith(x => x.IsCompleted && !x.IsFaulted && !x.IsCanceled);
+		}
+
 		/// <summary>
 		/// Reads the channel in a probing and asynchronous manner
 		/// </summary>
@@ -234,6 +263,44 @@ namespace CoCoL
 				return new KeyValuePair<bool, T>(true, x.Result);
 			});
 		}
+
+		/// <summary>
+		/// Tries to read from the channel with a cancellation token.
+		/// </summary>
+		/// <param name="self">The channel to read from</param>
+		/// <param name="cancelToken">The cancellation token</param>
+		/// <typeparam name="T">The channel data type parameter.</typeparam>
+		/// <returns>True if the read succeeded, false otherwise</returns>
+		public static Task<KeyValuePair<bool, T>> TryReadAsync<T>(this IReadChannel<T> self, CancellationToken cancelToken)
+		{
+			return self.ReadAsync(new CancellationOffer(cancelToken)).ContinueWith(x =>
+			{
+				if (x.IsFaulted || x.IsCanceled)
+					return new KeyValuePair<bool, T>(false, default(T));
+
+				return new KeyValuePair<bool, T>(true, x.Result);
+			});
+		}
+
+		/// <summary>
+		/// Tries to read from the channel with a timeout and cancellation token.
+		/// </summary>
+		/// <param name="self">The channel to read from</param>
+		/// <param name="timeout">The read timeout</param>
+		/// <param name="cancelToken">The cancellation token</param>
+		/// <typeparam name="T">The channel data type parameter.</typeparam>
+		/// <returns>True if the read succeeded, false otherwise</returns>
+		public static Task<KeyValuePair<bool, T>> TryReadAsync<T>(this IReadChannel<T> self, TimeSpan timeout, CancellationToken cancelToken)
+		{
+			return self.ReadAsync(new TimeoutOffer(timeout, cancelToken)).ContinueWith(x =>
+			{
+				if (x.IsFaulted || x.IsCanceled)
+					return new KeyValuePair<bool, T>(false, default(T));
+
+				return new KeyValuePair<bool, T>(true, x.Result);
+			});
+		}
+
 		/// <summary>
 		/// Reads the channel asynchronously.
 		/// </summary>
@@ -939,6 +1006,18 @@ namespace CoCoL
 		public static Task WriteAsync(this IUntypedChannel self, object value, TimeSpan timeout)
 		{
 			return UntypedAccessMethods.CreateWriteAccessor(self).WriteAsync(self, value, new TimeoutOffer(timeout));
+		}
+
+		/// <summary>
+		/// Writes the channel asynchronously with a cancellation token.
+		/// </summary>
+		/// <param name="self">The channel to write.</param>
+		/// <param name="value">The value to write.</param>
+		/// <param name="cancelToken">The cancellation token</param>
+		/// <returns></returns>
+		public static Task WriteAsync(this IUntypedChannel self, object value, CancellationToken cancelToken)
+		{
+			return self.WriteAsync(value, Timeout.Infinite, cancelToken);
 		}
 
 		/// <summary>
