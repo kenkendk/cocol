@@ -123,6 +123,37 @@ namespace UnitTest
             }
         }
 
+        [TestMethod]
+        public async Task TestNormalChannelOperationWithCancellationToken()
+        {
+            var cts = new System.Threading.CancellationTokenSource();
+            var channel = ChannelManager.CreateChannel<int>(buffersize: 1);
+
+            // Test normal without timeout
+            await channel.WriteAsync(1, cts.Token);
+            var res = await channel.ReadAsync(cts.Token);
+            Assert.AreEqual(1, res);
+
+            // Test normal with non-triggering timeout
+            await channel.WriteAsync(2, TimeSpan.FromSeconds(1), cts.Token);
+            var res2 = await channel.ReadAsync(cts.Token);
+            Assert.AreEqual(2, res2);
+
+            // Test try methods without timeout
+            var tryWriteResult = await channel.TryWriteAsync(3, cts.Token);
+            Assert.IsTrue(tryWriteResult, "Expected TryWrite to succeed without timeout");
+            var tryReadResult = await channel.TryReadAsync(cts.Token);
+            Assert.IsTrue(tryReadResult.Key, "Expected TryRead to succeed without timeout");
+            Assert.AreEqual(3, tryReadResult.Value);
+
+            // Test try methods with non-triggering timeout
+            var tryWriteResult2 = await channel.TryWriteAsync(4, TimeSpan.FromSeconds(1), cts.Token);
+            Assert.IsTrue(tryWriteResult2, "Expected TryWrite to succeed with non-triggering timeout");
+            var tryReadResult2 = await channel.TryReadAsync(TimeSpan.FromSeconds(1), cts.Token);
+            Assert.IsTrue(tryReadResult2.Key, "Expected TryRead to succeed with non-triggering timeout");
+            Assert.AreEqual(4, tryReadResult2.Value);
+        }
+
         private void ThrowingMethod()
         {
             throw new NotImplementedException("This method is not implemented.");
