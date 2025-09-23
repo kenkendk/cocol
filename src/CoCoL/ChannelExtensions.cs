@@ -193,7 +193,7 @@ namespace CoCoL
 		/// <returns>True if the write succeeded, false otherwise</returns>
 		public static Task<bool> TryWriteAsync<T>(this IWriteChannel<T> self, T value)
 		{
-			return TryWriteAsync(self, value, Timeout.Immediate);
+			return TryWriteAsync(self, value, Timeout.Immediate, CancellationToken.None);
 		}
 
 		/// <summary>
@@ -206,24 +206,7 @@ namespace CoCoL
 		/// <returns>True if the write succeeded, false otherwise</returns>
 		public static Task<bool> TryWriteAsync<T>(this IWriteChannel<T> self, T value, TimeSpan waittime)
 		{
-			return self.WriteAsync(value, new TimeoutOffer(waittime)).ContinueWith(x =>
-			{
-				if (x.IsFaulted || x.IsCanceled)
-				{
-					Exception ex = x.Exception;
-					if (ex is AggregateException aex && aex.InnerExceptions.Count == 1)
-						ex = aex.InnerExceptions[0];
-
-					return ex switch
-					{
-						// Consume timeout exceptions
-						TimeoutException _ => false,
-						_ => throw ex,
-					};
-				}
-
-				return x.IsCompleted;
-			});
+			return TryWriteAsync(self, value, waittime, CancellationToken.None);
 		}
 
 		/// <summary>
@@ -236,7 +219,7 @@ namespace CoCoL
 		/// <returns>True if the write succeeded, false otherwise</returns>
 		public static Task<bool> TryWriteAsync<T>(this IWriteChannel<T> self, T value, CancellationToken cancelToken)
 		{
-			return self.WriteAsync(value, new CancellationOffer(cancelToken)).ContinueWith(x => x.IsCompleted && !x.IsFaulted && !x.IsCanceled);
+			return TryWriteAsync(self, value, Timeout.Immediate, cancelToken);
 		}
 
 		/// <summary>
@@ -250,7 +233,32 @@ namespace CoCoL
 		/// <returns>True if the write succeeded, false otherwise</returns>
 		public static Task<bool> TryWriteAsync<T>(this IWriteChannel<T> self, T value, TimeSpan waittime, CancellationToken cancelToken)
 		{
-			return self.WriteAsync(value, new TimeoutOffer(waittime, cancelToken)).ContinueWith(x => x.IsCompleted && !x.IsFaulted && !x.IsCanceled);
+			return self.WriteAsync(value, new TimeoutOffer(waittime, cancelToken)).ContinueWith(x =>
+			{
+				if (x.IsFaulted || x.IsCanceled)
+				{
+					Exception ex = x.Exception;
+					if (ex is AggregateException aex && aex.InnerExceptions.Count == 1)
+						ex = aex.InnerExceptions[0];
+
+					// Check if it's the token that requested the cancellation
+					if (x.IsCanceled && cancelToken.IsCancellationRequested)
+						throw new TaskCanceledException();
+					// Otherwise, it's the timeout, which is caught by the null in the switch
+
+					return ex switch
+					{
+						// Consume timeout exceptions
+						TimeoutException _ => false,
+						// Exception is null, and the token hasn't requested the cancellation, so it must be from the two-phase commit when it captured the timeout.
+						null => false,
+						// Throw any remaining exceptions
+						_ => throw ex,
+					};
+				}
+
+				return x.IsCompleted;
+			});
 		}
 
 		/// <summary>
@@ -261,7 +269,7 @@ namespace CoCoL
 		/// <returns>True if the read succeeded, false otherwise</returns>
 		public static Task<KeyValuePair<bool, T>> TryReadAsync<T>(this IReadChannel<T> self)
 		{
-			return TryReadAsync(self, Timeout.Immediate);
+			return TryReadAsync(self, Timeout.Immediate, CancellationToken.None);
 		}
 		/// <summary>
 		/// Reads the channel in a probing and asynchronous manner
@@ -272,24 +280,7 @@ namespace CoCoL
 		/// <returns>True if the read succeeded, false otherwise</returns>
 		public static Task<KeyValuePair<bool, T>> TryReadAsync<T>(this IReadChannel<T> self, TimeSpan waittime)
 		{
-			return self.ReadAsync(new TimeoutOffer(waittime)).ContinueWith(x =>
-			{
-				if (x.IsFaulted || x.IsCanceled)
-				{
-					Exception ex = x.Exception;
-					if (ex is AggregateException aex && aex.InnerExceptions.Count == 1)
-						ex = aex.InnerExceptions[0];
-
-					return ex switch
-					{
-						// Consume timeout exceptions
-						TimeoutException _ => new KeyValuePair<bool, T>(false, default(T)),
-						_ => throw ex,
-					};
-				}
-
-				return new KeyValuePair<bool, T>(true, x.Result);
-			});
+			return TryReadAsync(self, waittime, CancellationToken.None);
 		}
 
 		/// <summary>
@@ -301,13 +292,7 @@ namespace CoCoL
 		/// <returns>True if the read succeeded, false otherwise</returns>
 		public static Task<KeyValuePair<bool, T>> TryReadAsync<T>(this IReadChannel<T> self, CancellationToken cancelToken)
 		{
-			return self.ReadAsync(new CancellationOffer(cancelToken)).ContinueWith(x =>
-			{
-				if (x.IsFaulted || x.IsCanceled)
-					return new KeyValuePair<bool, T>(false, default(T));
-
-				return new KeyValuePair<bool, T>(true, x.Result);
-			});
+			return TryReadAsync(self, Timeout.Immediate, cancelToken);
 		}
 
 		/// <summary>
@@ -323,7 +308,26 @@ namespace CoCoL
 			return self.ReadAsync(new TimeoutOffer(timeout, cancelToken)).ContinueWith(x =>
 			{
 				if (x.IsFaulted || x.IsCanceled)
-					return new KeyValuePair<bool, T>(false, default(T));
+				{
+					Exception ex = x.Exception;
+					if (ex is AggregateException aex && aex.InnerExceptions.Count == 1)
+						ex = aex.InnerExceptions[0];
+
+					// Check if it's the token that requested the cancellation
+					if (x.IsCanceled && cancelToken.IsCancellationRequested)
+						throw new TaskCanceledException();
+					// Otherwise, it's the timeout, which is caught by the null in the switch
+
+					return ex switch
+					{
+						// Consume timeout exceptions
+						TimeoutException _ => new KeyValuePair<bool, T>(false, default),
+						// Exception is null so it must be canceled, and the token hasn't requested the cancellation, so it must be from the two-phase commit when it captured the timeout.
+						null => new KeyValuePair<bool, T>(false, default),
+						// Throw any remaining exceptions
+						_ => throw ex,
+					};
+				}
 
 				return new KeyValuePair<bool, T>(true, x.Result);
 			});
@@ -448,7 +452,7 @@ namespace CoCoL
 			}
 			else if (res.IsCanceled)
 			{
-				throw new OperationCanceledException();
+				throw new TaskCanceledException();
 			}
 		}
 
@@ -472,7 +476,7 @@ namespace CoCoL
 			}
 			else if (res.IsCanceled)
 			{
-				throw new OperationCanceledException();
+				throw new TaskCanceledException();
 			}
 		}
 
@@ -965,7 +969,7 @@ namespace CoCoL
 			}
 			else if (res.IsCanceled)
 			{
-				throw new OperationCanceledException();
+				throw new TaskCanceledException();
 			}
 		}
 
