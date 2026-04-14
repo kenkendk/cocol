@@ -6,6 +6,6 @@
     <ProjectReference Include="..\CoCoL\CoCoL.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="log4net" Version="2.0.10" />
+    <PackageReference Include="log4net" Version="3.3.0" />
   </ItemGroup>
 </Project>
